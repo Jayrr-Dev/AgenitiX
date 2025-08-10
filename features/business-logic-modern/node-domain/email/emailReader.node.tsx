@@ -24,7 +24,6 @@ import { z } from "zod";
 
 import { ExpandCollapseButton } from "@/components/nodes/ExpandCollapseButton";
 import LabelNode from "@/components/nodes/labelNode";
-import { findEdgesByHandle } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/edgeUtils";
 import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
 import { normalizeHandleId } from "@/features/business-logic-modern/infrastructure/node-core/handleOutputUtils";
 import {
@@ -43,7 +42,7 @@ import {
   EXPANDED_SIZES,
 } from "@/features/business-logic-modern/infrastructure/theming/sizing";
 import { useNodeData } from "@/hooks/useNodeData";
-import { useReactFlow, useStore } from "@xyflow/react";
+import { useStore } from "@xyflow/react";
 
 import { useAuth } from "@/components/auth/AuthProvider";
 import { api } from "@/convex/_generated/api";
@@ -371,18 +370,22 @@ const EmailReaderNode = memo(
       retryCount,
     } = nodeData as EmailReaderData;
 
-    // Global React‑Flow store – subscribe only to relevant edges to avoid re-renders during node drag
-    const _edges = useStore(
-      (s) => s.edges.filter((e) => e.source === id || e.target === id),
-      (a, b) => {
-        if (a === b) return true;
-        if (a.length !== b.length) return false;
-        const aIds = a.map((e) => e.id).join("|");
-        const bIds = b.map((e) => e.id).join("|");
-        return aIds === bIds;
-      }
+    // Targeted selectors: avoid broad dependency on nodes/edges arrays
+    // Track only the edges connected to 'account-input' handle
+    const accountInputEdgesSignature = useStore(
+      (s) => {
+        const edges = s.edges.filter(
+          (e) => e.target === id && e.targetHandle?.startsWith("account-input")
+        );
+        // Stable primitive signature to leverage strict equality
+        return (
+          edges
+            .map((e) => `${e.id}:${e.source}:${e.sourceHandle ?? ""}`)
+            .join("|") || "none"
+        );
+      },
+      (a, b) => a === b
     );
-    const { getNodes } = useReactFlow();
     const { showSuccess, showError } = useNodeToast(id);
 
     // Keep last emitted output to avoid redundant writes
@@ -412,48 +415,50 @@ const EmailReaderNode = memo(
     // -------------------------------------------------------------------------
     // 4.4  Get connected email account nodes
     // -------------------------------------------------------------------------
-    const connectedAccountIds = useMemo(() => {
-      // [Extract account IDs from connected account-output handles], basically read from source node outputs
-      const incomingEdges = findEdgesByHandle(_edges, id, "account-input");
-      if (!incomingEdges || incomingEdges.length === 0) return [] as string[];
-
-      const ids = new Set<string>();
-      for (const edge of incomingEdges) {
-        const sourceNode = (getNodes() as RFNode[]).find(
-          (n: RFNode) => n.id === edge.source
+    const connectedAccountIds = useStore(
+      (s) => {
+        const incomingEdges = s.edges.filter(
+          (e) => e.target === id && e.targetHandle?.startsWith("account-input")
         );
-        const output = (sourceNode?.data?.output ?? {}) as Record<
-          string,
-          unknown
-        >;
-        // Prefer explicit handle key from output map
-        const explicit = output["account-output"] as
-          | Record<string, unknown>
-          | undefined;
-        if (explicit && typeof explicit === "object") {
-          const maybeId = (explicit as any).accountId;
-          if (typeof maybeId === "string" && maybeId.length > 0)
-            ids.add(maybeId);
-          continue;
+        if (incomingEdges.length === 0) return [] as string[];
+        const ids = new Set<string>();
+        for (const edge of incomingEdges) {
+          const sourceNode = (s.nodes as RFNode[]).find(
+            (n: RFNode) => n.id === edge.source
+          );
+          const output = (sourceNode?.data?.output ?? {}) as Record<
+            string,
+            unknown
+          >;
+          const explicit = output["account-output"] as
+            | Record<string, unknown>
+            | undefined;
+          if (explicit && typeof explicit === "object") {
+            const maybeId = (explicit as any).accountId;
+            if (typeof maybeId === "string" && maybeId.length > 0)
+              ids.add(maybeId);
+          } else if (edge.sourceHandle) {
+            const handleId = normalizeHandleId(edge.sourceHandle);
+            const val = output[handleId] as Record<string, unknown> | undefined;
+            const maybeId = (val as any)?.accountId;
+            if (typeof maybeId === "string" && maybeId.length > 0)
+              ids.add(maybeId);
+          }
         }
-        // Fallback: derive from source handle id if needed
-        if (edge.sourceHandle) {
-          const handleId = normalizeHandleId(edge.sourceHandle);
-          const val = output[handleId] as Record<string, unknown> | undefined;
-          const maybeId = (val as any)?.accountId;
-          if (typeof maybeId === "string" && maybeId.length > 0)
-            ids.add(maybeId);
-        }
-      }
-      return Array.from(ids);
-    }, [_edges, id, getNodes]);
+        return Array.from(ids).sort();
+      },
+      (a, b) => a.length === b.length && a.every((v, i) => v === b[i])
+    );
 
     // Whether this node has any incoming edges to the account-input handle
     // [Explanation], basically detect if an Email Account node is wired even if it hasn't emitted outputs yet
-    const hasAccountInputEdges = useMemo(() => {
-      const incomingEdges = findEdgesByHandle(_edges, id, "account-input");
-      return Array.isArray(incomingEdges) && incomingEdges.length > 0;
-    }, [_edges, id]);
+    const hasAccountInputEdges = useStore(
+      (s) =>
+        s.edges.some(
+          (e) => e.target === id && e.targetHandle?.startsWith("account-input")
+        ),
+      Object.is
+    );
 
     // -------------------------------------------------------------------------
     // 4.5  Available accounts (filtered by connected nodes)

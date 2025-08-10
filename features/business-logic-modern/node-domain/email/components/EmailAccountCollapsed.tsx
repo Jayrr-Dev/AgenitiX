@@ -11,11 +11,12 @@
  * Keywords: collapsed-view, provider-icons, status-indicators, compact-ui
  */
 
-import { memo, useMemo } from "react";
+import RenderStatusDot from "@/components/RenderStatusDot";
+import { memo, useCallback, useMemo } from "react";
 import { FaMicrosoft } from "react-icons/fa";
 import { FcGoogle } from "react-icons/fc";
 import { MdEmail } from "react-icons/md";
-import RenderStatusDot from "@/components/RenderStatusDot";
+import { useEmailAccountContext } from "./EmailAccountProvider";
 // No import needed for types
 
 // Collapsed view styling constants
@@ -43,6 +44,7 @@ export const EmailAccountCollapsed = memo(
     onToggleExpand,
   }: EmailAccountCollapsedProps) => {
     const { provider, email, connectionStatus } = nodeData;
+    const { handleOAuth2Auth } = useEmailAccountContext();
 
     // Provider information with icons
     const providerInfo = useMemo(() => {
@@ -96,24 +98,35 @@ export const EmailAccountCollapsed = memo(
 
     const IconComponent = providerInfo.icon;
 
+    // Primary action for collapsed big icon, basically OAuth for oauth2 providers or expand for manual
+    const onPrimaryAction = useCallback(() => {
+      if (provider === "gmail" || provider === "outlook") {
+        handleOAuth2Auth(provider);
+        return;
+      }
+      onToggleExpand?.();
+    }, [handleOAuth2Auth, onToggleExpand, provider]);
+
     return (
       <div className={`${COLLAPSED_STYLES.container}`}>
         <div className={COLLAPSED_STYLES.content}>
           {/* Provider Icon */}
           <div className="flex justify-center">
-            <div 
+            <div
               className={COLLAPSED_STYLES.providerIcon}
-              onClick={onToggleExpand}
+              onClick={onPrimaryAction}
               role="button"
               tabIndex={0}
               onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
+                if (e.key === "Enter" || e.key === " ") {
                   e.preventDefault();
-                  onToggleExpand?.();
+                  onPrimaryAction();
                 }
               }}
             >
-              <IconComponent className={`w-6 h-6 ${providerInfo.color} ${COLLAPSED_STYLES.iconWrapper}`} />
+              <IconComponent
+                className={`w-6 h-6 ${providerInfo.color} ${COLLAPSED_STYLES.iconWrapper}`}
+              />
             </div>
           </div>
 

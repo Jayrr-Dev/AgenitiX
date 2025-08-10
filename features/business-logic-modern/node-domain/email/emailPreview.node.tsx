@@ -48,7 +48,8 @@ import {
   EXPANDED_SIZES,
 } from "@/features/business-logic-modern/infrastructure/theming/sizing";
 import { useNodeData } from "@/hooks/useNodeData";
-import { useReactFlow, useStore } from "@xyflow/react";
+import { useStore } from "@xyflow/react";
+import { shallow } from "zustand/shallow";
 
 // -----------------------------------------------------------------------------
 // 1️⃣  Data schema & validation
@@ -357,46 +358,47 @@ const EmailPreviewNode = memo(
     const { isExpanded, isEnabled, isActive, store } =
       nodeData as EmailPreviewData;
 
-    // 4.2  Global React‑Flow store – subscribe only to edges touching this node
-    const edges = useStore(
-      (s) => s.edges.filter((e) => e.source === id || e.target === id),
-      (a, b) => {
-        if (a === b) return true;
-        if (a.length !== b.length) return false;
-        const aIds = a.map((e) => e.id).join("|");
-        const bIds = b.map((e) => e.id).join("|");
-        return aIds === bIds;
-      }
-    );
-    const { getNodes } = useReactFlow();
-
-    // Subscribe to upstream value changes feeding into `emails-input`
-    // This creates a compact signature of the connected source node's relevant outputs
-    // so effects can react when inputs change (without subscribing to all nodes)
-    const inputSignature = useStore(
+    // 4.2  Targeted subscriptions to avoid broad nodes/edges dependencies
+    // Track the specific incoming edge for 'emails-input' only
+    const emailInputInfo = useStore(
       (s) => {
-        const edge = findEdgeByHandle(s.edges, id, "emails-input");
-        if (!edge) return "no-edge";
-        const src = (s.nodes as Array<{ id: string; data?: unknown }>).find(
-          (n) => n.id === edge.source
-        );
-        if (!src) return "no-src";
-        const data = (src.data ?? {}) as Record<string, unknown>;
-        // Only include keys that can influence the derived emails array
-        const compact = {
-          output: data.output,
-          messages: data.messages,
-          emailsOutput: data.emailsOutput,
-          store: data.store,
-        };
-        try {
-          return JSON.stringify(compact);
-        } catch {
-          // Fallback to a simple marker if serialization fails for any reason
-          return `sig-${src.id}`;
-        }
+        const e = findEdgeByHandle(s.edges, id, "emails-input");
+        return {
+          sourceId: e?.source ?? null,
+          sourceHandle: e?.sourceHandle ?? null,
+          edgeId: e?.id ?? null,
+        } as const;
       },
-      (a, b) => a === b
+      (a, b) =>
+        a.sourceId === b.sourceId &&
+        a.sourceHandle === b.sourceHandle &&
+        a.edgeId === b.edgeId
+    );
+
+    // Subscribe only to the relevant fields of the source node feeding this handle
+    const [srcOutput, srcMessages, srcEmailsOutput, srcStore] = useStore(
+      (s) => {
+        if (!emailInputInfo.sourceId)
+          return [undefined, undefined, undefined, undefined] as const;
+        const d = (s.nodes as Array<{ id: string; data?: unknown }>).find(
+          (n) => n.id === emailInputInfo.sourceId
+        )?.data as
+          | (Record<string, unknown> & {
+              output?: unknown;
+              messages?: unknown;
+              emailsOutput?: unknown;
+              store?: unknown;
+            })
+          | undefined;
+        return [d?.output, d?.messages, d?.emailsOutput, d?.store] as const;
+      },
+      shallow
+    );
+
+    // Minimal boolean for whether the emails-input connection exists
+    const hasEmailsInputEdge = useStore(
+      (s) => Boolean(findEdgeByHandle(s.edges, id, "emails-input")),
+      Object.is
     );
 
     // keep last emitted output to avoid redundant writes
@@ -449,37 +451,38 @@ const EmailPreviewNode = memo(
 
     /**
      * Compute the latest text coming from connected input handles.
-     *
-     * Uses findEdgeByHandle utility to properly handle React Flow's handle naming
-     * conventions (handles get type suffixes like "json-input__j", "input__b").
-     *
-     * Priority: json-input > input (modify based on your node's specific handles)
+     * [Explanation], basically use targeted selectors instead of scanning arrays
      */
-    const computeInput = useCallback((): string | null => {
-      const inputEdge = findEdgeByHandle(edges, id, "input");
-      if (!inputEdge) return null;
-      const src = (getNodes() as any[]).find((n) => n.id === inputEdge.source);
-      if (!src) return null;
-      const inputValue = src.data?.output ?? src.data?.store ?? src.data;
-      return typeof inputValue === "string"
-        ? inputValue
-        : String(inputValue || "");
-    }, [edges, id, getNodes]);
+    const inputText = useStore(
+      (s) => {
+        const inputEdge = findEdgeByHandle(s.edges, id, "input");
+        if (!inputEdge) return null as string | null;
+        const d = (s.nodes as Array<{ id: string; data?: unknown }>).find(
+          (n) => n.id === inputEdge.source
+        )?.data as
+          | (Record<string, unknown> & { output?: unknown; store?: unknown })
+          | undefined;
+        const v = (d?.output ?? d?.store ?? d) as unknown;
+        if (v == null) return "";
+        return typeof v === "string" ? v : String(v);
+      },
+      (a, b) => a === b
+    );
 
-    // Extract emails array from 'emails-input' when connected
+    // Extract emails array from 'emails-input' using targeted source fields
     const computeEmailsArray = useCallback((): Array<
       Record<string, unknown>
     > => {
-      const edge = findEdgeByHandle(edges, id, "emails-input");
-      if (!edge) return [];
-      const src = (getNodes() as any[]).find((n) => n.id === edge.source);
-      if (!src) return [];
-      const srcData: any = src.data || {};
-
-      // Primary: handle-based outputs
+      const srcData: any = {
+        output: srcOutput,
+        messages: srcMessages,
+        emailsOutput: srcEmailsOutput,
+        store: srcStore,
+      };
+      // Primary: handle-based outputs using the concrete source handle
       if (srcData?.output && typeof srcData.output === "object") {
-        if (edge.sourceHandle) {
-          const h = normalizeHandleId(edge.sourceHandle);
+        if (emailInputInfo.sourceHandle) {
+          const h = normalizeHandleId(emailInputInfo.sourceHandle);
           const v = srcData.output[h];
           if (Array.isArray(v)) return v as Array<Record<string, unknown>>;
           if (typeof v === "string") {
@@ -490,7 +493,7 @@ const EmailPreviewNode = memo(
             } catch {}
           }
         }
-        // fallback: first array value within output map
+        // Fallback: first array value within output map
         const firstArray = Object.values(srcData.output).find((v: unknown) =>
           Array.isArray(v)
         );
@@ -507,7 +510,6 @@ const EmailPreviewNode = memo(
           } catch {}
         }
       }
-
       // Secondary: common fields exposed by upstream nodes
       const value =
         srcData.messages ?? srcData.emailsOutput ?? srcData.store ?? srcData;
@@ -527,7 +529,13 @@ const EmailPreviewNode = memo(
           return firstArray as Array<Record<string, unknown>>;
       }
       return [];
-    }, [edges, id, getNodes]);
+    }, [
+      emailInputInfo.sourceHandle,
+      srcOutput,
+      srcMessages,
+      srcEmailsOutput,
+      srcStore,
+    ]);
 
     // Selected email normalization for display
     const getSelectedEmail = useCallback(() => {
@@ -773,16 +781,15 @@ const EmailPreviewNode = memo(
         lastEmailsJsonRef.current = nextJson;
         updateNodeData({ emails: safeEmails as any });
       }
-    }, [computeEmailsArray, updateNodeData, inputSignature]);
+    }, [computeEmailsArray, updateNodeData]);
 
     /* 🧹 If the emails-input edge is removed, clear preview state */
     useEffect(() => {
-      const stillConnected = !!findEdgeByHandle(edges, id, "emails-input");
-      if (!stillConnected) {
+      if (!hasEmailsInputEdge) {
         lastEmailsJsonRef.current = "[]";
         updateNodeData({ emails: [], selectedIndex: 0 });
       }
-    }, [edges, id, updateNodeData]);
+    }, [hasEmailsInputEdge, updateNodeData]);
 
     // Always enabled per request
     useEffect(() => {
