@@ -1,12 +1,14 @@
 /**
+Route: features/business-logic-modern/infrastructure/flow-engine/hooks/useLoadCanvas.ts
  * LOAD CANVAS HOOK - Load canvas state from Convex
  *
  * • Loads canvas state (nodes and edges) from Convex when flow opens
  * • Handles authentication and permission checks
  * • Provides loading status and error handling
  * • Integrates with flow store for state management
+ * • Clears legacy localStorage and new sessionStorage backups after server load
  *
- * Keywords: load-canvas, convex, flow-store, authentication
+ * Keywords: load-canvas, convex, flow-store, authentication, backup-cleanup
  */
 
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -121,12 +123,22 @@ export function useLoadCanvas(): UseLoadCanvasResult {
           );
           // Only clear backups if we actually loaded data from server, basically preserve backups for empty flows
           if (serverNodes.length > 0 || serverEdges.length > 0) {
+            // Clear legacy localStorage backups
             window.localStorage.removeItem(
               `${CLEAR_FLOW_EDITOR_BACKUP_PREFIX}${flowId}`
             );
             window.localStorage.removeItem(
               `${CLEAR_UNDO_BACKUP_PREFIX}${flowId}`
             );
+            // Clear new sessionStorage backups
+            try {
+              window.sessionStorage.removeItem(
+                `${CLEAR_FLOW_EDITOR_BACKUP_PREFIX}${flowId}`
+              );
+              window.sessionStorage.removeItem(
+                `${CLEAR_UNDO_BACKUP_PREFIX}${flowId}`
+              );
+            } catch {}
           }
         }
       } catch {}
@@ -160,10 +172,20 @@ export function useLoadCanvas(): UseLoadCanvasResult {
           `${SERVER_LOAD_MARK_PREFIX}${flowId}`,
           "loading"
         );
+        // Clear legacy localStorage backups
         window.localStorage.removeItem(
           `${CLEAR_FLOW_EDITOR_BACKUP_PREFIX}${flowId}`
         );
         window.localStorage.removeItem(`${CLEAR_UNDO_BACKUP_PREFIX}${flowId}`);
+        // Clear new sessionStorage backups
+        try {
+          window.sessionStorage.removeItem(
+            `${CLEAR_FLOW_EDITOR_BACKUP_PREFIX}${flowId}`
+          );
+          window.sessionStorage.removeItem(
+            `${CLEAR_UNDO_BACKUP_PREFIX}${flowId}`
+          );
+        } catch {}
       }
     } catch {}
   }, [flow?.id, hasHydrated, setNodes, setEdges]);

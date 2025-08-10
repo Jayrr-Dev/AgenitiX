@@ -1,5 +1,16 @@
 "use client";
 
+/**
+Route: features/business-logic-modern/infrastructure/flow-engine/FlowEditor.tsx
+ * FLOW EDITOR - Main canvas UI and behavior for building flows
+ *
+ * • Keyboard shortcuts, undo/redo integration, and node interactions
+ * • Debounced backup now uses sessionStorage with TTL and size guard (dev-only)
+ * • Cleans up legacy localStorage backups to prevent bloat
+ *
+ * Keywords: flow-editor, sessionStorage-backup, undo-redo, reactflow, cleanup
+ */
+
 import { useFlowStore } from "@/features/business-logic-modern/infrastructure/flow-engine/stores/flowStore";
 import type {
   AgenEdge,
@@ -81,6 +92,11 @@ const getNodeSpecForType = (nodeType: string) => {
 
 // Local storage keys (verb-first)
 const SERVER_LOAD_MARK_PREFIX = "flow-server-loaded:"; // [Explanation], basically marks that the current flow was loaded from server
+
+// Backup controls (verb-first)
+const ENABLE_FLOW_BACKUP = process.env.NODE_ENV !== "production"; // [Explanation], basically restrict backups to development only
+const FLOW_BACKUP_TTL_MS = 60 * 60 * 1000; // [Explanation], basically expire backups after 1 hour
+const FLOW_BACKUP_MAX_CHARS = 300_000; // [Explanation], basically guard against oversized snapshots (~300KB)
 
 /* -------------------------------------------------------------------------- */
 /*  DESIGN CONSTANTS (verb-first names)                                        */
@@ -502,7 +518,23 @@ const FlowEditorInternal = () => {
   const hasHydrated = useFlowStore((s) => s._hasHydrated);
   const restoreAttemptedRef = React.useRef(false);
 
+  // Cleanup legacy localStorage backups to prevent permanent bloat
   React.useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      // [Explanation], basically remove any old flow-editor-backup:* entries from localStorage
+      for (let i = window.localStorage.length - 1; i >= 0; i -= 1) {
+        const key = window.localStorage.key(i);
+        if (!key) continue;
+        if (key.startsWith("flow-editor-backup:")) {
+          window.localStorage.removeItem(key);
+        }
+      }
+    } catch {}
+  }, []);
+
+  React.useEffect(() => {
+    if (!ENABLE_FLOW_BACKUP) return; // [Explanation], basically disable backup/restore in production
     if (!flow?.id || !hasHydrated) return;
     const BACKUP_KEY = `flow-editor-backup:${flow.id}`;
     const SERVER_MARK_KEY = `${SERVER_LOAD_MARK_PREFIX}${flow.id}`;
@@ -521,29 +553,28 @@ const FlowEditorInternal = () => {
     // Restore if nodes are empty but backup has data
     if (!restoreAttemptedRef.current && nodes.length === 0) {
       try {
-        const raw = window.localStorage.getItem(BACKUP_KEY);
+        const raw = window.sessionStorage.getItem(BACKUP_KEY);
         if (raw) {
           const parsed = JSON.parse(raw) as {
             nodes?: any[];
             edges?: any[];
             ts?: number;
           };
-          if (Array.isArray(parsed.nodes) && parsed.nodes.length > 0) {
+          const isFresh =
+            typeof parsed?.ts === "number" &&
+            Date.now() - parsed.ts < FLOW_BACKUP_TTL_MS;
+          if (
+            isFresh &&
+            Array.isArray(parsed.nodes) &&
+            parsed.nodes.length > 0
+          ) {
             setNodes(parsed.nodes as any);
             setEdges(Array.isArray(parsed.edges) ? (parsed.edges as any) : []);
-            if (
-              typeof window !== "undefined" &&
-              window.localStorage.getItem("DEBUG_FLOW_CLEAR") === "1"
-            ) {
-              // eslint-disable-next-line no-console
-              console.log("[FlowDebug] Restored graph from backup snapshot", {
-                nodeCount: parsed.nodes.length,
-                edgeCount: Array.isArray(parsed.edges)
-                  ? parsed.edges.length
-                  : 0,
-                ts: parsed.ts,
-              });
-            }
+          } else {
+            // Expired or invalid -> clear
+            try {
+              window.sessionStorage.removeItem(BACKUP_KEY);
+            } catch {}
           }
         }
       } catch {}
@@ -553,6 +584,7 @@ const FlowEditorInternal = () => {
 
   React.useEffect(() => {
     // [Explanation], basically debounce backup writes and run them in idle time to avoid blocking pointer events
+    if (!ENABLE_FLOW_BACKUP) return; // dev-only
     if (!flow?.id) return;
     const BACKUP_KEY = `flow-editor-backup:${flow.id}`;
 
@@ -581,7 +613,10 @@ const FlowEditorInternal = () => {
         scheduleIdle(() => {
           try {
             const snapshot = JSON.stringify({ nodes, edges, ts: Date.now() });
-            window.localStorage.setItem(BACKUP_KEY, snapshot);
+            // Guard against oversized snapshots
+            if (snapshot.length <= FLOW_BACKUP_MAX_CHARS) {
+              window.sessionStorage.setItem(BACKUP_KEY, snapshot);
+            }
           } catch {}
         });
       }, BACKUP_IDLE_DEBOUNCE_MS);

@@ -351,6 +351,10 @@ export default defineSchema({
     storage_size: v.optional(v.number()), // Bytes of the blob in storage
     is_external_storage: v.optional(v.boolean()), // If true, use storage blob instead of inline
     storage_method: v.optional(v.string()), // "inline" | "chunked" | "blob"
+    // Reliability metadata
+    version: v.optional(v.number()), // Monotonic version for two-phase writes
+    checksum: v.optional(v.string()), // Simple checksum of serialized graph
+    total_chunks: v.optional(v.number()), // Number of chunks when chunked
     compressed_size: v.optional(v.number()), // Kept for backwards compatibility/monitoring
     is_dragging: v.optional(v.boolean()), // Whether this save was during a drag operation
     created_at: v.number(),
@@ -367,8 +371,12 @@ export default defineSchema({
     chunk_index: v.number(),
     chunk_data: v.string(), // JSON string chunk
     chunk_size: v.number(),
+    // Versioning for two-phase writes
+    chunk_version: v.optional(v.number()),
+    chunk_checksum: v.optional(v.string()),
     created_at: v.number(),
   })
     .index("by_history_id", ["history_id"])
-    .index("by_history_id_and_index", ["history_id", "chunk_index"]),
+    .index("by_history_id_and_index", ["history_id", "chunk_index"])
+    .index("by_history_id_and_version", ["history_id", "chunk_version"]),
 });

@@ -20,8 +20,7 @@ export function SetupWebVitalsClient(): null {
   useEffect(() => {
     if (process.env.NODE_ENV !== "development") return;
     let cancelled = false;
-    // eslint-disable-next-line no-console
-    console.log("[vitals] runtime attached");
+    // Web vitals runtime attached
     (async () => {
       try {
         const mod = await import("web-vitals/attribution");
@@ -31,13 +30,7 @@ export function SetupWebVitalsClient(): null {
           // [Explanation], basically show metric name, value, and key attribution fields
           const rounded = Math.round(m.value ?? 0);
           const attr = m.attribution ?? {};
-          // eslint-disable-next-line no-console
-          console.log("[vitals]", m.name, rounded, {
-            eventType: attr.eventType,
-            target: attr.eventTarget,
-            loadState: attr.loadState,
-            navigationType: attr.navigationType,
-          });
+          // Web vitals metric logged
         };
         mod.onLCP(log);
         mod.onINP(log);

@@ -289,14 +289,7 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
   const flowId = flow?.id;
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
 
-  // Debug authentication state
-  console.log("🔐 UndoRedoManager auth state:", {
-    hasUser: !!user,
-    userId: user?.id,
-    isAuthenticated,
-    authLoading,
-    flowId,
-  });
+  // Debug authentication state - removed console.log for production
 
   // Initialize history persistence - only when flowId and userId are available
   const {
@@ -1143,6 +1136,13 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
         });
         lastCapturedStateRef.current = snap;
         pendingPositionActionRef.current = null;
+        // Finalize with a server snapshot immediately after drag end
+        try {
+          const g = graphRef.current;
+          if (g && flowId) {
+            saveGraph(g, flowId, false);
+          }
+        } catch {}
       }
     };
     window.addEventListener("pointerup", onPointerUp);

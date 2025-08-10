@@ -43,8 +43,7 @@ export function SetupWhyDidYouRenderClient(): null {
           collapseGroups: true,
         });
         (React as any).__WDYR_INSTALLED__ = true;
-        // eslint-disable-next-line no-console
-        console.log("[wdyr] runtime attached");
+        // WDYR runtime attached
       }
     } catch (err) {
       // eslint-disable-next-line no-console

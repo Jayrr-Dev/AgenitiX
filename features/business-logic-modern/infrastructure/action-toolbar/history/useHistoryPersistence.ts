@@ -10,7 +10,7 @@
  */
 
 import { useMutation, useQuery } from "convex/react";
-import { useCallback, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { api } from "../../../../../convex/_generated/api";
 import type { Id } from "../../../../../convex/_generated/dataModel";
 import type { HistoryGraph } from "./historyGraph";
@@ -30,8 +30,8 @@ function optimizeGraphForStorage(graph: HistoryGraph): HistoryGraph {
   };
 }
 
-const SAVE_DEBOUNCE_MS = 500; // Debounce saves, basically wait 500ms before saving
-const DRAG_DEBOUNCE_MS = 1000; // Longer debounce during drag operations
+const SAVE_DEBOUNCE_MS = 750; // Debounce saves, basically wait 750ms before saving
+const DRAG_DEBOUNCE_MS = 1500; // Longer debounce during drag operations
 
 interface UseHistoryPersistenceOptions {
   flowId?: Id<"flows">;
@@ -42,6 +42,8 @@ interface UseHistoryPersistenceOptions {
 interface UseHistoryPersistenceResult {
   /** Save history graph to server */
   saveHistory: (graph: HistoryGraph, isDragging?: boolean) => void;
+  /** Save a local fine-grained diff to IndexedDB ring buffer */
+  saveLocalDiff: (diff: HistoryDiff) => Promise<void>;
   /** Load history graph from server */
   loadedHistory: HistoryGraph | null | undefined;
   /** Whether history is currently loading */
@@ -60,6 +62,9 @@ export function useHistoryPersistence(
   const { flowId, userId, enabled = true } = options;
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastSaveRef = useRef<string | null>(null);
+  const ringBufferRef = useRef<ReturnType<
+    typeof createIndexedDbRingBuffer
+  > | null>(null);
 
   // Convex hooks
   const saveHistoryMutation = useMutation(api.flowHistory.saveHistoryGraph);
@@ -73,6 +78,44 @@ export function useHistoryPersistence(
   // Process loaded history
   const loadedHistory = historyQuery?.historyGraph || null;
   const isLoading = historyQuery === undefined;
+  // Initialize client-side ring buffer (IndexedDB)
+  useEffect(() => {
+    if (!enabled || !flowId || !userId) return;
+    const buf = createIndexedDbRingBuffer({
+      dbName: "agenitix_history",
+      storeName: `flow_${flowId}_user_${userId}`,
+      capacity: 200, // Keep last 200 diffs client-side
+    });
+    ringBufferRef.current = buf;
+    return () => {
+      buf?.close?.();
+      ringBufferRef.current = null;
+    };
+  }, [enabled, flowId, userId]);
+
+  // On load: reconcile local diffs on top of server snapshot
+  useEffect(() => {
+    const reconcile = async () => {
+      if (!enabled || !flowId || !userId) return;
+      if (!loadedHistory) return; // nothing to reconcile
+      const buf = ringBufferRef.current;
+      if (!buf) return;
+      try {
+        const diffs = await buf.readAll();
+        if (!diffs || diffs.length === 0) return;
+        // Apply diffs in order to the loadedHistory and update the query cache optimistically
+        const reconciled = applyDiffsToGraph(loadedHistory, diffs);
+        // Fire-and-forget: persist reconciled snapshot and then clear local diffs
+        saveHistory(reconciled, false);
+        await buf.clear();
+      } catch (e) {
+        // Silent fail; server snapshot remains
+      }
+    };
+    void reconcile();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loadedHistory, enabled, flowId, userId]);
+
   // Don't treat null response as error since it could be authentication/access issue
   const error = null;
 
@@ -98,7 +141,26 @@ export function useHistoryPersistence(
         clearTimeout(saveTimeoutRef.current);
       }
 
-      // Optimize graph for storage
+      // During dragging: store a local fine-grained diff and skip network
+      if (isDragging) {
+        try {
+          const cursorId = graph.cursor as string;
+          const cursorNode = graph.nodes?.[cursorId] as any;
+          const parentId = (cursorNode?.parentId as string | null) ?? null;
+          const after = cursorNode?.after ?? null;
+          if (cursorId && after) {
+            void ringBufferRef.current?.write({
+              id: cursorId,
+              parentId,
+              after,
+              createdAt: Date.now(),
+            });
+          }
+        } catch {}
+        return;
+      }
+
+      // Optimize graph for storage for non-drag snapshots
       const optimizedGraph = optimizeGraphForStorage(graph);
       const graphString = JSON.stringify(optimizedGraph);
 
@@ -107,25 +169,22 @@ export function useHistoryPersistence(
         return;
       }
 
-      const debounceMs = isDragging ? DRAG_DEBOUNCE_MS : SAVE_DEBOUNCE_MS;
+      const debounceMs = SAVE_DEBOUNCE_MS;
 
       saveTimeoutRef.current = setTimeout(async () => {
         try {
-          console.log("💾 Saving history to server", {
-            flowId,
-            userId,
-            isDragging,
-          });
-
           await saveHistoryMutation({
             flowId,
             historyGraph: optimizedGraph,
-            isDragging,
+            isDragging: false,
             userId,
           });
 
           lastSaveRef.current = graphString;
-          console.log("✅ History saved successfully");
+          // On successful snapshot, clear local ring buffer to prevent duplication
+          try {
+            await ringBufferRef.current?.clear();
+          } catch {}
         } catch (error) {
           console.error("❌ Failed to save history:", error);
         }
@@ -134,6 +193,15 @@ export function useHistoryPersistence(
     [enabled, flowId, userId, saveHistoryMutation]
   );
 
+  // Save local diff into ring buffer for fast, offline-friendly move streams
+  const saveLocalDiff = useCallback(async (diff: HistoryDiff) => {
+    try {
+      await ringBufferRef.current?.write(diff);
+    } catch {
+      // Ignore local write failures
+    }
+  }, []);
+
   // Clear history
   const clearHistory = useCallback(async () => {
     if (!enabled || !flowId || !userId) {
@@ -141,10 +209,8 @@ export function useHistoryPersistence(
     }
 
     try {
-      console.log("🗑️ Clearing history for flow", flowId);
       await clearHistoryMutation({ flowId, userId });
       lastSaveRef.current = null;
-      console.log("✅ History cleared successfully");
     } catch (error) {
       console.error("❌ Failed to clear history:", error);
       throw error;
@@ -164,10 +230,133 @@ export function useHistoryPersistence(
 
   return {
     saveHistory,
+    saveLocalDiff,
     loadedHistory,
     isLoading,
     isSaving,
     clearHistory,
     error,
   };
+}
+
+// --------------------------------------
+// Local IndexedDB Ring Buffer (minimal)
+// --------------------------------------
+type RingBufferOptions = {
+  dbName: string;
+  storeName: string;
+  capacity: number;
+};
+export type HistoryDiff = {
+  id: string;
+  parentId: string | null;
+  after: unknown;
+  createdAt: number;
+};
+
+function createIndexedDbRingBuffer(options: RingBufferOptions) {
+  const { dbName, storeName, capacity } = options;
+  const openDb = (): Promise<IDBDatabase> =>
+    new Promise((resolve, reject) => {
+      const req = indexedDB.open(dbName, 1);
+      req.onupgradeneeded = () => {
+        const db = req.result;
+        if (!db.objectStoreNames.contains(storeName)) {
+          const store = db.createObjectStore(storeName, {
+            keyPath: "key",
+            autoIncrement: false,
+          });
+          store.createIndex("by_createdAt", "createdAt");
+        }
+      };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+
+  const write = async (diff: HistoryDiff) => {
+    const db = await openDb();
+    const tx = db.transaction(storeName, "readwrite");
+    const store = tx.objectStore(storeName);
+    const key = `${diff.createdAt}_${diff.id}`;
+    await new Promise((resolve, reject) => {
+      const putReq = store.put({ key, ...diff });
+      putReq.onsuccess = resolve;
+      putReq.onerror = () => reject(putReq.error);
+    });
+    // Trim to capacity
+    const all = await readAll();
+    if (all.length > capacity) {
+      const toDelete = all.length - capacity;
+      for (let i = 0; i < toDelete; i += 1) {
+        const delKey = `${all[i]!.createdAt}_${all[i]!.id}`;
+        await new Promise((resolve, reject) => {
+          const delReq = store.delete(delKey);
+          delReq.onsuccess = resolve;
+          delReq.onerror = () => reject(delReq.error);
+        });
+      }
+    }
+    await new Promise((resolve) => (tx.oncomplete = () => resolve(null)));
+    db.close();
+  };
+
+  const readAll = async (): Promise<HistoryDiff[]> => {
+    const db = await openDb();
+    const tx = db.transaction(storeName, "readonly");
+    const store = tx.objectStore(storeName);
+    const index = store.index("by_createdAt");
+    const results: HistoryDiff[] = [];
+    await new Promise<void>((resolve, reject) => {
+      const cursorReq = index.openCursor();
+      cursorReq.onsuccess = () => {
+        const cursor = cursorReq.result;
+        if (!cursor) return resolve();
+        results.push(cursor.value as HistoryDiff);
+        cursor.continue();
+      };
+      cursorReq.onerror = () => reject(cursorReq.error);
+    });
+    db.close();
+    return results.sort((a, b) => a.createdAt - b.createdAt);
+  };
+
+  const clear = async () => {
+    const db = await openDb();
+    const tx = db.transaction(storeName, "readwrite");
+    tx.objectStore(storeName).clear();
+    await new Promise((resolve) => (tx.oncomplete = () => resolve(null)));
+    db.close();
+  };
+
+  const close = () => {
+    // No-op; we close per-op
+  };
+
+  return { write, readAll, clear, close };
+}
+
+// Minimal diff applier: append nodes from diffs if newer than cursor
+function applyDiffsToGraph(
+  graph: HistoryGraph,
+  diffs: HistoryDiff[]
+): HistoryGraph {
+  if (!diffs.length) return graph;
+  const g = { ...graph, nodes: { ...graph.nodes } } as HistoryGraph;
+  for (const d of diffs) {
+    g.nodes[d.id] = {
+      ...(g.nodes[d.id] ?? {
+        id: d.id,
+        parentId: d.parentId,
+        childrenIds: [],
+        label: "LOCAL",
+        before: d.after,
+        after: d.after,
+        createdAt: d.createdAt,
+      }),
+      after: d.after as any,
+      createdAt: d.createdAt,
+    } as any;
+    g.cursor = d.id;
+  }
+  return g;
 }

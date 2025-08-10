@@ -11,7 +11,7 @@
  */
 
 import { v } from "convex/values";
-import type { QueryCtx, ActionCtx, MutationCtx } from "./_generated/server";
+import type { ActionCtx, MutationCtx, QueryCtx } from "./_generated/server";
 
 /* -------------------------------------------------------------------------- */
 /* 🔧 Re-usable Types                                                         */
@@ -45,8 +45,7 @@ export interface AuthContext {
 export const debug = (context: string, ...args: unknown[]) => {
   if (process.env.NODE_ENV === "development") {
     const timestamp = new Date().toISOString();
-    // eslint-disable-next-line no-console
-    console.log(`🔐 [${timestamp}] [${context}]`, ...args);
+    // Debug logging removed for production
   }
 };
 
@@ -61,7 +60,7 @@ export const debug = (context: string, ...args: unknown[]) => {
 /* 🏷️ Identity builder with validation                                       */
 /* -------------------------------------------------------------------------- */
 export const toIdentity = (
-  user: any, 
+  user: any,
   source: SessionIdentity["source"],
   tokenIdentifier?: string
 ): SessionIdentity => {
@@ -71,7 +70,7 @@ export const toIdentity = (
 
   const identity: SessionIdentity = {
     email: user.email as string,
-    name: user.name as string || undefined,
+    name: (user.name as string) || undefined,
     subject: user._id as string,
     source,
     tokenIdentifier,
@@ -80,7 +79,7 @@ export const toIdentity = (
   debug("toIdentity", "Created identity:", {
     email: identity.email,
     source: identity.source,
-    hasName: !!identity.name
+    hasName: !!identity.name,
   });
 
   return identity;
@@ -90,18 +89,25 @@ export const toIdentity = (
 /* 🪄 THE collision-safe session resolver                                     */
 /* -------------------------------------------------------------------------- */
 export const getSession = async (
-  ctx: QueryCtx | ActionCtx | MutationCtx,
+  ctx: QueryCtx | ActionCtx | MutationCtx
 ): Promise<SessionIdentity | null> => {
-  const contextType = "runQuery" in ctx ? "Action" : "runMutation" in ctx ? "Action" : "Query/Mutation";
+  const contextType =
+    "runQuery" in ctx
+      ? "Action"
+      : "runMutation" in ctx
+        ? "Action"
+        : "Query/Mutation";
   debug("getSession", `Starting session resolution in ${contextType}`);
   try {
     const convexIdentity = await ctx.auth.getUserIdentity();
     if (convexIdentity && convexIdentity.email) {
-      debug("getSession", "Convex auth successful", { email: convexIdentity.email });
+      debug("getSession", "Convex auth successful", {
+        email: convexIdentity.email,
+      });
       return {
         email: convexIdentity.email,
         name: convexIdentity.name || undefined,
-        subject: convexIdentity.tokenIdentifier || null as unknown as string,
+        subject: convexIdentity.tokenIdentifier || (null as unknown as string),
         source: "convex",
         tokenIdentifier: convexIdentity.tokenIdentifier ?? null,
       };
@@ -118,10 +124,10 @@ export const getSession = async (
 /* 🔍 Session validation and context building                                */
 /* -------------------------------------------------------------------------- */
 export const getAuthContext = async (
-  ctx: QueryCtx | ActionCtx | MutationCtx,
+  ctx: QueryCtx | ActionCtx | MutationCtx
 ): Promise<AuthContext> => {
   const session = await getSession(ctx);
-  
+
   if (!session) {
     debug("getAuthContext", "No session available");
     return {
@@ -167,15 +173,13 @@ export const getAuthContext = async (
 /* 🛡️ Auth guards and validation                                            */
 /* -------------------------------------------------------------------------- */
 export const requireAuth = async (
-  ctx: QueryCtx | ActionCtx | MutationCtx,
+  ctx: QueryCtx | ActionCtx | MutationCtx
 ): Promise<AuthContext> => {
   const authContext = await getAuthContext(ctx);
-  
+
   if (!authContext.isAuthenticated || !authContext.session) {
     debug("requireAuth", "Authentication required but not found");
-    throw new Error(
-      "Authentication required. Please sign in to continue."
-    );
+    throw new Error("Authentication required. Please sign in to continue.");
   }
 
   debug("requireAuth", "Authentication validated:", {
@@ -187,10 +191,10 @@ export const requireAuth = async (
 };
 
 export const requireUser = async (
-  ctx: QueryCtx | ActionCtx | MutationCtx,
+  ctx: QueryCtx | ActionCtx | MutationCtx
 ): Promise<{ authContext: AuthContext; user: any }> => {
   const authContext = await requireAuth(ctx);
-  
+
   if (!authContext.user) {
     debug("requireUser", "User object not found in database");
     throw new Error(
@@ -213,7 +217,9 @@ export const optionalString = v.optional(v.string());
 
 export const tokenArgs = {} as const;
 
-export const getTokenFromArgs = (_args: Record<string, unknown>): string | undefined => {
+export const getTokenFromArgs = (
+  _args: Record<string, unknown>
+): string | undefined => {
   return undefined;
 };
 
@@ -237,7 +243,7 @@ export const logAuthState = (
 export const validateAuthConsistency = (
   operation: string,
   expectedSource: "convex" | "any",
-  authContext: AuthContext,
+  authContext: AuthContext
 ) => {
   if (!authContext.isAuthenticated) {
     debug("validateAuthConsistency", `${operation}: Not authenticated`);

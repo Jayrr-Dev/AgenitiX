@@ -49,6 +49,15 @@ function splitIntoChunks(input: string, chunkSize: number): string[] {
   return chunks;
 }
 
+function simpleChecksum(str: string): string {
+  // Fast rolling checksum; [Explanation], basically cheap integrity signal
+  let h = 0;
+  for (let i = 0; i < str.length; i++) {
+    h = (h * 31 + str.charCodeAt(i)) >>> 0;
+  }
+  return h.toString(36);
+}
+
 /**
  * Save history graph to database, basically persist undo/redo state
  */
@@ -68,11 +77,11 @@ export const saveHistoryGraph = mutation({
 
       // If identity is unavailable, we still proceed using the trusted userId param
       // [Explanation], basically align with existing flows API that passes user_id explicitly
-      if (!identity?.email) {
-        console.warn(
-          "No authenticated identity from ctx.auth; proceeding with provided userId"
-        );
-      }
+      //   if (!identity?.email) {
+      //     console.warn(
+      //       "No authenticated identity from ctx.auth; proceeding with provided userId"
+      //     );
+      //   }
 
       // Validate that the authenticated user matches the passed userId (security check)
       if (identity?.email) {
@@ -117,17 +126,11 @@ export const saveHistoryGraph = mutation({
       const useExternal = byteSize > INLINE_BYTE_LIMIT;
 
       if (existingHistory) {
-        if (useExternal) {
-          // Replace inline with chunked storage
-          // Delete previous chunks if present
-          const oldChunks = await ctx.db
-            .query("flow_history_chunks")
-            .withIndex("by_history_id", (q) =>
-              q.eq("history_id", existingHistory._id)
-            )
-            .collect();
-          await Promise.all(oldChunks.map((c) => ctx.db.delete(c._id)));
+        const nextVersion = (existingHistory.version ?? 0) + 1;
+        const checksum = simpleChecksum(serialized);
 
+        if (useExternal) {
+          // Two-phase write: write new versioned chunks first, then flip head and finally clean old version
           const chunks = splitIntoChunks(serialized, CHUNK_BYTE_SIZE);
           for (let i = 0; i < chunks.length; i += 1) {
             const part = chunks[i]!;
@@ -136,10 +139,13 @@ export const saveHistoryGraph = mutation({
               chunk_index: i,
               chunk_data: part,
               chunk_size: part.length,
+              chunk_version: nextVersion,
+              chunk_checksum: checksum,
               created_at: now,
             });
           }
 
+          // Promote new version on head
           await ctx.db.patch(existingHistory._id, {
             history_graph: undefined,
             storage_id: undefined,
@@ -148,11 +154,28 @@ export const saveHistoryGraph = mutation({
             storage_method: "chunked",
             compressed_size: byteSize,
             is_dragging: isDragging,
+            total_chunks: chunks.length,
+            checksum,
+            version: nextVersion,
             updated_at: now,
           });
-          // History updated successfully (chunked)
+
+          // Cleanup: delete older chunk versions
+          const oldChunks = await ctx.db
+            .query("flow_history_chunks")
+            .withIndex("by_history_id", (q) =>
+              q.eq("history_id", existingHistory._id)
+            )
+            .collect();
+          await Promise.all(
+            oldChunks
+              .filter((c) => (c.chunk_version ?? 0) < nextVersion)
+              .map((c) => ctx.db.delete(c._id))
+          );
+
           return existingHistory._id;
         }
+
         await ctx.db.patch(existingHistory._id, {
           history_graph: historyGraph,
           storage_id: undefined,
@@ -161,14 +184,16 @@ export const saveHistoryGraph = mutation({
           storage_method: "inline",
           compressed_size: byteSize,
           is_dragging: isDragging,
+          checksum,
+          version: nextVersion,
+          total_chunks: undefined,
           updated_at: now,
         });
-        // History updated successfully
         return existingHistory._id;
       }
 
       if (useExternal) {
-        // Fallback to document chunking within DB to avoid storage API in mutation
+        const checksum = simpleChecksum(serialized);
         const chunks = splitIntoChunks(serialized, CHUNK_BYTE_SIZE);
         const historyId = await ctx.db.insert("flow_histories", {
           flow_id: flowId,
@@ -180,10 +205,13 @@ export const saveHistoryGraph = mutation({
           storage_method: "chunked",
           compressed_size: byteSize,
           is_dragging: isDragging,
+          version: 1,
+          total_chunks: chunks.length,
+          checksum,
           created_at: now,
           updated_at: now,
         });
-        // Write chunks
+        // Write chunks for version 1
         for (let i = 0; i < chunks.length; i += 1) {
           const part = chunks[i]!;
           await ctx.db.insert("flow_history_chunks", {
@@ -191,10 +219,11 @@ export const saveHistoryGraph = mutation({
             chunk_index: i,
             chunk_data: part,
             chunk_size: part.length,
+            chunk_version: 1,
+            chunk_checksum: checksum,
             created_at: now,
           });
         }
-        // History created successfully (chunked)
         return historyId;
       }
 
@@ -265,14 +294,23 @@ export const loadHistoryGraph = query({
         return null;
       }
 
-      // If stored in chunked form, stitch it together
+      // If stored in chunked form, stitch it together (latest version only)
       if (history.storage_method === "chunked") {
+        const version = history.version ?? 1;
         const chunks = await ctx.db
           .query("flow_history_chunks")
           .withIndex("by_history_id", (q) => q.eq("history_id", history._id))
           .collect();
-        const ordered = chunks.sort((a, b) => a.chunk_index - b.chunk_index);
+        const filtered = chunks.filter(
+          (c) => (c.chunk_version ?? version) === version
+        );
+        const ordered = filtered.sort((a, b) => a.chunk_index - b.chunk_index);
         const combined = ordered.map((c) => c.chunk_data).join("");
+        // Optional integrity check
+        const checksum = simpleChecksum(combined);
+        if (history.checksum && history.checksum !== checksum) {
+          console.warn("History chunk checksum mismatch detected");
+        }
         const parsed = JSON.parse(combined) as HistoryGraph;
         return {
           historyGraph: parsed,
@@ -332,6 +370,13 @@ export const clearHistoryGraph = mutation({
         .first();
 
       if (history) {
+        // Delete chunk rows if present
+        const chunks = await ctx.db
+          .query("flow_history_chunks")
+          .withIndex("by_history_id", (q) => q.eq("history_id", history._id))
+          .collect();
+        await Promise.all(chunks.map((c) => ctx.db.delete(c._id)));
+
         // If there is an external blob, delete it as well
         if (history.is_external_storage && history.storage_id) {
           try {
