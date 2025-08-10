@@ -52,6 +52,10 @@ import { useNodeToast } from "@/hooks/useNodeToast";
 import { useQuery } from "convex/react";
 import { EmailReaderCollapsed } from "./components/EmailReaderCollapsed";
 import { EmailReaderExpanded } from "./components/EmailReaderExpanded";
+import {
+  clearEmailReaderMessagesForNode,
+  setEmailReaderMessagesForNode,
+} from "./stores/use-email-reader-outputs";
 
 // -----------------------------------------------------------------------------
 // 1️⃣  Data schema & validation
@@ -399,6 +403,7 @@ const EmailReaderNode = memo(
     // -------------------------------------------------------------------------
     const { user, authToken: token } = useAuth();
     const flowMetadata = useFlowMetadataOptional();
+    const flowId = String(flowMetadata?.flow?.id ?? "");
     const canEdit = flowMetadata?.flow?.canEdit ?? true;
     const userEmail = user?.email ?? "";
 
@@ -640,17 +645,23 @@ const EmailReaderNode = memo(
           },
         }));
 
+        // Store heavy payload outside node.data to avoid React Flow lag
+        setEmailReaderMessagesForNode(
+          flowId,
+          id,
+          emails as unknown as Array<Record<string, unknown>>
+        );
+
+        // Persist only lightweight metadata in node.data
         updateNodeData({
           connectionStatus: "connected",
           isConnected: true,
-          isActive: true, // Activar el nodo para que propague datos
+          isActive: true, // propagate status only
           lastSync: Date.now(),
           processedCount: processedCount + emails.length,
           messageCount: emails.length,
-          messages: emails,
-          emailsOutput: JSON.stringify(emails), // Raw data
-          output: JSON.stringify(formattedEmails, null, 2), // Formatted for viewText
           statusOutput: true,
+          // Intentionally omit: messages, emailsOutput, heavy output strings
         });
 
         showSuccess(`Read ${emails.length} messages successfully`);
@@ -694,6 +705,10 @@ const EmailReaderNode = memo(
       const emailChanged = prevEmail !== userEmail;
       if (tokenChanged || emailChanged) {
         updateNodeData({ ...RESET_ON_LOGOUT_DATA });
+        // Clear ephemeral outputs cache for this node on auth change
+        try {
+          clearEmailReaderMessagesForNode(flowId, id);
+        } catch {}
         _prevUserEmailRef.current = userEmail;
         _prevTokenRef.current = token ?? null;
       }
@@ -753,22 +768,16 @@ const EmailReaderNode = memo(
 
       // Only clear when transitioning from connected -> disconnected
       if (wasConnected && !isConnected) {
-        const data = nodeData as EmailReaderData;
-        const hasStaleData =
-          (Array.isArray(data.messages) && data.messages.length > 0) ||
-          (typeof data.messageCount === "number" && data.messageCount > 0) ||
-          (typeof data.emailsOutput === "string" &&
-            data.emailsOutput.length > 0) ||
-          (typeof data.output === "string" && data.output.length > 0);
-
-        if (hasStaleData) {
-          updateNodeData({
-            messages: [],
-            messageCount: 0,
-            emailsOutput: "",
-            output: "",
-          });
-        }
+        // Clear any local indicators
+        updateNodeData({
+          messageCount: 0,
+          emailsOutput: "",
+          output: "",
+        });
+        // Clear heavy payload from the ephemeral store
+        try {
+          clearEmailReaderMessagesForNode(flowId, id);
+        } catch {}
       }
 
       _prevIsConnectedRef.current = isConnected;

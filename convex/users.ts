@@ -10,9 +10,8 @@
  * Keywords: user-queries, authentication, data-access, convex-auth, synchronized-tables
  */
 
-import { query, mutation } from "./_generated/server";
-import { auth } from "./auth";
 import { v } from "convex/values";
+import { mutation, query } from "./_generated/server";
 
 /**
  * Get current authenticated user with complete profile data, basically unified user info
@@ -20,26 +19,37 @@ import { v } from "convex/values";
 export const getCurrentUser = query({
   args: {},
   handler: async (ctx) => {
-    const userId = await auth.getUserId(ctx);
-    if (!userId) return null;
+    try {
+      // Get user identity from Convex Auth
+      const identity = await ctx.auth.getUserIdentity();
+      if (!identity?.email) return null;
 
-    const user = await ctx.db.get(userId);
-    if (!user) return null;
+      // Find user in users table by email (not by auth session ID)
+      const user = await ctx.db
+        .query("users")
+        .withIndex("email", (q) => q.eq("email", identity.email))
+        .first();
 
-    return {
-      id: user._id,
-      email: user.email,
-      name: user.name,
-      avatar_url: user.image || user.avatar_url,
-      email_verified: !!user.emailVerificationTime || user.email_verified,
-      is_active: user.is_active ?? true,
-      created_at: user.created_at,
-      updated_at: user.updated_at,
-      last_login: user.last_login,
-      company: user.company,
-      role: user.role,
-      timezone: user.timezone,
-    };
+      if (!user) return null;
+
+      return {
+        id: user._id,
+        email: user.email,
+        name: user.name,
+        avatar_url: user.image || user.avatar_url,
+        email_verified: !!user.emailVerificationTime || user.email_verified,
+        is_active: user.is_active ?? true,
+        created_at: user.created_at,
+        updated_at: user.updated_at,
+        last_login: user.last_login,
+        company: user.company,
+        role: user.role,
+        timezone: user.timezone,
+      };
+    } catch (error) {
+      // Return null if authentication fails, basically graceful auth handling
+      return null;
+    }
   },
 });
 
@@ -52,7 +62,7 @@ export const getUserById = query({
     try {
       const user = await ctx.db.get(args.userId);
       if (!user) return null;
-        
+
       return {
         id: user._id,
         email: user.email,
@@ -84,22 +94,35 @@ export const updateUserProfile = mutation({
     timezone: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const userId = await auth.getUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
+    try {
+      // Get user identity from Convex Auth
+      const identity = await ctx.auth.getUserIdentity();
+      if (!identity?.email) throw new Error("Not authenticated");
 
-    const user = await ctx.db.get(userId);
-    if (!user) throw new Error("User not found");
+      // Find user in users table by email (not by auth session ID)
+      const user = await ctx.db
+        .query("users")
+        .withIndex("email", (q) => q.eq("email", identity.email))
+        .first();
 
-    const now = Date.now();
-    const updateData = {
-      ...args,
-      updated_at: now,
-    };
+      if (!user) throw new Error("User not found");
 
-    // Update users table
-    await ctx.db.patch(userId, updateData);
+      const now = Date.now();
+      const updateData = {
+        ...args,
+        updated_at: now,
+      };
 
-    return { success: true };
+      // Update users table
+      await ctx.db.patch(user._id, updateData);
+
+      return { success: true };
+    } catch (error) {
+      // Re-throw with proper error message, basically enhanced error handling
+      throw new Error(
+        error instanceof Error ? error.message : "Failed to update profile"
+      );
+    }
   },
 });
 

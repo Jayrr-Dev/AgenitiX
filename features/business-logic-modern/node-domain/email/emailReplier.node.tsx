@@ -43,9 +43,11 @@ import {
 } from "@/features/business-logic-modern/infrastructure/theming/sizing";
 import { useNodeData } from "@/hooks/useNodeData";
 import { useReactFlow, useStore } from "@xyflow/react";
+import { getEmailReaderMessagesForNode } from "./stores/use-email-reader-outputs";
 
 import { useAuth } from "@/components/auth/AuthProvider";
 import { api } from "@/convex/_generated/api";
+import { useFlowMetadataOptional } from "@/features/business-logic-modern/infrastructure/flow-engine/contexts/flow-metadata-context";
 // Convex integration
 import { useQuery } from "convex/react";
 import { toast } from "sonner";
@@ -360,6 +362,8 @@ const EmailReplierNode = memo(
     // -------------------------------------------------------------------------
     const { nodeData, updateNodeData } = useNodeData(id, {});
     const { authToken: token } = useAuth();
+    const flowMetadata = useFlowMetadataOptional();
+    const flowId = String(flowMetadata?.flow?.id ?? "");
 
     // -------------------------------------------------------------------------
     // STATE MANAGEMENT (grouped for clarity)
@@ -467,27 +471,31 @@ const EmailReplierNode = memo(
       const sourceNode = (getNodes() as any[]).find(
         (n) => n.id === edge.source
       );
-      const data = (sourceNode?.data ?? {}) as Record<string, unknown>;
-      let emails: unknown = [];
-      // Handle-based output first
-      const output = (data.output ?? {}) as Record<string, unknown>;
-      if (edge.sourceHandle) {
-        const h = normalizeHandleId(edge.sourceHandle);
-        emails = output[h] ?? emails;
+      // Prefer ephemeral outputs store from EmailReader (current flow scope)
+      let next = getEmailReaderMessagesForNode(flowId, edge.source);
+      // Fallback: legacy data paths if any
+      if (!Array.isArray(next) || next.length === 0) {
+        const data = (sourceNode?.data ?? {}) as Record<string, unknown>;
+        let emails: unknown = [];
+        const output = (data.output ?? {}) as Record<string, unknown>;
+        if (edge.sourceHandle) {
+          const h = normalizeHandleId(edge.sourceHandle);
+          emails = output[h] ?? emails;
+        }
+        if (!Array.isArray(emails))
+          emails = output["messages-output"] ?? emails;
+        if (!Array.isArray(emails)) emails = (data as any).messages;
+        if (
+          !Array.isArray(emails) &&
+          typeof (data as any).emailsOutput === "string"
+        ) {
+          try {
+            const parsed = JSON.parse((data as any).emailsOutput as string);
+            if (Array.isArray(parsed)) emails = parsed;
+          } catch {}
+        }
+        next = Array.isArray(emails) ? (emails as any[]) : [];
       }
-      // Fallbacks
-      if (!Array.isArray(emails)) emails = output["messages-output"] ?? emails;
-      if (!Array.isArray(emails)) emails = (data as any).messages;
-      if (
-        !Array.isArray(emails) &&
-        typeof (data as any).emailsOutput === "string"
-      ) {
-        try {
-          const parsed = JSON.parse((data as any).emailsOutput as string);
-          if (Array.isArray(parsed)) emails = parsed;
-        } catch {}
-      }
-      const next = Array.isArray(emails) ? (emails as any[]) : [];
       const nextJson = JSON.stringify(next);
       if (nextJson !== lastEmailsJsonRef.current) {
         lastEmailsJsonRef.current = nextJson;

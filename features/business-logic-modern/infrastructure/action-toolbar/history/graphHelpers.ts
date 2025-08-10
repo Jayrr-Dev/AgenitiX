@@ -3,14 +3,13 @@
  *
  * • Graph creation and manipulation utilities
  * • Node creation with proper parent-child relationships
- * • Persistence helpers for localStorage integration
+ * • Server-first helpers (local persistence removed)
  * • ID generation and state validation
  *
  * Keywords: graph-utilities, node-creation, persistence, validation
  */
 
 // Lightweight runtime compression for large graphs (≈70% smaller). Adds <2 KB to bundle.
-import { compressToUTF16, decompressFromUTF16 } from "lz-string";
 import { generateNodeId as generateReadableNodeId } from "../../flow-engine/utils/nodeUtils";
 import type {
   FlowState,
@@ -123,18 +122,24 @@ export const getLeafNodes = (graph: HistoryGraph): HistoryNode[] => {
   );
 };
 
-// Persistence helpers
-const STORAGE_KEY_PREFIX = "workflow-history-graph-v5"; // bump version for flow-specific storage
+// Server-first: local persistence disabled
+const STORAGE_KEY_PREFIX = "workflow-history-graph-v5"; // kept for compatibility
 
 /**
  * PERSISTENCE QUEUE - Dedupes and defers heavy persistence work
  *
  * [Explanation], basically batch multiple quick updates and run JSON/compression + localStorage writes in idle time
  */
-const PERSIST_DEBOUNCE_MS = 400; // [Explanation], basically wait a bit to coalesce rapid changes
-const COMPRESSION_THRESHOLD = 500_000; // [Explanation], basically only compress very large payloads
+const PERSIST_DEBOUNCE_MS = 0;
+const DRAG_DEBOUNCE_MS = 0;
+const COMPRESSION_THRESHOLD = Number.POSITIVE_INFINITY;
+const MAX_PERSIST_SIZE = Number.POSITIVE_INFINITY;
 
-type PersistJob = { graph: HistoryGraph; flowId?: string };
+type PersistJob = {
+  graph: HistoryGraph;
+  flowId?: string;
+  isDragging?: boolean;
+};
 
 let pendingJob: PersistJob | null = null; // [Explanation], basically latest scheduled job
 let isPersisting = false; // [Explanation], basically avoid concurrent persists
@@ -221,52 +226,15 @@ function optimizeGraphForStorage(graph: HistoryGraph) {
  * Perform the heavy JSON serialization, compression, and localStorage write.
  * Runs outside the interaction path.
  */
-function persistNow(job: PersistJob): void {
-  try {
-    const optimizedGraph = optimizeGraphForStorage(job.graph);
-    const json = JSON.stringify(optimizedGraph);
-    const payload = json.length > COMPRESSION_THRESHOLD ? `lz:${compressToUTF16(json)}` : json;
-    const storageKey = getStorageKey(job.flowId);
-    window.localStorage.setItem(storageKey, payload);
-  } catch (error) {
-    console.error("[GraphHelpers] Failed to save graph to localStorage:", error);
-  }
+async function persistNow(_job: PersistJob): Promise<void> {
+  // No-op: local persistence removed in favor of server-first state
 }
 
 /**
  * Schedule a persist; coalesces multiple calls and executes in idle time.
  */
-function schedulePersist(job: PersistJob): void {
-  pendingJob = job; // keep latest
-
-  // Debounce burst of updates
-  if (debounceTimer) {
-    clearTimeout(debounceTimer);
-    debounceTimer = null;
-  }
-
-  debounceTimer = setTimeout(() => {
-    // Cancel any scheduled idle work, we are going to enqueue the latest
-    cancelIdle();
-
-    const run = () => {
-      if (!pendingJob) return;
-      const toRun = pendingJob;
-      pendingJob = null;
-      isPersisting = true;
-      try {
-        persistNow(toRun);
-      } finally {
-        isPersisting = false;
-        // If another job came in while persisting, schedule again
-        if (pendingJob) {
-          schedulePersist(pendingJob);
-        }
-      }
-    };
-
-    requestIdle(run);
-  }, PERSIST_DEBOUNCE_MS);
+function schedulePersist(_job: PersistJob): void {
+  // No-op: local persistence removed
 }
 
 const getStorageKey = (flowId?: string): string => {
@@ -275,13 +243,35 @@ const getStorageKey = (flowId?: string): string => {
     : `${STORAGE_KEY_PREFIX}-default`;
 };
 
-export const saveGraph = (graph: HistoryGraph, flowId?: string): void => {
-  // Guard against server-side execution where localStorage is unavailable
-  if (typeof window === "undefined") {
-    return;
+// Server-side persistence callbacks - set by the UndoRedoManager
+let saveGraphCallback:
+  | ((graph: HistoryGraph, flowId?: string, isDragging?: boolean) => void)
+  | null = null;
+let loadGraphCallback: ((flowId?: string) => HistoryGraph | null) | null = null;
+
+/**
+ * Set persistence callbacks for server-side storage, basically register save/load functions
+ */
+export const setPersistenceCallbacks = (
+  saveCallback: (
+    graph: HistoryGraph,
+    flowId?: string,
+    isDragging?: boolean
+  ) => void,
+  loadCallback: (flowId?: string) => HistoryGraph | null
+) => {
+  saveGraphCallback = saveCallback;
+  loadGraphCallback = loadCallback;
+};
+
+export const saveGraph = (
+  graph: HistoryGraph,
+  flowId?: string,
+  isDragging?: boolean
+): void => {
+  if (saveGraphCallback) {
+    saveGraphCallback(graph, flowId, isDragging);
   }
-  // Schedule persistence rather than doing heavy work synchronously
-  schedulePersist({ graph, flowId });
 };
 
 // Validate and fix graph data structure after loading
@@ -362,59 +352,19 @@ const validateAndFixGraphData = (graph: HistoryGraph): HistoryGraph => {
 };
 
 export const loadGraph = (flowId?: string): HistoryGraph | null => {
-  // Skip on server – nothing to load
-  if (typeof window === "undefined") {
-    return null;
+  if (loadGraphCallback) {
+    return loadGraphCallback(flowId);
   }
-  try {
-    const storageKey = getStorageKey(flowId);
-    const stored = window.localStorage.getItem(storageKey);
-    if (!stored) {
-      return null;
-    }
-
-    const data = stored.startsWith("lz:")
-      ? decompressFromUTF16(stored.slice(3))
-      : stored;
-
-    if (!data) {
-      return null; // decompression failure
-    }
-
-    const rawGraph = JSON.parse(data);
-
-    // Validate and fix the loaded graph data
-    return validateAndFixGraphData(rawGraph);
-  } catch (error) {
-    console.error("[GraphHelpers] Failed to load graph:", error);
-    return null;
-  }
+  return null;
 };
 
 export const clearPersistedGraph = (flowId?: string): void => {
-  if (typeof window === "undefined") {
-    return;
-  }
-  try {
-    const storageKey = getStorageKey(flowId);
-    window.localStorage.removeItem(storageKey);
-  } catch (error) {
-    console.warn("[GraphHelpers] Failed to clear persisted graph:", error);
-  }
+  // No-op
 };
 
 // Clear all flow histories (useful for cleanup)
 export const clearAllPersistedGraphs = (): void => {
-  try {
-    const keys = Object.keys(window.localStorage);
-    for (const key of keys) {
-      if (key.startsWith(STORAGE_KEY_PREFIX)) {
-        window.localStorage.removeItem(key);
-      }
-    }
-  } catch (error) {
-    console.warn("[GraphHelpers] Failed to clear all persisted graphs:", error);
-  }
+  // No-op
 };
 
 // Graph statistics for debugging/UI
@@ -550,5 +500,49 @@ export const removeNodeAndChildren = (
   for (const id of nodesToRemove) {
     delete graph.nodes[id];
   }
+  return true;
+};
+
+// Determine if a given node is on the active path from root → cursor
+export const isNodeOnActivePath = (
+  graph: HistoryGraph,
+  nodeId: NodeId
+): boolean => {
+  let current: NodeId | null = graph.cursor;
+  const safety = 10_000;
+  let steps = 0;
+  while (current && steps++ < safety) {
+    if (current === nodeId) return true;
+    const node: HistoryNode | undefined = graph.nodes[current];
+    current = node?.parentId ?? null;
+  }
+  return nodeId === graph.root;
+};
+
+// PRUNE BRANCH (refuse if node is on the active path)
+export const pruneBranch = (graph: HistoryGraph, nodeId: NodeId): boolean => {
+  if (!graph.nodes[nodeId]) return false;
+  if (isNodeOnActivePath(graph, nodeId)) {
+    // Refuse pruning active path to avoid breaking the current timeline
+    return false;
+  }
+  return removeNodeAndChildren(graph, nodeId);
+};
+
+// PRUNE FUTURE FROM NODE (default: cursor) – clears redo branches
+export const pruneFutureFrom = (
+  graph: HistoryGraph,
+  fromNodeId?: NodeId
+): boolean => {
+  const nodeId = fromNodeId ?? graph.cursor;
+  const node = graph.nodes[nodeId];
+  if (!node) return false;
+  if (!node.childrenIds || node.childrenIds.length === 0) return true;
+
+  const toRemove = [...node.childrenIds];
+  for (const childId of toRemove) {
+    removeNodeAndChildren(graph, childId);
+  }
+  node.childrenIds = [];
   return true;
 };

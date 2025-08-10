@@ -52,7 +52,7 @@ const getChatModel = (cfg: AiAgentConfig, _ctx?: unknown) => {
 			if (cfg.customApiKey) {
 				// Note: Custom API keys need to be set via environment or passed differently
 				// For now, we'll use the environment key
-				console.log("Using custom OpenAI key (via environment)");
+				// Using custom OpenAI key (via environment)
 			}
 			return openai.chat(cfg.selectedModel);
 		case "anthropic":
@@ -60,7 +60,7 @@ const getChatModel = (cfg: AiAgentConfig, _ctx?: unknown) => {
 			if (cfg.customApiKey) {
 				// Note: Custom API keys need to be set via environment or passed differently
 				// For now, we'll use the environment key
-				console.log("Using custom Anthropic key (via environment)");
+				// Using custom Anthropic key (via environment)
 			}
 			return anthropic.chat(cfg.selectedModel);
 		case "google":
@@ -68,7 +68,7 @@ const getChatModel = (cfg: AiAgentConfig, _ctx?: unknown) => {
 			if (cfg.customApiKey) {
 				// Note: Custom API keys need to be set via environment or passed differently
 				// For now, we'll use the environment key
-				console.log("Using custom Google key (via environment)");
+				// Using custom Google key (via environment)
 			}
 			return google.chat(cfg.selectedModel);
 		case "custom":
@@ -109,10 +109,7 @@ const createAiAgent = (cfg: AiAgentConfig, ctx?: unknown) => {
 		const chatModel = getChatModel(cfg, ctx);
 		
 		// Convert enabled tools to Convex Agent tools
-		console.log("Creating agent with tools:", cfg.enabledTools);
 		const tools = getEnabledTools(cfg.enabledTools || []);
-		console.log("Processed tools for agent:", Object.keys(tools));
-		console.log("Tools object:", tools);
 		
 		// Create agent configuration with enhanced instructions for tool usage
 		const baseInstructions = cfg.systemPrompt;
@@ -132,11 +129,8 @@ Do not say you don't have access to information if you have tools that can get t
 		
 		// Only add tools if we have any configured
 		if (Object.keys(tools).length > 0) {
-			console.log("Adding tools to agent:", Object.keys(tools));
 			agentConfig.tools = tools;
 		}
-		
-		console.log("Creating agent with config:", agentConfig);
 		return new Agent(components.agent, agentConfig);
 	} catch (error: unknown) {
 		console.error("Failed to create AI agent:", error);
@@ -251,12 +245,12 @@ const performWebSearch = async (query: string, options: { maxResults?: number; i
 	const TAVILY_API_KEY = process.env.TAVILY_API_KEY;
 
 	try {
-		console.log(`Searching for: "${query}"`);
+		// Searching for query
 		
 		// Strategy 1: Try Tavily Search API first (most reliable)
 		if (TAVILY_API_KEY) {
 			try {
-				console.log('Attempting Tavily search...');
+				// Attempting Tavily search
 				const tavilyResponse = await fetch('https://api.tavily.com/search', {
 				method: 'POST',
 				headers: {
@@ -276,7 +270,7 @@ const performWebSearch = async (query: string, options: { maxResults?: number; i
 
 			if (tavilyResponse.ok) {
 				const tavilyData = await tavilyResponse.json();
-				console.log('Tavily search completed successfully');
+				// Tavily search completed successfully
 				
 				let result = `Search Results for "${query}":\n\n`;
 				let hasResults = false;
@@ -304,7 +298,7 @@ const performWebSearch = async (query: string, options: { maxResults?: number; i
 
 				if (hasResults) {
 					result += `\n*Search powered by Tavily*`;
-					console.log('Returning Tavily search results');
+					// Returning Tavily search results
 					return result;
 				}
 			} else {

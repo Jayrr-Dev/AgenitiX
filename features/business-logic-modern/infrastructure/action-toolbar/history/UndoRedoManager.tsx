@@ -17,19 +17,24 @@ import { type Edge, type Node, useReactFlow } from "@xyflow/react";
 import { enableMapSet, produce } from "immer";
 import type React from "react";
 import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useAuth } from "../../../../../components/auth/AuthProvider";
+import type { Id } from "../../../../../convex/_generated/dataModel";
 import { useFlowMetadataOptional } from "../../flow-engine/contexts/flow-metadata-context";
 import {
   createChildNode,
   createRootGraph,
   getGraphStats,
   getPathToCursor,
-  loadGraph,
+  pruneBranch as pruneBranchHelper,
+  pruneFutureFrom as pruneFutureFromHelper,
   pruneGraphToLimit,
   removeNodeAndChildren,
   saveGraph,
+  setPersistenceCallbacks,
 } from "./graphHelpers";
 import type { FlowState, HistoryGraph, HistoryNode } from "./historyGraph";
 import { useRegisterUndoRedoManager } from "./undo-redo-context";
+import { useHistoryPersistence } from "./useHistoryPersistence";
 
 // Enable Immer Map/Set support
 enableMapSet();
@@ -42,7 +47,8 @@ const DEBUG_MODE = false; // Disable debug logging completely
 // ============================================================================
 
 const ACTION_SEPARATOR_DELAY = 200; // ms between distinct actions
-const POSITION_DEBOUNCE_DELAY = 300; // ms for position changes - debounce node movements
+const POSITION_DEBOUNCE_DELAY = 120; // [Explanation], basically shorter trailing debounce for smoother recording
+const POSITION_MOVE_MIN_PX = 2; // [Explanation], basically ignore jitter below 2px
 
 // ============================================================================
 // TYPES (keeping existing ones for compatibility)
@@ -113,14 +119,30 @@ const createFlowStateOptimized = (
  * FAST STATE HASHING - 10x faster than deep comparison
  */
 const createStateHash = (state: FlowState): string => {
-  const nodeHash = state.nodes
-    .map((n) => `${n.id}:${n.position.x}:${n.position.y}:${n.type}`)
-    .join("|");
-  const edgeHash = state.edges
-    .map((e) => `${e.id}:${e.source}:${e.target}`)
-    .join("|");
-
-  return `${nodeHash}##${edgeHash}`;
+  // Cheap FNV-1a-like rolling hash over id:pos:type:(data.__v)
+  let h = 2166136261 >>> 0;
+  const mix = (str: string) => {
+    for (let i = 0; i < str.length; i++) {
+      h ^= str.charCodeAt(i);
+      h = Math.imul(h, 16777619);
+    }
+  };
+  for (const n of state.nodes) {
+    let v = 0;
+    const maybeData: unknown = (n as { data?: unknown }).data;
+    if (maybeData && typeof maybeData === "object" && "__v" in maybeData) {
+      const val = (maybeData as { __v?: unknown }).__v;
+      v = typeof val === "number" ? val : 0;
+    }
+    mix(
+      `${n.id}:${n.position?.x ?? 0}:${n.position?.y ?? 0}:${n.type ?? ""}:${v}`
+    );
+  }
+  mix("##");
+  for (const e of state.edges) {
+    mix(`${e.id}:${e.source}:${e.target}`);
+  }
+  return (h >>> 0).toString(36);
 };
 
 /**
@@ -265,7 +287,33 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
   const { measureStateCreation } = usePerformanceMonitor();
   const { flow } = useFlowMetadataOptional() || { flow: null };
   const flowId = flow?.id;
-  const BACKUP_KEY = flowId ? `flow-undo-backup:${flowId}` : null;
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+
+  // Debug authentication state
+  console.log("🔐 UndoRedoManager auth state:", {
+    hasUser: !!user,
+    userId: user?.id,
+    isAuthenticated,
+    authLoading,
+    flowId,
+  });
+
+  // Initialize history persistence - only when flowId and userId are available
+  const {
+    saveHistory,
+    loadedHistory,
+    isLoading: isHistoryLoading,
+    clearHistory: clearServerHistory,
+  } = useHistoryPersistence({
+    flowId: flowId as Id<"flows">,
+    userId: user?.id as Id<"users">,
+    enabled:
+      !!flowId &&
+      !!user?.id &&
+      isAuthenticated &&
+      !authLoading &&
+      typeof flowId === "string",
+  });
 
   const finalConfig = useMemo(
     () => ({
@@ -291,13 +339,17 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
   );
 
   const initialGraph = useMemo(() => {
-    const persisted = loadGraph(flowId);
-    return persisted ?? createRootGraph(initialState);
-  }, [initialState, flowId]);
+    // Use loaded history if available, otherwise create new root graph
+    if (loadedHistory && !isHistoryLoading) {
+      return loadedHistory;
+    }
+    return createRootGraph(initialState);
+  }, [loadedHistory, isHistoryLoading, initialState]);
 
   const graphRef = useRef<HistoryGraph>(initialGraph);
 
   const isUndoRedoOperationRef = useRef(false);
+  const isApplyingRef = useRef(false); // [Explanation], basically guard apply() to avoid re-record
   const lastCapturedStateRef = useRef<FlowState | null>(null);
   const lastNonEmptyStateRef = useRef<FlowState | null>(null);
   const lastActionTimestampRef = useRef(0);
@@ -310,6 +362,42 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
     movedNodes: Set<string>;
     startTime: number;
   } | null>(null);
+  const pathCacheRef = useRef<string[] | null>(null); // [Explanation], basically cached root→cursor path (ids)
+
+  // ============================================================================
+  // PERSISTENCE SETUP
+  // ============================================================================
+
+  // Set up persistence callbacks
+  useEffect(() => {
+    const saveCallback = (
+      graph: HistoryGraph,
+      _flowId?: string,
+      isDragging?: boolean
+    ) => {
+      if (flowId && saveHistory) {
+        try {
+          saveHistory(graph, isDragging);
+        } catch (error) {
+          console.warn("Failed to save history:", error);
+        }
+      }
+    };
+
+    const loadCallback = (_flowId?: string): HistoryGraph | null => {
+      // Return loaded history if available
+      return loadedHistory || null;
+    };
+
+    setPersistenceCallbacks(saveCallback, loadCallback);
+  }, [flowId, saveHistory, loadedHistory]);
+
+  // Update graph ref when loaded history changes
+  useEffect(() => {
+    if (loadedHistory && !isHistoryLoading) {
+      graphRef.current = loadedHistory;
+    }
+  }, [loadedHistory, isHistoryLoading]);
 
   // ============================================================================
   // CORE FUNCTIONS
@@ -384,34 +472,16 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
       }
 
       isUndoRedoOperationRef.current = true;
+      isApplyingRef.current = true;
 
       // [Dev guard] , basically block applying an empty snapshot that would wipe nodes during Fast Refresh
       try {
         const isDev = process.env.NODE_ENV === "development";
-        const debugFlag =
-          typeof window !== "undefined" &&
-          window.localStorage.getItem("DEBUG_FLOW_CLEAR") === "1";
+        const debugFlag = false;
         const hadNonEmpty =
           (lastNonEmptyStateRef.current?.nodes.length ?? 0) > 0;
         if (isDev && hadNonEmpty && state.nodes.length === 0) {
           let fallback: FlowState | null = lastNonEmptyStateRef.current ?? null;
-          if (BACKUP_KEY) {
-            try {
-              const raw = window.localStorage.getItem(BACKUP_KEY);
-              if (raw) {
-                const parsed = JSON.parse(raw) as {
-                  nodes?: Node[];
-                  edges?: Edge[];
-                };
-                if (Array.isArray(parsed.nodes) && parsed.nodes.length > 0) {
-                  fallback = createFlowStateOptimized(
-                    parsed.nodes as Node[],
-                    (parsed.edges as Edge[]) || []
-                  );
-                }
-              }
-            } catch {}
-          }
           if (fallback) {
             if (debugFlag) {
               // eslint-disable-next-line no-console
@@ -456,6 +526,10 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
         // Use a timeout to ensure ReactFlow fully processes the changes
         setTimeout(() => {
           isUndoRedoOperationRef.current = false;
+          // [Explanation], basically release the apply guard in the next frame
+          requestAnimationFrame(() => {
+            isApplyingRef.current = false;
+          });
           if (DEBUG_MODE) {
           }
         }, 50);
@@ -485,7 +559,7 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
         );
         const root = createRootGraph(nextState);
         graphRef.current = root;
-        saveGraph(root, flowId);
+        saveGraph(root, flowId, false);
         return;
       }
 
@@ -508,36 +582,16 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
         pruneGraphToLimit(graph, finalConfig.maxHistorySize);
       }
 
-      // Persist the updated graph
-      saveGraph(graph, flowId);
-
-      // Schedule a lightweight backup snapshot in idle time (avoids blocking pointer events)
-      try {
-        if (BACKUP_KEY && nextState.nodes.length > 0) {
-          const scheduleIdle = (fn: () => void) => {
-            const ric: unknown = (globalThis as any).requestIdleCallback;
-            if (typeof ric === "function") {
-              (ric as (cb: () => void) => void)(fn);
-            } else {
-              setTimeout(fn, 0);
-            }
-          };
-          scheduleIdle(() => {
-            try {
-              const snapshot = JSON.stringify({
-                nodes: nextState.nodes,
-                edges: nextState.edges,
-                ts: Date.now(),
-              });
-              window.localStorage.setItem(BACKUP_KEY, snapshot);
-            } catch {}
-          });
-        }
-      } catch {}
+      // Persist the updated graph (server-first). Local persistence removed.
+      const isDragging = metadata.actionType === "node_move";
+      saveGraph(graph, flowId, isDragging);
 
       // Notify of history change
+      // Invalidate path cache – cursor moved
+      pathCacheRef.current = null;
       const path = getPathToCursor(graph);
       onHistoryChange?.(path, path.length - 1);
+      // Local/IDB path backup removed – rely on server state only
     },
     [onHistoryChange, getGraph, finalConfig.maxHistorySize, flowId]
   );
@@ -546,21 +600,32 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
   // HISTORY MANAGEMENT
   // ============================================================================
 
-  const clearHistory = useCallback(() => {
+  const clearHistory = useCallback(async () => {
     if (DEBUG_MODE) {
     }
 
     const currentState = captureCurrentState();
     const newGraph = createRootGraph(currentState);
     graphRef.current = newGraph;
-    saveGraph(newGraph, flowId);
+    saveGraph(newGraph, flowId, false);
+
+    // Also clear server-side history
+    try {
+      if (flowId) {
+        await clearServerHistory();
+      }
+    } catch (error) {
+      console.warn("Failed to clear server history:", error);
+      // Continue with local clear even if server clear fails
+    }
 
     lastCapturedStateRef.current = currentState;
     lastActionTimestampRef.current = performance.now();
 
+    pathCacheRef.current = null;
     const path = getPathToCursor(newGraph);
     onHistoryChange?.(path, path.length - 1);
-  }, [captureCurrentState, onHistoryChange, flowId]);
+  }, [captureCurrentState, onHistoryChange, flowId, clearServerHistory]);
 
   const removeSelectedNode = useCallback(
     (nodeId?: string) => {
@@ -575,7 +640,7 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
 
       const success = removeNodeAndChildren(graph, targetNodeId);
       if (success) {
-        saveGraph(graph, flowId);
+        saveGraph(graph, flowId, false);
 
         // Apply the state that the cursor now points to
         const currentNode = graph.nodes[graph.cursor];
@@ -583,6 +648,7 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
           applyState(currentNode.after, "remove node and children");
         }
 
+        pathCacheRef.current = null;
         const path = getPathToCursor(graph);
         onHistoryChange?.(path, path.length - 1);
 
@@ -611,7 +677,7 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
         `⚠️ [UndoRedo] Invalid cursor "${graph.cursor}" in undo, resetting to root`
       );
       graph.cursor = graph.root;
-      saveGraph(graph, flowId);
+      saveGraph(graph, flowId, false);
       return false;
     }
 
@@ -634,12 +700,13 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
     }
 
     applyState(parent.after, `undo ${current.label}`);
-    saveGraph(graph, flowId);
+    saveGraph(graph, flowId, false);
 
     if (DEBUG_MODE) {
     }
 
     // Notify history change
+    pathCacheRef.current = null;
     const path = getPathToCursor(graph);
     onHistoryChange?.(path, path.length - 1);
 
@@ -657,7 +724,7 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
           `⚠️ [UndoRedo] Invalid cursor "${graph.cursor}" in redo, resetting to root`
         );
         graph.cursor = graph.root;
-        saveGraph(graph, flowId);
+        saveGraph(graph, flowId, false);
         return false;
       }
 
@@ -684,14 +751,17 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
       graph.cursor = targetId;
       const target = graph.nodes[targetId];
       applyState(target.after, `redo ${target.label}`);
-      saveGraph(graph, flowId);
+      saveGraph(graph, flowId, false);
 
       if (DEBUG_MODE) {
       }
 
       // Notify history change
+      pathCacheRef.current = null;
       const path = getPathToCursor(graph);
       onHistoryChange?.(path, path.length - 1);
+      // Update action timestamp to avoid immediate coalescing with hydration changes
+      lastActionTimestampRef.current = performance.now();
 
       return true;
     },
@@ -700,7 +770,7 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
 
   const recordAction = useCallback(
     (type: ActionType, metadata: Record<string, unknown> = {}) => {
-      if (isUndoRedoOperationRef.current) {
+      if (isUndoRedoOperationRef.current || isApplyingRef.current) {
         if (DEBUG_MODE) {
         }
         return;
@@ -729,7 +799,15 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
 
   const getHistory = useCallback(() => {
     const graph = getGraph();
-    const path = getPathToCursor(graph);
+    // Use cached path if available; invalidate only on cursor/graph mutation
+    const path = pathCacheRef.current
+      ? (pathCacheRef.current
+          .map((id) => graph.nodes[id])
+          .filter(Boolean) as HistoryNode[])
+      : getPathToCursor(graph);
+    if (!pathCacheRef.current) {
+      pathCacheRef.current = path.map((n) => n.id);
+    }
     const current = graph.nodes[graph.cursor];
 
     // Safety check: if cursor points to non-existent node, reset to root
@@ -763,7 +841,7 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
         rootNode.childrenIds = [];
       }
 
-      saveGraph(graph, flowId);
+      saveGraph(graph, flowId, false);
 
       return {
         entries: [rootNode],
@@ -828,7 +906,7 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
         rootNode.childrenIds = [];
       }
 
-      saveGraph(graph, flowId);
+      saveGraph(graph, flowId, false);
       return [...rootNode.childrenIds];
     }
 
@@ -845,28 +923,7 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
   // ============================================================================
 
   useEffect(() => {
-    // Restore last-good backup on mount if nodes prop is empty and a backup exists
-    try {
-      const isEmptyStart = nodes.length === 0;
-      if (isEmptyStart && BACKUP_KEY) {
-        const raw = window.localStorage.getItem(BACKUP_KEY);
-        if (raw) {
-          const parsed = JSON.parse(raw) as { nodes?: Node[]; edges?: Edge[] };
-          if (Array.isArray(parsed.nodes) && parsed.nodes.length > 0) {
-            const restored = createFlowStateOptimized(
-              parsed.nodes as Node[],
-              (parsed.edges as Edge[]) || []
-            );
-            lastNonEmptyStateRef.current = restored;
-            // Apply immediately to avoid an empty flash
-            onNodesChange(restored.nodes);
-            onEdgesChange(restored.edges);
-            lastCapturedStateRef.current = restored;
-          }
-        }
-      }
-    } catch {}
-
+    // Server-state first: no local restoration. Proceed with normal capture logic.
     if (isUndoRedoOperationRef.current) {
       return;
     }
@@ -878,6 +935,8 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
     // Initialize if this is the first state
     if (!lastCapturedStateRef.current) {
       lastCapturedStateRef.current = currentState;
+      // Do not create an entry on first run; let user action drive first snapshot
+      lastActionTimestampRef.current = performance.now();
       return;
     }
 
@@ -887,25 +946,30 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
     }
 
     // Check for position changes (node movements)
-    const nodePositionChanges = currentState.nodes.filter((node, index) => {
-      const oldNode = lastCapturedStateRef.current?.nodes[index];
-      return (
-        oldNode &&
-        (oldNode.position.x !== node.position.x ||
-          oldNode.position.y !== node.position.y)
-      );
-    });
+    const nodeById = new Map(currentState.nodes.map((n) => [n.id, n]));
+    const oldById = new Map(
+      (lastCapturedStateRef.current?.nodes ?? []).map((n) => [n.id, n])
+    );
+    const movedIds: string[] = [];
+    for (const [id, node] of nodeById) {
+      const old = oldById.get(id);
+      if (!old) continue;
+      const dx = Math.abs((old.position?.x ?? 0) - (node.position?.x ?? 0));
+      const dy = Math.abs((old.position?.y ?? 0) - (node.position?.y ?? 0));
+      if (dx >= POSITION_MOVE_MIN_PX || dy >= POSITION_MOVE_MIN_PX) {
+        movedIds.push(id);
+      }
+    }
 
     // Handle position changes with debouncing
-    if (nodePositionChanges.length > 0) {
+    if (movedIds.length > 0) {
       if (pendingPositionActionRef.current) {
         // Add newly moved nodes to the set
-        for (const node of nodePositionChanges) {
-          pendingPositionActionRef.current?.movedNodes.add(node.id);
-        }
+        for (const id of movedIds)
+          pendingPositionActionRef.current?.movedNodes.add(id);
       } else {
         pendingPositionActionRef.current = {
-          movedNodes: new Set(nodePositionChanges.map((n) => n.id)),
+          movedNodes: new Set(movedIds),
           startTime: performance.now(),
         };
       }
@@ -927,15 +991,16 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
           if (DEBUG_MODE) {
           }
 
+          // Coalesce as an id-based move stream – single snapshot per push
           const description =
             movedNodeCount > 1 ? `Move ${movedNodeCount} nodes` : "Move node";
-          push(description, captureCurrentState(), {
+          const snap = captureCurrentState();
+          push(description, snap, {
             actionType: "node_move",
             nodeCount: movedNodeCount,
             movedNodes: Array.from(pendingPositionActionRef.current.movedNodes),
           });
-
-          lastCapturedStateRef.current = captureCurrentState();
+          lastCapturedStateRef.current = snap;
         }
 
         pendingPositionActionRef.current = null;
@@ -962,6 +1027,16 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
           nodeCountDiff > 1 ? `Add ${nodeCountDiff} nodes` : "Add node";
         metadata.nodeCount = nodeCountDiff;
       } else if (nodeCountDiff < 0) {
+        // Guard: do not record a destructive delete when React Flow is still hydrating
+        // after mount/refresh. If we previously restored a non-empty snapshot on mount,
+        // and the runtime is still reconciling, skip this destructive entry.
+        const hadNonEmpty =
+          (lastNonEmptyStateRef.current?.nodes.length ?? 0) > 0;
+        if (hadNonEmpty && nodes.length === 0) {
+          // Skip this cycle entirely; wait for stable state
+          lastCapturedStateRef.current = currentState;
+          return;
+        }
         actionType = "node_delete";
         const deletedCount = Math.abs(nodeCountDiff);
         description =
@@ -1049,18 +1124,48 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
     };
   }, []);
 
+  // Pointerup flush for finalizing move stream ASAP
+  useEffect(() => {
+    const onPointerUp = () => {
+      if (positionDebounceRef.current) {
+        clearTimeout(positionDebounceRef.current);
+        positionDebounceRef.current = null;
+      }
+      if (pendingPositionActionRef.current && !isUndoRedoOperationRef.current) {
+        const movedNodeCount = pendingPositionActionRef.current.movedNodes.size;
+        const description =
+          movedNodeCount > 1 ? `Move ${movedNodeCount} nodes` : "Move node";
+        const snap = captureCurrentState();
+        push(description, snap, {
+          actionType: "node_move",
+          nodeCount: movedNodeCount,
+          movedNodes: Array.from(pendingPositionActionRef.current.movedNodes),
+        });
+        lastCapturedStateRef.current = snap;
+        pendingPositionActionRef.current = null;
+      }
+    };
+    window.addEventListener("pointerup", onPointerUp);
+    return () => window.removeEventListener("pointerup", onPointerUp);
+  }, [push, captureCurrentState]);
+
   // ============================================================================
   // REGISTER WITH CONTEXT
   // ============================================================================
 
   useEffect(() => {
     const managerAPI = {
+      id: "undo-redo-manager",
       undo,
       redo,
       recordAction,
-      recordActionDebounced: recordAction, // Same as recordAction now
+      recordActionDebounced: recordAction, // compatible; explicit debounced move path uses internal pipeline
       clearHistory,
       removeSelectedNode,
+      capture: () => captureCurrentState(),
+      apply: (state: unknown, actionType?: string) =>
+        applyState(state as FlowState, actionType ?? "apply"),
+      hash: (state: unknown) => createStateHash(state as FlowState),
       getHistory,
       // Additional graph-specific APIs
       getBranchOptions,
@@ -1070,6 +1175,32 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
         cursor: graphRef.current.cursor,
       }),
       redoSpecificBranch: redo, // Alias for clarity
+      pruneBranch: (nodeId: string) => {
+        const g = getGraph();
+        const ok = pruneBranchHelper(g, nodeId);
+        if (ok) {
+          saveGraph(g, flowId, false);
+          const current = g.nodes[g.cursor];
+          if (current) applyState(current.after, "prune branch");
+          pathCacheRef.current = null;
+          const path = getPathToCursor(g);
+          onHistoryChange?.(path, path.length - 1);
+        }
+        return ok;
+      },
+      pruneFutureFrom: (nodeId?: string) => {
+        const g = getGraph();
+        const ok = pruneFutureFromHelper(g, nodeId);
+        if (ok) {
+          saveGraph(g, flowId, false);
+          const current = g.nodes[g.cursor];
+          if (current) applyState(current.after, "prune future");
+          pathCacheRef.current = null;
+          const path = getPathToCursor(g);
+          onHistoryChange?.(path, path.length - 1);
+        }
+        return ok;
+      },
     };
 
     registerManager(managerAPI);
@@ -1087,7 +1218,7 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
             graphRef.current = graph;
             const current = graph.nodes[graph.cursor];
             applyState(current.after, "import graph");
-            saveGraph(graph, flowId);
+            saveGraph(graph, flowId, false);
           } catch (error) {
             console.error("Failed to import graph:", error);
           }

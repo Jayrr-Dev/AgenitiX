@@ -27,6 +27,7 @@ import { z } from "zod";
 
 import { ExpandCollapseButton } from "@/components/nodes/ExpandCollapseButton";
 import LabelNode from "@/components/nodes/labelNode";
+import { useFlowMetadataOptional } from "@/features/business-logic-modern/infrastructure/flow-engine/contexts/flow-metadata-context";
 import { findEdgeByHandle } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/edgeUtils";
 import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
 import { normalizeHandleId } from "@/features/business-logic-modern/infrastructure/node-core/handleOutputUtils";
@@ -50,6 +51,7 @@ import {
 import { useNodeData } from "@/hooks/useNodeData";
 import { useStore } from "@xyflow/react";
 import { shallow } from "zustand/shallow";
+import { useEmailReaderOutputsStore } from "./stores/use-email-reader-outputs";
 
 // -----------------------------------------------------------------------------
 // 1️⃣  Data schema & validation
@@ -351,6 +353,8 @@ const EmailPreviewNode = memo(
     // 4.1  Sync with React‑Flow store
     // -------------------------------------------------------------------------
     const { nodeData, updateNodeData } = useNodeData(id, data);
+    const flowMetadata = useFlowMetadataOptional();
+    const flowId = String(flowMetadata?.flow?.id ?? "");
 
     // -------------------------------------------------------------------------
     // 4.2  Derived state
@@ -380,9 +384,9 @@ const EmailPreviewNode = memo(
       (s) => {
         if (!emailInputInfo.sourceId)
           return [undefined, undefined, undefined, undefined] as const;
-        const d = (s.nodes as Array<{ id: string; data?: unknown }>).find(
-          (n) => n.id === emailInputInfo.sourceId
-        )?.data as
+        const d = (
+          s.nodes as Array<{ id: string; data?: unknown; flowId?: string }>
+        ).find((n) => n.id === emailInputInfo.sourceId)?.data as
           | (Record<string, unknown> & {
               output?: unknown;
               messages?: unknown;
@@ -449,24 +453,18 @@ const EmailPreviewNode = memo(
       }
     }, [isActive, isEnabled, updateNodeData]);
 
-    /**
-     * Compute the latest text coming from connected input handles.
-     * [Explanation], basically use targeted selectors instead of scanning arrays
-     */
-    const inputText = useStore(
-      (s) => {
-        const inputEdge = findEdgeByHandle(s.edges, id, "input");
-        if (!inputEdge) return null as string | null;
-        const d = (s.nodes as Array<{ id: string; data?: unknown }>).find(
-          (n) => n.id === inputEdge.source
-        )?.data as
-          | (Record<string, unknown> & { output?: unknown; store?: unknown })
-          | undefined;
-        const v = (d?.output ?? d?.store ?? d) as unknown;
-        if (v == null) return "";
-        return typeof v === "string" ? v : String(v);
-      },
-      (a, b) => a === b
+    // Reactive subscription to EmailReader outputs store for the connected source node
+    // [Explanation], basically re-render when the upstream reader pushes new messages
+    const reactiveMessages = useEmailReaderOutputsStore(
+      useCallback(
+        (s) =>
+          flowId && emailInputInfo.sourceId
+            ? (s.getMessages(flowId, emailInputInfo.sourceId) as Array<
+                Record<string, unknown>
+              >)
+            : (EMPTY_EMAILS as Array<Record<string, unknown>>),
+        [flowId, emailInputInfo.sourceId]
+      )
     );
 
     // Extract emails array from 'emails-input' using targeted source fields
@@ -479,6 +477,10 @@ const EmailPreviewNode = memo(
         emailsOutput: srcEmailsOutput,
         store: srcStore,
       };
+      // Prefer EmailReader ephemeral outputs store when available (reactive)
+      if (Array.isArray(reactiveMessages) && reactiveMessages.length > 0) {
+        return reactiveMessages as Array<Record<string, unknown>>;
+      }
       // Primary: handle-based outputs using the concrete source handle
       if (srcData?.output && typeof srcData.output === "object") {
         if (emailInputInfo.sourceHandle) {
@@ -535,6 +537,7 @@ const EmailPreviewNode = memo(
       srcMessages,
       srcEmailsOutput,
       srcStore,
+      reactiveMessages,
     ]);
 
     // Selected email normalization for display

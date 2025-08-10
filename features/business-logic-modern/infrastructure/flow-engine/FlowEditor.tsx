@@ -79,6 +79,9 @@ const getNodeSpecForType = (nodeType: string) => {
   }
 };
 
+// Local storage keys (verb-first)
+const SERVER_LOAD_MARK_PREFIX = "flow-server-loaded:"; // [Explanation], basically marks that the current flow was loaded from server
+
 /* -------------------------------------------------------------------------- */
 /*  DESIGN CONSTANTS (verb-first names)                                        */
 /* -------------------------------------------------------------------------- */
@@ -502,6 +505,18 @@ const FlowEditorInternal = () => {
   React.useEffect(() => {
     if (!flow?.id || !hasHydrated) return;
     const BACKUP_KEY = `flow-editor-backup:${flow.id}`;
+    const SERVER_MARK_KEY = `${SERVER_LOAD_MARK_PREFIX}${flow.id}`;
+
+    // Skip restore when server has just authoritatively loaded this flow
+    try {
+      if (typeof window !== "undefined") {
+        const serverLoaded = window.localStorage.getItem(SERVER_MARK_KEY);
+        if (serverLoaded) {
+          restoreAttemptedRef.current = true;
+          return;
+        }
+      }
+    } catch {}
 
     // Restore if nodes are empty but backup has data
     if (!restoreAttemptedRef.current && nodes.length === 0) {

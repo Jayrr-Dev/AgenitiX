@@ -20,6 +20,9 @@ import { useFlowMetadataOptional } from "../contexts/flow-metadata-context";
 import { useFlowStore } from "../stores/flowStore";
 import { sanitizeNodesForSave } from "../utils/sanitizeCanvasData";
 
+// Local storage keys (verb-first)
+const SERVER_LOAD_MARK_PREFIX = "flow-server-loaded:"; // [Explanation], basically used to block autosave during server load
+
 interface UseAutoSaveCanvasOptions {
   /** Debounce delay in milliseconds (default: 1000) */
   debounceMs?: number;
@@ -96,6 +99,18 @@ export function useAutoSaveCanvas(
       return;
     }
 
+    // [Server-load guard] , basically skip while current flow is loading from server to avoid saving empty state
+    try {
+      if (typeof window !== "undefined") {
+        const mark = window.localStorage.getItem(
+          `${SERVER_LOAD_MARK_PREFIX}${flow.id}`
+        );
+        if (mark === "loading") {
+          return;
+        }
+      }
+    } catch {}
+
     // Skip if data hasn't changed
     if (currentData === lastSavedDataRef.current) {
       return;
@@ -171,6 +186,18 @@ export function useAutoSaveCanvas(
       return;
     }
 
+    // [Server-load guard] , basically skip scheduling while server load is in progress
+    try {
+      if (typeof window !== "undefined") {
+        const mark = window.localStorage.getItem(
+          `${SERVER_LOAD_MARK_PREFIX}${flow.id}`
+        );
+        if (mark === "loading") {
+          return;
+        }
+      }
+    } catch {}
+
     // Skip if data hasn't changed
     if (currentData === lastSavedDataRef.current) {
       return;
@@ -208,6 +235,13 @@ export function useAutoSaveCanvas(
     debounceMs,
     performSave,
   ]);
+
+  // Reset autosave internals on flow change to avoid cross-flow carryover
+  useEffect(() => {
+    lastSavedDataRef.current = "";
+    lastSavedRef.current = null;
+    lastErrorRef.current = null;
+  }, [flow?.id]);
 
   // Cleanup on unmount
   useEffect(() => {

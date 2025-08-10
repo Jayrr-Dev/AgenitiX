@@ -14,10 +14,6 @@ import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
-import {
-  hasStarterTemplates,
-  provisionStarterTemplates,
-} from "./starterTemplates";
 
 interface UserDocument {
   _id: Id<"users">; // Use Convex Auth users table for OAuth compatibility
@@ -936,7 +932,7 @@ export const checkStarterTemplateStatus = query({
 
       const starterTemplateNames = [
         "🚀 Welcome & AI Introduction",
-        "📧 Email Automation Starter", 
+        "📧 Email Automation Starter",
         "📊 Data Processing Basics",
       ];
 
@@ -958,7 +954,7 @@ export const checkStarterTemplateStatus = query({
           created_at: flow.created_at,
         })),
         missingTemplates: starterTemplateNames.filter(
-          name => !starterTemplates.some(t => t.name === name)
+          (name) => !starterTemplates.some((t) => t.name === name)
         ),
       };
     } catch (error) {
@@ -983,23 +979,29 @@ export const debugUserValidation = query({
     try {
       // Check if user exists in users table
       const userFromUsers = await ctx.db.get(args.user_id as Id<"users">);
-      
+
       // Since we unified to users table only
       const userFromAuthUsers = null;
-      
+
       // Try to get flows with manual query
       const flows = await ctx.db.query("flows").collect();
-      const userFlows = flows.filter(f => f.user_id === args.user_id);
-      
+      const userFlows = flows.filter((f) => f.user_id === args.user_id);
+
       return {
         providedUserId: args.user_id,
         userExistsInUsers: !!userFromUsers,
         userExistsInAuthUsers: !!userFromAuthUsers,
-        userFromUsers: userFromUsers ? { id: userFromUsers._id, email: userFromUsers.email } : null,
+        userFromUsers: userFromUsers
+          ? { id: userFromUsers._id, email: userFromUsers.email }
+          : null,
         userFromAuthUsers: null, // Unified schema - no longer using separate auth_users table
         totalFlows: flows.length,
         userFlowsCount: userFlows.length,
-        userFlows: userFlows.map(f => ({ id: f._id, name: f.name, user_id: f.user_id })),
+        userFlows: userFlows.map((f) => ({
+          id: f._id,
+          name: f.name,
+          user_id: f.user_id,
+        })),
       };
     } catch (error) {
       return {
@@ -1019,14 +1021,14 @@ export const debugProblematicFlow = query({
     try {
       // Get the problematic flow
       const flow = await ctx.db.get(args.flow_id as Id<"flows">);
-      
+
       if (!flow) {
         return { error: "Flow not found", flow_id: args.flow_id };
       }
-      
+
       // Check if the user_id exists in users table
       const authUser = await ctx.db.get(flow.user_id as Id<"users">);
-      
+
       // Look for corresponding user in users table
       let correspondingUser = null;
       if (authUser) {
@@ -1034,7 +1036,7 @@ export const debugProblematicFlow = query({
         // In unified schema, the authUser IS the user
         correspondingUser = authUser;
       }
-      
+
       return {
         flow: {
           id: flow._id,
@@ -1042,17 +1044,23 @@ export const debugProblematicFlow = query({
           user_id: flow.user_id,
           created_at: flow.created_at,
         },
-        authUser: authUser ? {
-          id: authUser._id,
-          email: authUser.email,
-          name: authUser.name,
-        } : null,
-        correspondingUser: correspondingUser ? {
-          id: correspondingUser._id,
-          email: correspondingUser.email,
-          name: correspondingUser.name,
-        } : null,
-        migrationPath: correspondingUser ? `Update flow ${flow._id} user_id from ${flow.user_id} to ${correspondingUser._id}` : "No corresponding user found in users table",
+        authUser: authUser
+          ? {
+              id: authUser._id,
+              email: authUser.email,
+              name: authUser.name,
+            }
+          : null,
+        correspondingUser: correspondingUser
+          ? {
+              id: correspondingUser._id,
+              email: correspondingUser.email,
+              name: correspondingUser.name,
+            }
+          : null,
+        migrationPath: correspondingUser
+          ? `Update flow ${flow._id} user_id from ${flow.user_id} to ${correspondingUser._id}`
+          : "No corresponding user found in users table",
       };
     } catch (error) {
       return {
@@ -1130,45 +1138,45 @@ export const migrateFlowUserIds = mutation({
     try {
       // Get all flows
       const allFlows = await ctx.db.query("flows").collect();
-      
-      // Get all users 
+
+      // Get all users
       const users = await ctx.db.query("users").collect();
-      
+
       // Create mapping from auth_users ID to users ID using cross-references
       const authToUserMap = new Map<string, string>();
-      
+
       // Since we unified to users table, all flows should already use correct user IDs
       // No mapping needed in unified schema
-      
+
       // Since we unified to a single users table, no additional mapping needed
-      
+
       let migratedCount = 0;
       let errorCount = 0;
       const errors: string[] = [];
-      
+
       // Process each flow
       for (const flow of allFlows) {
         try {
           // Check if this flow's user_id looks like it's from auth_users table
           // If we can find a mapping, update it
           const newUserId = authToUserMap.get(flow.user_id);
-          
+
           if (newUserId && newUserId !== flow.user_id) {
             await ctx.db.patch(flow._id, {
               user_id: newUserId as Id<"users">,
               updated_at: new Date().toISOString(),
             });
-            
+
             migratedCount++;
           }
         } catch (error) {
           errorCount++;
-          const errorMsg = `Failed to migrate flow ${flow._id}: ${error instanceof Error ? error.message : 'Unknown error'}`;
+          const errorMsg = `Failed to migrate flow ${flow._id}: ${error instanceof Error ? error.message : "Unknown error"}`;
           errors.push(errorMsg);
           console.error(errorMsg);
         }
       }
-      
+
       return {
         success: true,
         totalFlows: allFlows.length,
@@ -1178,7 +1186,7 @@ export const migrateFlowUserIds = mutation({
         mappingStats: {
           totalUsers: users.length,
           mappingsFound: authToUserMap.size,
-        }
+        },
       };
     } catch (error) {
       console.error("Migration failed:", error);
@@ -1215,7 +1223,7 @@ export const getStarterTemplatesForUser = mutation({
     // Check if any flows match our starter template names
     const starterTemplateNames = [
       "🚀 Welcome & AI Introduction",
-      "📧 Email Automation Starter", 
+      "📧 Email Automation Starter",
       "📊 Data Processing Basics",
     ];
     const hasTemplates = userFlows.some((flow) =>
@@ -1236,7 +1244,7 @@ export const getStarterTemplatesForUser = mutation({
 
     // Import the template definitions from starterTemplates file, basically using the properly configured templates
     // Note: We need to recreate the templates here since we can't call another mutation from within a mutation
-    
+
     // Template node positioning constants, basically layout spacing
     const NODE_SPACING_X = 300;
     const NODE_SPACING_Y = 200;

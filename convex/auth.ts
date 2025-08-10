@@ -12,18 +12,24 @@
  * Keywords: convex-auth, oauth, github, google, custom-schema, backward-compatibility, user-sync
  */
 
-import { convexAuth } from "@convex-dev/auth/server";
 import GitHub from "@auth/core/providers/github";
 import Google from "@auth/core/providers/google";
 import Resend from "@auth/core/providers/resend";
 import { Password } from "@convex-dev/auth/providers/Password";
+import { convexAuth } from "@convex-dev/auth/server";
 
 // Debug environment variables in development only, basically check if auth keys are loaded
 if (process.env.NODE_ENV === "development") {
   // Silent environment debugging
 }
 
-export const { auth, signIn, signOut: oauthSignOut, store, isAuthenticated } = convexAuth({
+export const {
+  auth,
+  signIn,
+  signOut: oauthSignOut,
+  store,
+  isAuthenticated,
+} = convexAuth({
   providers: [
     GitHub,
     Google,
@@ -34,7 +40,7 @@ export const { auth, signIn, signOut: oauthSignOut, store, isAuthenticated } = c
     async afterUserCreatedOrUpdated(ctx, args) {
       const { userId, existingUserId } = args;
       const user = await ctx.db.get(userId);
-      
+
       if (!user?.email) return;
 
       const now = Date.now();
@@ -52,11 +58,12 @@ export const { auth, signIn, signOut: oauthSignOut, store, isAuthenticated } = c
       if (!existingUserId) {
         try {
           const nowISO = new Date().toISOString();
-          
+
           const STARTER_TEMPLATES = [
             {
               name: "🚀 Welcome & AI Introduction",
-              description: "Learn the basics with text creation and AI interaction",
+              description:
+                "Learn the basics with text creation and AI interaction",
               icon: "rocket",
               nodes: [],
               edges: [],
@@ -94,7 +101,10 @@ export const { auth, signIn, signOut: oauthSignOut, store, isAuthenticated } = c
             } catch (error) {
               // Log template creation errors only in development, basically debug onboarding
               if (process.env.NODE_ENV === "development") {
-                console.error(`Failed to create template "${template.name}":`, error);
+                console.error(
+                  `Failed to create template "${template.name}":`,
+                  error
+                );
               }
             }
           }
@@ -111,3 +121,7 @@ export const { auth, signIn, signOut: oauthSignOut, store, isAuthenticated } = c
 
 // Note: Custom auth functions in authFunctions.ts are kept for backward compatibility
 // but Convex Auth is now the primary authentication system
+
+// IMPORTANT: Export Convex Auth instance as default so ctx.auth is wired up correctly
+// [Explanation], basically this connects Convex Auth to server ctx.auth
+export default auth;
