@@ -36,6 +36,47 @@ type HistoryGraph = {
   cursor: string;
   nodes: Record<string, HistoryNode>;
 };
+// Ephemeral sanitization: strip large, sensitive, or transient fields before persistence
+function sanitizeHistoryGraphForPersistence(graph: HistoryGraph): HistoryGraph {
+  // Deep clone shallowly and remove email payloads from node states
+  const sanitizedNodes: Record<string, HistoryNode> = {};
+  const stripEmailPayloads = (state: { nodes: any[]; edges: any[] }) => {
+    const safeNodes = Array.isArray(state.nodes)
+      ? state.nodes.map((n) => {
+          try {
+            if (n && typeof n === "object" && typeof n.data === "object") {
+              const kind: string | undefined = n.data?.kind || n.kind || n.type;
+              // If this is an email domain node (emailPreview, emailReader, etc.), drop heavy content
+              if (typeof kind === "string" && /^email/i.test(kind)) {
+                // Remove common large/sensitive fields
+                if (n.data) {
+                  const d = { ...n.data };
+                  delete (d as any).emails;
+                  delete (d as any).messages;
+                  delete (d as any).emailsOutput;
+                  delete (d as any).content;
+                  delete (d as any).html;
+                  delete (d as any).text;
+                  n = { ...n, data: d };
+                }
+              }
+            }
+          } catch {}
+          return n;
+        })
+      : [];
+    const safeEdges = Array.isArray(state.edges) ? state.edges : [];
+    return { nodes: safeNodes, edges: safeEdges };
+  };
+
+  for (const [id, node] of Object.entries(graph.nodes)) {
+    const before = stripEmailPayloads(node.before);
+    const after = stripEmailPayloads(node.after);
+    sanitizedNodes[id] = { ...node, before, after };
+  }
+
+  return { ...graph, nodes: sanitizedNodes };
+}
 
 // STORAGE STRATEGY CONSTANTS
 const INLINE_BYTE_LIMIT = 900_000; // [Explanation], basically keep docs well under 1 MiB limit
@@ -109,8 +150,10 @@ export const saveHistoryGraph = mutation({
         return null;
       }
 
+      // Sanitize ephemeral/sensitive data before measuring or saving
+      const sanitizedGraph = sanitizeHistoryGraphForPersistence(historyGraph);
       // Calculate size for monitoring
-      const serialized = JSON.stringify(historyGraph);
+      const serialized = JSON.stringify(sanitizedGraph);
       const byteSize = new Blob([serialized]).size;
 
       // Check if history already exists for this flow
@@ -177,7 +220,7 @@ export const saveHistoryGraph = mutation({
         }
 
         await ctx.db.patch(existingHistory._id, {
-          history_graph: historyGraph,
+          history_graph: sanitizedGraph,
           storage_id: undefined,
           storage_size: undefined,
           is_external_storage: false,
@@ -231,7 +274,7 @@ export const saveHistoryGraph = mutation({
       const historyId = await ctx.db.insert("flow_histories", {
         flow_id: flowId,
         user_id: userId,
-        history_graph: historyGraph,
+        history_graph: sanitizedGraph,
         storage_id: undefined,
         storage_size: undefined,
         is_external_storage: false,

@@ -243,7 +243,7 @@ function createDynamicSpec(data: EmailReaderData): NodeSpec {
         hasAttachments: false,
         contentSearch: "",
       },
-      batchSize: 1,
+      batchSize: 5,
       maxMessages: 5,
       includeAttachments: false,
       markAsRead: false,
@@ -704,7 +704,16 @@ const EmailReaderNode = memo(
       const tokenChanged = prevToken !== (token ?? null);
       const emailChanged = prevEmail !== userEmail;
       if (tokenChanged || emailChanged) {
-        updateNodeData({ ...RESET_ON_LOGOUT_DATA });
+        // Only write if something actually differs
+        const diffs: Partial<EmailReaderData> = {};
+        const curr = nodeData as EmailReaderData;
+        (
+          Object.keys(RESET_ON_LOGOUT_DATA) as Array<keyof EmailReaderData>
+        ).forEach((k) => {
+          const nextVal = (RESET_ON_LOGOUT_DATA as any)[k];
+          if ((curr as any)[k] !== nextVal) (diffs as any)[k] = nextVal;
+        });
+        if (Object.keys(diffs).length) updateNodeData(diffs);
         // Clear ephemeral outputs cache for this node on auth change
         try {
           clearEmailReaderMessagesForNode(flowId, id);
@@ -712,7 +721,7 @@ const EmailReaderNode = memo(
         _prevUserEmailRef.current = userEmail;
         _prevTokenRef.current = token ?? null;
       }
-    }, [userEmail, token, updateNodeData]);
+    }, [userEmail, token, updateNodeData, nodeData, flowId, id]);
 
     /**
      * Auto-select a connected account when available
@@ -734,30 +743,34 @@ const EmailReaderNode = memo(
         availableAccounts.find((acc) => acc.isConnected) ??
         availableAccounts[0];
       if (preferred) {
-        updateNodeData({
+        const next = {
           accountId: preferred.value,
-          provider: preferred.provider || "gmail",
-          connectionStatus: "idle",
+          provider: (preferred.provider ||
+            "gmail") as EmailReaderData["provider"],
+          connectionStatus: "idle" as const,
           isConnected: false,
           lastError: "",
-        });
+        } satisfies Partial<EmailReaderData>;
+        const curr = nodeData as EmailReaderData;
+        const hasDiff =
+          curr.accountId !== next.accountId ||
+          curr.provider !== next.provider ||
+          curr.connectionStatus !== next.connectionStatus ||
+          curr.isConnected !== next.isConnected ||
+          curr.lastError !== next.lastError;
+        if (hasDiff) updateNodeData(next);
       }
-    }, [availableAccounts, accountId, updateNodeData]);
+    }, [availableAccounts, accountId, updateNodeData, nodeData]);
 
     /** Update output when message state changes */
     useEffect(() => {
-      if (isEnabled && isConnected) {
-        updateNodeData({
-          statusOutput: true,
-          isActive: true,
-        });
-      } else {
-        updateNodeData({
-          statusOutput: false,
-          isActive: false,
-        });
+      const curr = nodeData as EmailReaderData;
+      const nextActive = Boolean(isEnabled && isConnected);
+      const nextStatus = nextActive;
+      if (curr.statusOutput !== nextStatus || curr.isActive !== nextActive) {
+        updateNodeData({ statusOutput: nextStatus, isActive: nextActive });
       }
-    }, [isEnabled, isConnected, updateNodeData]);
+    }, [isEnabled, isConnected, updateNodeData, nodeData]);
 
     /**
      * Clear outputs when connection is lost
@@ -769,11 +782,14 @@ const EmailReaderNode = memo(
       // Only clear when transitioning from connected -> disconnected
       if (wasConnected && !isConnected) {
         // Clear any local indicators
-        updateNodeData({
-          messageCount: 0,
-          emailsOutput: "",
-          output: "",
-        });
+        const curr = nodeData as EmailReaderData;
+        if (
+          curr.messageCount !== 0 ||
+          curr.emailsOutput !== "" ||
+          curr.output !== ""
+        ) {
+          updateNodeData({ messageCount: 0, emailsOutput: "", output: "" });
+        }
         // Clear heavy payload from the ephemeral store
         try {
           clearEmailReaderMessagesForNode(flowId, id);
@@ -781,7 +797,7 @@ const EmailReaderNode = memo(
       }
 
       _prevIsConnectedRef.current = isConnected;
-    }, [isConnected, nodeData, updateNodeData]);
+    }, [isConnected, nodeData, updateNodeData, flowId, id]);
 
     // -------------------------------------------------------------------------
     // 4.7  Validation
