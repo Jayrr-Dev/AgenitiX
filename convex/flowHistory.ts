@@ -84,19 +84,19 @@ export const saveHistoryGraph = mutation({
       //   }
 
       // Validate that the authenticated user matches the passed userId (security check)
-      if (identity?.email) {
-        const authUser = await ctx.db
-          .query("users")
-          .withIndex("email", (q) => q.eq("email", identity.email))
-          .first();
+      //   if (identity?.email) {
+      //     const authUser = await ctx.db
+      //       .query("users")
+      //       .withIndex("email", (q) => q.eq("email", identity.email))
+      //       .first();
 
-        if (!authUser || authUser._id !== userId) {
-          console.warn(
-            "Authentication mismatch - user not authorized for this action"
-          );
-          // Fall back to userId validation below; do not block the operation here
-        }
-      }
+      //     if (!authUser || authUser._id !== userId) {
+      //       console.warn(
+      //         "Authentication mismatch - user not authorized for this action"
+      //       );
+
+      //     }
+      //   }
 
       // User validation logging removed for production
 
