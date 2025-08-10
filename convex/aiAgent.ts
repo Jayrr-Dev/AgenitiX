@@ -302,7 +302,7 @@ const performWebSearch = async (query: string, options: { maxResults?: number; i
 					return result;
 				}
 			} else {
-				console.log(`Tavily API error: ${tavilyResponse.status}, falling back to DuckDuckGo`);
+				// Tavily API error, falling back to DuckDuckGo
 			}
 		} catch (tavilyError) {
 			console.log('Tavily search failed, falling back to DuckDuckGo:', tavilyError);
