@@ -21,6 +21,12 @@ import { spec as toTextSpec } from "../../node-domain/convert/toText.node";
 import { spec as toObjectSpec } from "../../node-domain/convert/toObject.node";
 import { spec as toArraySpec } from "../../node-domain/convert/toArray.node";
 import { spec as toAnySpec } from "../../node-domain/convert/toAny.node";
+import { spec as timeDelaySpec } from "../../node-domain/time/timeDelay.node";
+import { spec as timeIntervalSpec } from "../../node-domain/time/timeInterval.node";
+import { spec as timeThrottleSpec } from "../../node-domain/time/timeThrottle.node";
+import { spec as timeDebounceSpec } from "../../node-domain/time/timeDebounce.node";
+import { spec as timeStopwatchSpec } from "../../node-domain/time/timeStopwatch.node";
+import { spec as timeTimeoutSpec } from "../../node-domain/time/timeTimeout.node";
 import { spec as createTextSpec } from "../../node-domain/create/createText.node";
 import { spec as storeInMemorySpec } from "../../node-domain/create/storeInMemory.node";
 import { spec as emailAccountSpec } from "../../node-domain/email/emailAccount.node";
@@ -67,6 +73,12 @@ const nodeSpecs: Record<string, NodeSpec> = {
 	toObject: toObjectSpec,
 	toArray: toArraySpec,
 	toAny: toAnySpec,
+	timeDelay: timeDelaySpec,
+	timeInterval: timeIntervalSpec,
+	timeThrottle: timeThrottleSpec,
+	timeDebounce: timeDebounceSpec,
+	timeStopwatch: timeStopwatchSpec,
+	timeTimeout: timeTimeoutSpec,
 	// Add new node specs here (auto-updated by Plop)
 	createText: createTextSpec,
 	aiAgent: aiAgentSpec,
