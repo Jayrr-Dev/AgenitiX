@@ -39,7 +39,8 @@ import type {
 } from "./types";
 
 // Constants for better maintainability and performance
-const AUTOSAVE_DEBOUNCE_MS = 2000;
+// Increase debounce to reduce write bandwidth while editing
+const AUTOSAVE_DEBOUNCE_MS = 4000;
 const WORKFLOW_ACTIONS = {
   EXPORT: "export",
   RUN: "run",

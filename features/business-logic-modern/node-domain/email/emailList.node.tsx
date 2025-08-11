@@ -131,6 +131,16 @@ function createDynamicSpec(data: EmailListData): NodeSpec {
     COLLAPSED_SIZES[data.collapsedSize as keyof typeof COLLAPSED_SIZES] ??
     COLLAPSED_SIZES.C2;
 
+  /**
+   * HANDLE_TOOLTIPS – ultra‑concise labels for handles
+   * [Explanation], basically 1–3 word hints shown before dynamic value/type
+   */
+  const HANDLE_TOOLTIPS = {
+    EMAILS_IN: "Emails",
+    LIST_OUT: "List",
+    VALIDATED_OUT: "Validated",
+  } as const;
+
   return {
     kind: "emailList",
     displayName: "Email List",
@@ -144,6 +154,7 @@ function createDynamicSpec(data: EmailListData): NodeSpec {
         position: "left",
         type: "target",
         dataType: "Array",
+        tooltip: HANDLE_TOOLTIPS.EMAILS_IN,
       },
       {
         id: "list-output",
@@ -151,6 +162,7 @@ function createDynamicSpec(data: EmailListData): NodeSpec {
         position: "right",
         type: "source",
         dataType: "Array",
+        tooltip: HANDLE_TOOLTIPS.LIST_OUT,
       },
       {
         id: "validated-output",
@@ -158,6 +170,7 @@ function createDynamicSpec(data: EmailListData): NodeSpec {
         position: "bottom",
         type: "source",
         dataType: "Boolean",
+        tooltip: HANDLE_TOOLTIPS.VALIDATED_OUT,
       },
     ],
     inspector: { key: "EmailListInspector" },
@@ -300,7 +313,7 @@ const parseEmailList = (
 const EmailListNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
   // -------------------------------------------------------------------------
   const { nodeData, updateNodeData } = useNodeData(id, {});
-  	const { authToken: token } = useAuth();
+  const { authToken: token } = useAuth();
 
   // -------------------------------------------------------------------------
   // STATE MANAGEMENT (grouped for clarity)

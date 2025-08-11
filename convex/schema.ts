@@ -263,9 +263,12 @@ export default defineSchema({
     icon: v.optional(v.string()),
     is_private: v.boolean(),
     user_id: v.id("users"), // Use Convex Auth users table for OAuth compatibility
-    // Canvas state
-    nodes: v.optional(v.any()), // React Flow nodes array
-    edges: v.optional(v.any()), // React Flow edges array
+    // Canvas state (stored as blob to reduce bandwidth)
+    nodes: v.optional(v.any()), // React Flow nodes array (legacy/fallback)
+    edges: v.optional(v.any()), // React Flow edges array (legacy/fallback)
+    canvas_storage_id: v.optional(v.id("_storage")),
+    canvas_storage_size: v.optional(v.number()),
+    canvas_checksum: v.optional(v.string()),
     canvas_updated_at: v.optional(v.string()), // Last canvas save timestamp
     created_at: v.string(),
     updated_at: v.string(),
@@ -379,4 +382,45 @@ export default defineSchema({
     .index("by_history_id", ["history_id"])
     .index("by_history_id_and_index", ["history_id", "chunk_index"])
     .index("by_history_id_and_version", ["history_id", "chunk_version"]),
+
+  // FLOW NODE DOCUMENTS - External storage references for large node content
+  flow_node_documents: defineTable({
+    flow_id: v.id("flows"),
+    user_id: v.id("users"),
+    node_id: v.string(),
+    storage_id: v.id("_storage"),
+    storage_size: v.number(),
+    content_type: v.optional(v.string()),
+    preview_text: v.string(),
+    checksum: v.optional(v.string()),
+    created_at: v.number(),
+    updated_at: v.number(),
+  })
+    .index("by_flow_id", ["flow_id"])
+    .index("by_user_id", ["user_id"])
+    .index("by_flow_and_node", ["flow_id", "node_id"])
+    .index("by_user_and_node", ["user_id", "node_id"]),
+
+  // FLOW OPS LOG - Ordered operations per flow for scalable history
+  flow_ops: defineTable({
+    flow_id: v.id("flows"),
+    user_id: v.id("users"),
+    command_id: v.string(),
+    version: v.number(), // server-assigned increasing
+    ops: v.array(v.any()), // compact operations
+    created_at: v.number(),
+  })
+    .index("by_flow_and_version", ["flow_id", "version"])
+    .index("by_flow_and_user", ["flow_id", "user_id"])
+    .index("by_user_id", ["user_id"]),
+
+  // FLOW SNAPSHOTS - Periodic compaction to bound ops replay cost
+  flow_snapshots: defineTable({
+    flow_id: v.id("flows"),
+    version: v.number(),
+    snapshot: v.any(),
+    created_at: v.number(),
+  })
+    .index("by_flow_id", ["flow_id"])
+    .index("by_flow_and_version", ["flow_id", "version"]),
 });

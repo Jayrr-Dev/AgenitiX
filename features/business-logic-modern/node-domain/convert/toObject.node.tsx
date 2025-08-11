@@ -42,7 +42,9 @@ import { useNodeData } from "@/hooks/useNodeData";
 import { useStore } from "@xyflow/react";
 
 // Import conversion utilities (hash helper is locally defined below)
-import { getObjectDisplay, toObjectValue } from "./utils";
+import { CompactDataViewer } from "./components/CompactDataViewer";
+import { VirtualizedObjectViewer } from "./components/VirtualizedObjectViewer";
+import { toObjectValue } from "./utils";
 
 // Local utility function for generating simple hash
 function generateSimpleHash(str: string): string {
@@ -564,23 +566,44 @@ const ToObjectNode = memo(
                 </div>
               </div>
 
-              {/* Output Display */}
-              <div>
-                <label className="text-xs font-medium text-muted-foreground">
-                  Object Output:
-                </label>
-                <div
-                  className={`mt-1 p-2 rounded text-[11px] font-mono ${
-                    hasError
-                      ? "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300"
-                      : "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
-                  }`}
-                >
-                  {hasError
-                    ? `Error: ${errorMessage}`
-                    : getObjectDisplay(objectOutput)}
+              {/* Object Data Display */}
+              {hasError ? (
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground">
+                    Object Data:
+                  </label>
+                  <div className="mt-1 p-2 rounded text-[11px] font-mono bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300">
+                    Error: {errorMessage}
+                  </div>
                 </div>
-              </div>
+              ) : Object.keys(objectOutput).length > 50 ? (
+                // Use virtualized viewer for very large objects
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground">
+                    Object Data:
+                  </label>
+                  <div className="mt-1">
+                    <VirtualizedObjectViewer
+                      data={objectOutput}
+                      containerHeight={200}
+                      itemHeight={100}
+                      overscan={3}
+                      className="w-full"
+                    />
+                  </div>
+                </div>
+              ) : (
+                // Use compact viewer for smaller objects with expandability
+                <CompactDataViewer
+                  data={objectOutput}
+                  label="Object Data"
+                  initialLimit={20}
+                  maxHeight="max-h-32"
+                  expandable={true}
+                  drillable={true}
+                  emptyMessage="(empty object)"
+                />
+              )}
 
               {/* Conversion Info */}
               {!hasError && inputValue !== null && inputValue !== undefined && (

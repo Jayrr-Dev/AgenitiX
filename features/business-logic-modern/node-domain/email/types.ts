@@ -6,7 +6,13 @@
  */
 
 // Email Provider Types
-export type EmailProviderType = "gmail" | "outlook" | "yahoo" | "imap" | "smtp";
+export type EmailProviderType =
+  | "gmail"
+  | "outlook"
+  | "yahoo"
+  | "imap"
+  | "smtp"
+  | "resend-test"; // [Explanation], basically dev-only provider for Resend test sends
 
 export type AuthType = "oauth2" | "manual";
 

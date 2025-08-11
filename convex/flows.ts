@@ -15,6 +15,17 @@ import type { Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
 
+function checksum(input: string): string {
+  // Simple non-crypto checksum for integrity hints
+  let hash = 0;
+  for (let i = 0; i < input.length; i += 1) {
+    const chr = input.charCodeAt(i);
+    hash = (hash << 5) - hash + chr;
+    hash |= 0; // Convert to 32bit
+  }
+  return String(hash >>> 0);
+}
+
 interface UserDocument {
   _id: Id<"users">; // Use Convex Auth users table for OAuth compatibility
   _creationTime: number;
@@ -36,10 +47,23 @@ export const getUserFlows = query({
   args: { user_id: v.id("users") }, // Use Convex Auth users table for OAuth compatibility
   handler: async (ctx, args) => {
     try {
-      return await ctx.db
+      const docs = await ctx.db
         .query("flows")
         .withIndex("by_user_id", (q) => q.eq("user_id", args.user_id))
         .collect();
+
+      // Project to lightweight metadata to reduce bandwidth
+      return docs.map((flow) => ({
+        _id: flow._id,
+        name: flow.name,
+        description: flow.description,
+        icon: flow.icon,
+        is_private: flow.is_private,
+        user_id: flow.user_id,
+        created_at: (flow as any).created_at,
+        updated_at: (flow as any).updated_at,
+        canvas_updated_at: (flow as any).canvas_updated_at,
+      }));
     } catch (error) {
       console.error("Error in getUserFlows:", error);
       // Return empty array if there's a validation error while we fix the schema
@@ -70,7 +94,18 @@ export const getPublicFlows = query({
       ? publicFlows.filter((flow) => flow.user_id !== args.user_id)
       : publicFlows;
 
-    return filteredFlows.slice(0, limit);
+    // Return lightweight projection
+    return filteredFlows.slice(0, limit).map((flow) => ({
+      _id: flow._id,
+      name: flow.name,
+      description: flow.description,
+      icon: flow.icon,
+      is_private: flow.is_private,
+      user_id: flow.user_id,
+      created_at: (flow as any).created_at,
+      updated_at: (flow as any).updated_at,
+      canvas_updated_at: (flow as any).canvas_updated_at,
+    }));
   },
 });
 
@@ -113,12 +148,27 @@ export const getAccessibleFlows = query({
       .collect();
 
     // Combine and deduplicate
+    const project = (flow: any) => ({
+      _id: flow._id,
+      name: flow.name,
+      description: flow.description,
+      icon: flow.icon,
+      is_private: flow.is_private,
+      user_id: flow.user_id,
+      created_at: (flow as any).created_at,
+      updated_at: (flow as any).updated_at,
+      canvas_updated_at: (flow as any).canvas_updated_at,
+    });
+
     const allFlows = [
-      ...ownFlows.map((flow) => ({ ...flow, accessType: "owner" })),
+      ...ownFlows.map((flow) => ({ ...project(flow), accessType: "owner" })),
       ...sharedFlows
         .filter(Boolean)
-        .map((flow) => ({ ...flow, accessType: "shared" })),
-      ...publicFlows.map((flow) => ({ ...flow, accessType: "public" })),
+        .map((flow) => ({ ...project(flow), accessType: "shared" })),
+      ...publicFlows.map((flow) => ({
+        ...project(flow),
+        accessType: "public",
+      })),
     ];
 
     // Remove duplicates based on flow ID
@@ -136,7 +186,20 @@ export const getAccessibleFlows = query({
 export const getFlow = query({
   args: { flow_id: v.id("flows") },
   handler: async (ctx, args) => {
-    return await ctx.db.get(args.flow_id);
+    const flow = await ctx.db.get(args.flow_id);
+    if (!flow) return null;
+    // Project to lightweight metadata only
+    return {
+      _id: flow._id,
+      name: flow.name,
+      description: flow.description,
+      icon: flow.icon,
+      is_private: flow.is_private,
+      user_id: flow.user_id,
+      created_at: (flow as any).created_at,
+      updated_at: (flow as any).updated_at,
+      canvas_updated_at: (flow as any).canvas_updated_at,
+    } as const;
   },
 });
 
@@ -165,15 +228,27 @@ export const getFlowSecure = query({
       return null; // User doesn't have access
     }
 
-    // Return flow with access information
+    // Return ONLY metadata (omit heavy nodes/edges to reduce bandwidth)
+    const meta = {
+      _id: flow._id,
+      name: flow.name,
+      description: flow.description,
+      icon: flow.icon,
+      is_private: flow.is_private,
+      user_id: flow.user_id,
+      canvas_updated_at: (flow as any).canvas_updated_at,
+      created_at: (flow as any).created_at,
+      updated_at: (flow as any).updated_at,
+    } as const;
+
     return {
-      ...flow,
+      ...meta,
       userPermission: accessCheck.permission,
       canEdit:
         accessCheck.permission === "admin" || accessCheck.permission === "edit",
       canView: accessCheck.hasAccess,
       isOwner: flow.user_id === args.user_id,
-    };
+    } as const;
   },
 });
 
@@ -343,6 +418,22 @@ export const clonePublicFlow = mutation({
 
     const now = new Date().toISOString();
 
+    // Strip document references from nodes to avoid leaking storage refs across clones
+    const stripDocRefs = (nodes: any[] | undefined) => {
+      if (!Array.isArray(nodes)) return [] as any[];
+      return nodes.map((n) => {
+        const data = n?.data && typeof n.data === "object" ? { ...n.data } : {};
+        if (data) {
+          delete (data as any).document_id;
+          delete (data as any).document_size;
+          delete (data as any).document_checksum;
+          delete (data as any).document_content_type;
+          delete (data as any).document_preview;
+        }
+        return { ...n, data };
+      });
+    };
+
     // Create the cloned flow with canvas data, basically complete workflow copy
     const clonedFlowId = await ctx.db.insert("flows", {
       name: new_name || `${sourceFlow.name} (Copy)`,
@@ -350,7 +441,7 @@ export const clonePublicFlow = mutation({
       icon: sourceFlow.icon || "zap",
       is_private: true, // Clone as private by default
       user_id: user_id,
-      nodes: sourceFlow.nodes || [], // Copy canvas nodes
+      nodes: stripDocRefs((sourceFlow as any).nodes) || [], // Copy canvas nodes without doc refs
       edges: sourceFlow.edges || [], // Copy canvas edges
       canvas_updated_at: now,
       created_at: now,
@@ -418,12 +509,30 @@ export const saveFlowCanvas = mutation({
 
     const now = new Date().toISOString();
 
-    await ctx.db.patch(flow_id, {
-      nodes,
-      edges,
-      canvas_updated_at: now,
-      updated_at: now,
-    });
+    // Store as blob to reduce DB bandwidth
+    try {
+      const payload = JSON.stringify({ nodes, edges });
+      const data = new TextEncoder().encode(payload);
+      const storageId = await (ctx as any).storage.store(data);
+      await ctx.db.patch(flow_id, {
+        // Keep legacy fields empty to avoid heavy reactivity
+        nodes: undefined,
+        edges: undefined,
+        canvas_storage_id: storageId,
+        canvas_storage_size: payload.length,
+        canvas_checksum: checksum(payload),
+        canvas_updated_at: now,
+        updated_at: now,
+      } as any);
+    } catch {
+      // Fallback: store inline if storage fails
+      await ctx.db.patch(flow_id, {
+        nodes,
+        edges,
+        canvas_updated_at: now,
+        updated_at: now,
+      });
+    }
   },
 });
 
@@ -456,11 +565,72 @@ export const loadFlowCanvas = query({
       throw new Error("This flow is private");
     }
 
-    return {
-      nodes: flow.nodes || [],
-      edges: flow.edges || [],
-      canvas_updated_at: flow.canvas_updated_at,
+    // If stored as blob, load once and return parsed
+    if ((flow as any).canvas_storage_id) {
+      try {
+        const buf = await (ctx as any).storage.get(
+          (flow as any).canvas_storage_id
+        );
+        if (buf) {
+          const text = new TextDecoder().decode(buf);
+          const parsed = JSON.parse(text) as { nodes: any[]; edges: any[] };
+          return {
+            nodes: Array.isArray(parsed.nodes) ? parsed.nodes : [],
+            edges: Array.isArray(parsed.edges) ? parsed.edges : [],
+            canvas_updated_at: (flow as any).canvas_updated_at,
+          } as const;
+        }
+      } catch {}
+    }
+
+    // Server-side safety prune to keep payloads small and consistent
+    const SAFE_NODE_KEYS = new Set([
+      "isExpanded",
+      "isEnabled",
+      "isActive",
+      "label",
+      "store",
+      "expandedSize",
+      "collapsedSize",
+      "viewPath",
+      "summaryLimit",
+      // Document reference fields for large external content
+      "document_id",
+      "document_size",
+      "document_checksum",
+      "document_content_type",
+      "document_preview",
+    ]);
+
+    const sanitizeNodeData = (node: any) => {
+      const data = node?.data || {};
+      const out: Record<string, any> = {};
+      for (const k of Object.keys(data)) {
+        if (SAFE_NODE_KEYS.has(k)) out[k] = data[k];
+      }
+      // Preserve inputs for view/convert nodes to render inspector previews
+      const type: string = node?.type || "";
+      if (/^(view|to|convert)/i.test(type) && data.inputs) {
+        out.inputs = data.inputs;
+      }
+      return out;
     };
+
+    const nodes = Array.isArray((flow as any).nodes)
+      ? (flow as any).nodes.map((n: any) => ({
+          id: n.id,
+          type: n.type,
+          position: n.position,
+          data: sanitizeNodeData(n),
+        }))
+      : [];
+    const edges = Array.isArray((flow as any).edges) ? (flow as any).edges : [];
+
+    return {
+      nodes,
+      edges,
+      canvas_updated_at: (flow as any).canvas_updated_at,
+    } as const;
   },
 });
 
@@ -481,6 +651,16 @@ export const deleteFlow = mutation({
 
     if (flow.user_id !== args.user_id) {
       throw new Error("You don't have permission to delete this flow");
+    }
+
+    // Delete canvas blob if present
+    try {
+      const storageId = (flow as any).canvas_storage_id;
+      if (storageId) {
+        await ctx.storage.delete(storageId);
+      }
+    } catch (e) {
+      console.warn("Failed to delete canvas blob:", e);
     }
 
     // Delete upvotes first
@@ -521,6 +701,81 @@ export const deleteFlow = mutation({
 
     for (const request of requests) {
       await ctx.db.delete(request._id);
+    }
+
+    // Delete flow histories and chunks
+    try {
+      const histories = await ctx.db
+        .query("flow_histories")
+        .withIndex("by_flow_id", (q) => q.eq("flow_id", args.flow_id))
+        .collect();
+
+      for (const history of histories) {
+        // Delete associated chunks
+        const chunks = await ctx.db
+          .query("flow_history_chunks")
+          .withIndex("by_history_id", (q) => q.eq("history_id", history._id))
+          .collect();
+        for (const c of chunks) {
+          await ctx.db.delete(c._id);
+        }
+        // Delete external storage if present
+        if (history.is_external_storage && history.storage_id) {
+          try {
+            await ctx.storage.delete(history.storage_id);
+          } catch (e) {
+            console.warn("Failed to delete history blob:", e);
+          }
+        }
+        // Delete the history doc
+        await ctx.db.delete(history._id);
+      }
+    } catch (e) {
+      console.warn("Failed to delete flow histories:", e);
+    }
+
+    // Delete node documents (storage + rows)
+    try {
+      const docs = await ctx.db
+        .query("flow_node_documents")
+        .withIndex("by_flow_id", (q) => q.eq("flow_id", args.flow_id))
+        .collect();
+      for (const d of docs) {
+        try {
+          if (d.storage_id) {
+            await ctx.storage.delete(d.storage_id);
+          }
+        } catch {}
+        await ctx.db.delete(d._id);
+      }
+    } catch (e) {
+      console.warn("Failed to delete flow node documents:", e);
+    }
+
+    // Delete ops log sidecar (if used)
+    try {
+      const ops = await ctx.db
+        .query("flow_ops")
+        .withIndex("by_flow_and_version", (q) => q.eq("flow_id", args.flow_id))
+        .collect();
+      for (const op of ops) {
+        await ctx.db.delete(op._id);
+      }
+    } catch (e) {
+      console.warn("Failed to delete flow ops:", e);
+    }
+
+    // Delete snapshots (if used)
+    try {
+      const snaps = await ctx.db
+        .query("flow_snapshots")
+        .withIndex("by_flow_id", (q) => q.eq("flow_id", args.flow_id))
+        .collect();
+      for (const s of snaps) {
+        await ctx.db.delete(s._id);
+      }
+    } catch (e) {
+      console.warn("Failed to delete flow snapshots:", e);
     }
 
     // Finally delete the flow itself
@@ -846,7 +1101,15 @@ export const getPublicFlowsWithUpvotes = query({
             }
 
             return {
-              ...flow,
+              _id: flow._id,
+              name: flow.name,
+              description: flow.description,
+              icon: flow.icon,
+              is_private: flow.is_private,
+              user_id: flow.user_id,
+              created_at: (flow as any).created_at,
+              updated_at: (flow as any).updated_at,
+              canvas_updated_at: (flow as any).canvas_updated_at,
               upvoteCount: upvotes.length,
               hasUpvoted,
               creator,
@@ -855,7 +1118,15 @@ export const getPublicFlowsWithUpvotes = query({
             console.warn("Error processing flow:", flowError);
             // Return a basic flow object if there's an error
             return {
-              ...flow,
+              _id: flow._id,
+              name: flow.name,
+              description: flow.description,
+              icon: flow.icon,
+              is_private: flow.is_private,
+              user_id: flow.user_id,
+              created_at: (flow as any).created_at,
+              updated_at: (flow as any).updated_at,
+              canvas_updated_at: (flow as any).canvas_updated_at,
               upvoteCount: 0,
               hasUpvoted: false,
               creator: null,

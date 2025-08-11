@@ -176,6 +176,19 @@ export function useAutoSaveCanvas(
     performSave();
   }, [performSave]);
 
+  // Global event to force-save after critical ops (e.g., prune/undo/redo)
+  useEffect(() => {
+    const handler = () => saveNow();
+    if (typeof window !== "undefined") {
+      window.addEventListener("request-canvas-save", handler);
+    }
+    return () => {
+      if (typeof window !== "undefined") {
+        window.removeEventListener("request-canvas-save", handler);
+      }
+    };
+  }, [saveNow]);
+
   // Auto-save effect with debouncing
   useEffect(() => {
     // [Hydration gate] , basically skip scheduling until persisted store is ready

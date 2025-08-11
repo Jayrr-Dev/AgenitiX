@@ -42,7 +42,9 @@ import { useNodeData } from "@/hooks/useNodeData";
 import { useStore } from "@xyflow/react";
 
 // Import conversion utilities
-import { getArrayDisplay, toArrayValue } from "./utils";
+import { CompactDataViewer } from "./components/CompactDataViewer";
+import { VirtualizedArrayViewer } from "./components/VirtualizedArrayViewer";
+import { toArrayValue } from "./utils";
 
 // -----------------------------------------------------------------------------
 // 1️⃣  Data schema & validation
@@ -63,7 +65,7 @@ export const ToArrayDataSchema = z
     isEnabled: SafeSchemas.boolean(true),
     isActive: SafeSchemas.boolean(false),
     isExpanded: SafeSchemas.boolean(false),
-    expandedSize: SafeSchemas.text("VE3"),
+    expandedSize: SafeSchemas.text("FE3"),
     collapsedSize: SafeSchemas.text("C1"),
 
     // Error handling
@@ -205,7 +207,7 @@ const ToArrayNode = memo(
       isEnabled,
       isActive,
       inputValue,
-      arrayOutput,
+      arrayOutput = [],
       mode,
       maxItems,
       preserveOrder,
@@ -238,7 +240,7 @@ const ToArrayNode = memo(
     /** Propagate array output - legacy field + handle field */
     const propagate = useCallback(
       (value: any[]) => {
-        const out = value;
+        const out = value || []; // [Explanation], basically ensure we always have an array
         if (JSON.stringify(out) !== JSON.stringify(lastOutputRef.current)) {
           lastOutputRef.current = out;
           updateNodeData({ arrayOutput: out, ["array-output"]: out });
@@ -359,7 +361,7 @@ const ToArrayNode = memo(
 
     // Propagate array output and block JSON when inactive
     useEffect(() => {
-      const out = hasError ? [] : arrayOutput;
+      const out = hasError ? [] : arrayOutput || []; // [Explanation], basically ensure we always have an array
       propagate(out);
       blockJsonWhenInactive();
     }, [hasError, arrayOutput, propagate, blockJsonWhenInactive]);
@@ -460,7 +462,9 @@ const ToArrayNode = memo(
                 </div>
               ) : (
                 <div className="font-mono text-xs text-center max-w-full">
-                  <div className="truncate">[{arrayOutput.length} items]</div>
+                  <div className="truncate">
+                    [{arrayOutput?.length ?? 0} items]
+                  </div>
                 </div>
               )}
               {inputValue !== null && inputValue !== undefined && (
@@ -475,36 +479,46 @@ const ToArrayNode = memo(
           <div
             className={`${CONTENT.expanded} ${!isEnabled ? CONTENT.disabled : ""}`}
           >
-            <div className="space-y-2">
-              {/* Input Display */}
-              <div>
-                <label className="text-xs font-medium text-muted-foreground">
-                  Input:
-                </label>
-                <div className="mt-1 p-2 bg-muted rounded text-xs font-mono">
-                  {inputValue === null || inputValue === undefined
-                    ? "No input connected"
-                    : JSON.stringify(inputValue, null, 2)}
+            {/* Scrollable content area, basically prevent long sections from overlapping the node */}
+            <div className="min-h-0 flex-1 overflow-auto space-y-2">
+              {/* Array Data Display */}
+              {hasError ? (
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground">
+                    Array Data:
+                  </label>
+                  <div className="mt-1 p-2 rounded text-[11px] font-mono bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300">
+                    Error: {errorMessage}
+                  </div>
                 </div>
-              </div>
-
-              {/* Output Display */}
-              <div>
-                <label className="text-xs font-medium text-muted-foreground">
-                  Array Output:
-                </label>
-                <div
-                  className={`mt-1 p-2 rounded text-[11px] font-mono ${
-                    hasError
-                      ? "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300"
-                      : "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
-                  }`}
-                >
-                  {hasError
-                    ? `Error: ${errorMessage}`
-                    : getArrayDisplay(arrayOutput)}
+              ) : (arrayOutput?.length ?? 0) > 50 ? (
+                // Use virtualized viewer for very large arrays
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground">
+                    Array Data:
+                  </label>
+                  <div className="mt-1">
+                    <VirtualizedArrayViewer
+                      data={arrayOutput}
+                      containerHeight={200}
+                      itemHeight={100}
+                      overscan={3}
+                      className="w-full"
+                    />
+                  </div>
                 </div>
-              </div>
+              ) : (
+                // Use compact viewer for smaller arrays with expandability
+                <CompactDataViewer
+                  data={arrayOutput}
+                  label="Array Data"
+                  initialLimit={20}
+                  maxHeight="max-h-32"
+                  expandable={true}
+                  drillable={true}
+                  emptyMessage="(empty array)"
+                />
+              )}
 
               {/* Conversion Info */}
               {!hasError && inputValue !== null && inputValue !== undefined && (
@@ -522,7 +536,9 @@ const ToArrayNode = memo(
                     )}
                     <br />
                     Length:{" "}
-                    <span className="font-mono">{arrayOutput.length}</span>
+                    <span className="font-mono">
+                      {arrayOutput?.length ?? 0}
+                    </span>
                     {" • "}
                     Order:{" "}
                     <span className="font-mono">

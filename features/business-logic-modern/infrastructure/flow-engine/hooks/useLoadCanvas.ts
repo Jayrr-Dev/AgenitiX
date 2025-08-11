@@ -42,10 +42,11 @@ export function useLoadCanvas(): UseLoadCanvasResult {
   const [hasLoaded, setHasLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Query canvas data from Convex
+  // Query canvas data from Convex (one-shot: unsubscribe after first successful load)
+  const shouldQuery = !!flow?.id && !hasLoaded;
   const canvasData = useQuery(
     api.flows.loadFlowCanvas,
-    flow?.id
+    shouldQuery
       ? {
           flow_id: flow.id as Id<"flows">,
           user_id: user?.id as any,
@@ -56,8 +57,9 @@ export function useLoadCanvas(): UseLoadCanvasResult {
   // Load canvas data into store when available (after hydration)
   useEffect(() => {
     // [Hydration gate] , basically wait for persisted store to be ready
+    // Since persistence is disabled, immediately set hydrated to true
     if (!hasHydrated) {
-      // Force hydration if we have canvas data but store isn't hydrated yet
+      // Force hydration since we're not using persistence
       const setHasHydrated = useFlowStore.getState().setHasHydrated;
       setHasHydrated(true);
     }
@@ -65,8 +67,6 @@ export function useLoadCanvas(): UseLoadCanvasResult {
     if (canvasData === undefined) return;
     // Avoid re-applying after a successful load (reset on flow id change)
     if (hasLoaded) return;
-
-
     try {
       // Always trust server response for current flow, basically avoid leaking previous flow state
       const serverNodes = Array.isArray((canvasData as any).nodes)
@@ -130,7 +130,7 @@ export function useLoadCanvas(): UseLoadCanvasResult {
       setEdges([] as any);
     }
 
-    // Mark as server-loading and clear any stale per-flow backups to prevent client restore
+    // Clear any persistent storage that might conflict with server data
     try {
       if (typeof window !== "undefined" && flow?.id) {
         const flowId = String(flow.id);
@@ -143,6 +143,10 @@ export function useLoadCanvas(): UseLoadCanvasResult {
           `${CLEAR_FLOW_EDITOR_BACKUP_PREFIX}${flowId}`
         );
         window.localStorage.removeItem(`${CLEAR_UNDO_BACKUP_PREFIX}${flowId}`);
+
+        // Clear global flow store persistence that causes conflicts
+        window.localStorage.removeItem("flow-editor-storage");
+
         // Clear new sessionStorage backups
         try {
           window.sessionStorage.removeItem(
@@ -166,7 +170,6 @@ export function useLoadCanvas(): UseLoadCanvasResult {
       return { user, flow, canvasData, nodes, edges };
     };
   }
-
   return {
     isLoading: canvasData === undefined && !hasLoaded && !error,
     error,

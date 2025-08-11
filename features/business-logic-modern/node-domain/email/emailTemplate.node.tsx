@@ -175,6 +175,17 @@ function createDynamicSpec(data: EmailTemplateData): NodeSpec {
     COLLAPSED_SIZES[data.collapsedSize as keyof typeof COLLAPSED_SIZES] ??
     COLLAPSED_SIZES.C2;
 
+  /**
+   * HANDLE_TOOLTIPS – ultra‑concise labels for handles
+   * [Explanation], basically 1–3 word hints shown before dynamic value/type
+   */
+  const HANDLE_TOOLTIPS = {
+    DATA_IN: "Data",
+    TEMPLATE_OUT: "Template",
+    COMPILED_OUT: "Compiled",
+    OUTPUTS_OUT: "Outputs",
+  } as const;
+
   return {
     kind: "emailTemplate",
     displayName: "Email Template",
@@ -188,6 +199,7 @@ function createDynamicSpec(data: EmailTemplateData): NodeSpec {
         position: "top",
         type: "target",
         dataType: "JSON",
+        tooltip: HANDLE_TOOLTIPS.DATA_IN,
       },
       {
         id: "template-output",
@@ -195,6 +207,7 @@ function createDynamicSpec(data: EmailTemplateData): NodeSpec {
         position: "right",
         type: "source",
         dataType: "JSON",
+        tooltip: HANDLE_TOOLTIPS.TEMPLATE_OUT,
       },
       {
         id: "compiled-output",
@@ -202,6 +215,7 @@ function createDynamicSpec(data: EmailTemplateData): NodeSpec {
         position: "bottom",
         type: "source",
         dataType: "JSON",
+        tooltip: HANDLE_TOOLTIPS.COMPILED_OUT,
       },
       {
         id: "outputs",
@@ -209,6 +223,7 @@ function createDynamicSpec(data: EmailTemplateData): NodeSpec {
         position: "right",
         type: "source",
         dataType: "String",
+        tooltip: HANDLE_TOOLTIPS.OUTPUTS_OUT,
       },
     ],
     inspector: { key: "EmailTemplateInspector" },
@@ -370,7 +385,7 @@ const EmailTemplateNode = memo(
     // -------------------------------------------------------------------------
     const emailTemplates = useQuery(
       api.emailAccounts.getEmailReplyTemplates,
-      user ? {} : "skip",
+      user ? {} : "skip"
     );
 
     const saveTemplateMutation = useMutation(
@@ -469,15 +484,18 @@ const EmailTemplateNode = memo(
           const formattedOutput = {
             "📄 Template Saved": {
               "Template Name": templateName,
-              "Category": category,
-              "Subject": subject,
-              "Variables": variables.length > 0 ? variables.map(v => v.name).join(", ") : "None",
+              Category: category,
+              Subject: subject,
+              Variables:
+                variables.length > 0
+                  ? variables.map((v) => v.name).join(", ")
+                  : "None",
               "Content Type": htmlContent ? "HTML + Text" : "Text Only",
               "Content Length": `${(htmlContent || textContent).length} characters`,
               "Template ID": result.templateId,
               "✅ Status": result.isUpdate ? "Updated" : "Created",
               "⏰ Saved At": new Date().toLocaleString(),
-            }
+            },
           };
 
           updateNodeData({
@@ -487,7 +505,9 @@ const EmailTemplateNode = memo(
             isActive: true,
             outputs: JSON.stringify(formattedOutput, null, 2),
           });
-          toast.success(`Template ${result.isUpdate ? 'updated' : 'created'} successfully`);
+          toast.success(
+            `Template ${result.isUpdate ? "updated" : "created"} successfully`
+          );
         } else {
           throw new Error("Failed to save template");
         }
@@ -562,16 +582,25 @@ const EmailTemplateNode = memo(
         const formattedOutput = {
           "📄 Email Template": {
             "Template Name": templateName,
-            "Category": category || "general",
-            "Subject": subject || "(No subject)",
-            "Variables": variables.length > 0 ? variables.map(v => v.name).join(", ") : "None",
-            "Content Type": htmlContent ? "HTML + Text" : textContent ? "Text Only" : "Empty",
+            Category: category || "general",
+            Subject: subject || "(No subject)",
+            Variables:
+              variables.length > 0
+                ? variables.map((v) => v.name).join(", ")
+                : "None",
+            "Content Type": htmlContent
+              ? "HTML + Text"
+              : textContent
+                ? "Text Only"
+                : "Empty",
             "Content Length": `${(htmlContent || textContent || "").length} characters`,
-            "Status": isActive ? "✅ Active" : "⏸️ Inactive",
-            "Last Updated": lastSaved ? new Date(lastSaved).toLocaleString() : "Not saved",
-          }
+            Status: isActive ? "✅ Active" : "⏸️ Inactive",
+            "Last Updated": lastSaved
+              ? new Date(lastSaved).toLocaleString()
+              : "Not saved",
+          },
         };
-        
+
         updateNodeData({
           outputs: JSON.stringify(formattedOutput, null, 2),
         });
@@ -628,166 +657,170 @@ const EmailTemplateNode = memo(
               <span className="font-medium text-sm">Email Template</span>
             </div>
 
-        {/* Body */}
-        <div className={CONTENT.body}>
-          {/* Template Info */}
-          <div className="space-y-2">
-            <div>
-              <label
-                htmlFor={`template-name-${id}`}
-                className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >
-                Template Name
-              </label>
-              <input
-                id={`template-name-${id}`}
-                type="text"
-                value={templateName}
-                onChange={(e) =>
-                  updateNodeData({ templateName: e.target.value })
-                }
-                placeholder="Enter template name"
-                className="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                disabled={!isEnabled}
-              />
-            </div>
-
-            <div>
-              <label
-                htmlFor={`template-category-${id}`}
-                className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >
-                Category
-              </label>
-              <select
-                id={`template-category-${id}`}
-                value={category}
-                onChange={(e) => updateNodeData({ category: e.target.value })}
-                className="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                disabled={!isEnabled}
-              >
-                {TEMPLATE_CATEGORIES.map((cat) => (
-                  <option key={cat.value} value={cat.value}>
-                    {cat.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label
-                htmlFor={`template-subject-${id}`}
-                className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >
-                Subject
-              </label>
-              <input
-                id={`template-subject-${id}`}
-                type="text"
-                value={subject}
-                onChange={(e) => updateNodeData({ subject: e.target.value })}
-                placeholder="Email subject with {{variables}}"
-                className="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                disabled={!isEnabled}
-              />
-            </div>
-          </div>
-
-          {/* Content Areas */}
-          <div className="space-y-2">
-            <div>
-              <label
-                htmlFor={`template-html-${id}`}
-                className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >
-                HTML Content
-              </label>
-              <textarea
-                id={`template-html-${id}`}
-                value={htmlContent}
-                onChange={(e) =>
-                  updateNodeData({ htmlContent: e.target.value })
-                }
-                placeholder="HTML email content with {{variables}}"
-                className="w-full h-20 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 resize-none"
-                disabled={!isEnabled}
-              />
-            </div>
-            <div>
-              <label
-                htmlFor={`template-text-${id}`}
-                className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >
-                Text Content
-              </label>
-              <textarea
-                id={`template-text-${id}`}
-                value={textContent}
-                onChange={(e) =>
-                  updateNodeData({ textContent: e.target.value })
-                }
-                placeholder="Plain text fallback"
-                className="w-full h-16 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 resize-none"
-                disabled={!isEnabled}
-              />
-            </div>
-          </div>
-
-          {/* Preview */}
-          {showPreview && templateName && (
-            <div className="p-2 bg-gray-50 dark:bg-gray-800 rounded border">
-              <div className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Preview
-              </div>
-              <div className="text-xs text-gray-600 dark:text-gray-400">
+            {/* Body */}
+            <div className={CONTENT.body}>
+              {/* Template Info */}
+              <div className="space-y-2">
                 <div>
-                  <strong>Subject:</strong> {compileTemplate().subject}
+                  <label
+                    htmlFor={`template-name-${id}`}
+                    className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1"
+                  >
+                    Template Name
+                  </label>
+                  <input
+                    id={`template-name-${id}`}
+                    type="text"
+                    value={templateName}
+                    onChange={(e) =>
+                      updateNodeData({ templateName: e.target.value })
+                    }
+                    placeholder="Enter template name"
+                    className="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                    disabled={!isEnabled}
+                  />
                 </div>
-                <div className="mt-1">
-                  <strong>Content:</strong>
+
+                <div>
+                  <label
+                    htmlFor={`template-category-${id}`}
+                    className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1"
+                  >
+                    Category
+                  </label>
+                  <select
+                    id={`template-category-${id}`}
+                    value={category}
+                    onChange={(e) =>
+                      updateNodeData({ category: e.target.value })
+                    }
+                    className="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                    disabled={!isEnabled}
+                  >
+                    {TEMPLATE_CATEGORIES.map((cat) => (
+                      <option key={cat.value} value={cat.value}>
+                        {cat.label}
+                      </option>
+                    ))}
+                  </select>
                 </div>
-                <div className="mt-1 p-1 bg-white dark:bg-gray-700 rounded text-xs max-h-20 overflow-y-auto">
-                  {compileTemplate().html ||
-                    compileTemplate().text ||
-                    "No content"}
+
+                <div>
+                  <label
+                    htmlFor={`template-subject-${id}`}
+                    className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1"
+                  >
+                    Subject
+                  </label>
+                  <input
+                    id={`template-subject-${id}`}
+                    type="text"
+                    value={subject}
+                    onChange={(e) =>
+                      updateNodeData({ subject: e.target.value })
+                    }
+                    placeholder="Email subject with {{variables}}"
+                    className="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                    disabled={!isEnabled}
+                  />
                 </div>
               </div>
+
+              {/* Content Areas */}
+              <div className="space-y-2">
+                <div>
+                  <label
+                    htmlFor={`template-html-${id}`}
+                    className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1"
+                  >
+                    HTML Content
+                  </label>
+                  <textarea
+                    id={`template-html-${id}`}
+                    value={htmlContent}
+                    onChange={(e) =>
+                      updateNodeData({ htmlContent: e.target.value })
+                    }
+                    placeholder="HTML email content with {{variables}}"
+                    className="w-full h-20 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 resize-none"
+                    disabled={!isEnabled}
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor={`template-text-${id}`}
+                    className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1"
+                  >
+                    Text Content
+                  </label>
+                  <textarea
+                    id={`template-text-${id}`}
+                    value={textContent}
+                    onChange={(e) =>
+                      updateNodeData({ textContent: e.target.value })
+                    }
+                    placeholder="Plain text fallback"
+                    className="w-full h-16 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 resize-none"
+                    disabled={!isEnabled}
+                  />
+                </div>
+              </div>
+
+              {/* Preview */}
+              {showPreview && templateName && (
+                <div className="p-2 bg-gray-50 dark:bg-gray-800 rounded border">
+                  <div className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Preview
+                  </div>
+                  <div className="text-xs text-gray-600 dark:text-gray-400">
+                    <div>
+                      <strong>Subject:</strong> {compileTemplate().subject}
+                    </div>
+                    <div className="mt-1">
+                      <strong>Content:</strong>
+                    </div>
+                    <div className="mt-1 p-1 bg-white dark:bg-gray-700 rounded text-xs max-h-20 overflow-y-auto">
+                      {compileTemplate().html ||
+                        compileTemplate().text ||
+                        "No content"}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="flex gap-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+                <button
+                  onClick={handleSaveTemplate}
+                  className="flex-1 px-2 py-1 text-xs bg-green-500 text-white rounded hover:bg-green-600 disabled:opacity-50"
+                  disabled={!isEnabled || isSaving || !templateName.trim()}
+                >
+                  {isSaving ? "Saving..." : "Save Template"}
+                </button>
+
+                <button
+                  onClick={() => updateNodeData({ showPreview: !showPreview })}
+                  className="px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
+                  disabled={!isEnabled}
+                >
+                  {showPreview ? "Hide Preview" : "Show Preview"}
+                </button>
+              </div>
+
+              {/* Status */}
+              {lastError && (
+                <div className="text-xs text-red-500 dark:text-red-400 p-1 bg-red-50 dark:bg-red-900/20 rounded">
+                  {lastError}
+                </div>
+              )}
+
+              {isActive && (
+                <div className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1">
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                  Template active
+                </div>
+              )}
             </div>
-          )}
-
-          {/* Actions */}
-          <div className="flex gap-2 pt-2 border-t border-gray-200 dark:border-gray-700">
-            <button
-              onClick={handleSaveTemplate}
-              className="flex-1 px-2 py-1 text-xs bg-green-500 text-white rounded hover:bg-green-600 disabled:opacity-50"
-              disabled={!isEnabled || isSaving || !templateName.trim()}
-            >
-              {isSaving ? "Saving..." : "Save Template"}
-            </button>
-
-            <button
-              onClick={() => updateNodeData({ showPreview: !showPreview })}
-              className="px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
-              disabled={!isEnabled}
-            >
-              {showPreview ? "Hide Preview" : "Show Preview"}
-            </button>
-          </div>
-
-          {/* Status */}
-          {lastError && (
-            <div className="text-xs text-red-500 dark:text-red-400 p-1 bg-red-50 dark:bg-red-900/20 rounded">
-              {lastError}
-            </div>
-          )}
-
-          {isActive && (
-            <div className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1">
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-              Template active
-            </div>
-          )}
-        </div>
           </div>
         ) : (
           <div

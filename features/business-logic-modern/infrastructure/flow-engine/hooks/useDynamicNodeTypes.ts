@@ -1,11 +1,14 @@
 import { useMemo } from "react";
 
+// TIME nodes
 import timeDelay from '../../../node-domain/time/timeDelay.node';
 import timeInterval from '../../../node-domain/time/timeInterval.node';
 import timeThrottle from '../../../node-domain/time/timeThrottle.node';
 import timeDebounce from '../../../node-domain/time/timeDebounce.node';
 import timeStopwatch from '../../../node-domain/time/timeStopwatch.node';
 import timeTimeout from '../../../node-domain/time/timeTimeout.node';
+// EMAIL nodes
+import emailMessage from '../../../node-domain/email/emailMessage.node';
 // Add new node imports here (Plop can auto-inject these)
 import triggerPulse from '../../../node-domain/trigger/triggerPulse.node';
 import timeScheduler from '../../../node-domain/trigger/timeScheduler.node';
@@ -61,12 +64,15 @@ import logicXnor from "../../../node-domain/logic/logicXnor.node";
 export function useDynamicNodeTypes() {
 	const nodeTypes = useMemo(
 		() => ({
+			// TIME nodes
 			timeDelay,
 			timeInterval,
 			timeThrottle,
 			timeDebounce,
 			timeStopwatch,
 			timeTimeout,
+			// EMAIL nodes
+			emailMessage,
 			// Add new node types here
 			flowConditional,
 			viewBoolean,

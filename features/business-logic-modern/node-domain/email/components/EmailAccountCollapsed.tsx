@@ -17,7 +17,9 @@ import { FaMicrosoft } from "react-icons/fa";
 import { FcGoogle } from "react-icons/fc";
 import { MdEmail } from "react-icons/md";
 import { useEmailAccountContext } from "./EmailAccountProvider";
-// No import needed for types
+// Local, minimal types to avoid cross-file circular deps while staying type-safe
+type EmailProviderType = "gmail" | "outlook" | "imap" | "smtp";
+type ConnectionStatus = "disconnected" | "connecting" | "connected" | "error";
 
 // Collapsed view styling constants
 const COLLAPSED_STYLES = {
@@ -32,7 +34,11 @@ const COLLAPSED_STYLES = {
 } as const;
 
 interface EmailAccountCollapsedProps {
-  nodeData: any; // Using any for now to avoid type conflicts
+  nodeData: {
+    provider?: EmailProviderType;
+    email?: string;
+    connectionStatus?: ConnectionStatus;
+  };
   categoryStyles: { primary: string };
   onToggleExpand?: () => void;
 }
@@ -54,7 +60,10 @@ export const EmailAccountCollapsed = memo(
         imap: { name: "IMAP", icon: MdEmail, color: "text-gray-600" },
         smtp: { name: "SMTP", icon: MdEmail, color: "text-gray-600" },
       };
-      return providers[provider as keyof typeof providers];
+      // Fallback to gmail when provider is missing, basically default to Gmail icon/button
+      const key = (provider ??
+        "gmail") as EmailProviderType as keyof typeof providers;
+      return providers[key];
     }, [provider]);
 
     // Compute status props for the reusable dot component
@@ -89,19 +98,19 @@ export const EmailAccountCollapsed = memo(
       if (email) {
         return email.split("@")[0];
       }
-      return providerInfo?.name || provider;
+      return providerInfo?.name || (provider ?? "gmail");
     }, [email, providerInfo, provider]);
 
-    if (!providerInfo) {
-      return null;
-    }
+    // Ensure we always have an icon, basically never render null for missing provider
+    if (!providerInfo) return null;
 
     const IconComponent = providerInfo.icon;
 
     // Primary action for collapsed big icon, basically OAuth for oauth2 providers or expand for manual
     const onPrimaryAction = useCallback(() => {
-      if (provider === "gmail" || provider === "outlook") {
-        handleOAuth2Auth(provider);
+      const key = (provider ?? "gmail") as EmailProviderType; // [Explanation], basically default provider for click
+      if (key === "gmail" || key === "outlook") {
+        handleOAuth2Auth(key);
         return;
       }
       onToggleExpand?.();

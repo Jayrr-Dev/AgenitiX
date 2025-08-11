@@ -18,6 +18,7 @@ import { z } from "zod";
 
 import { ExpandCollapseButton } from "@/components/nodes/ExpandCollapseButton";
 import LabelNode from "@/components/nodes/labelNode";
+import { CounterBoxContainer } from "@/components/ui/counter-box";
 import { findEdgeByHandle } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/edgeUtils";
 import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
 import { renderLucideIcon } from "@/features/business-logic-modern/infrastructure/node-core/iconUtils";
@@ -39,7 +40,6 @@ import {
 import { useNodeData } from "@/hooks/useNodeData";
 import { useNodeToast } from "@/hooks/useNodeToast";
 import { useStore } from "@xyflow/react";
-import { CounterBoxContainer } from "@/components/ui/counter-box";
 
 // Schema & Types
 export const createJsonDataSchema = z
@@ -392,19 +392,14 @@ const createJsonNode = memo(
 
     useEffect(() => {
       const currentInputs = (nodeData as createJsonData).inputs;
-
       if (currentInputs !== null) {
-        const nextEnabled = Boolean(currentInputs?.trim());
-        if (nextEnabled !== isEnabled) {
-          updateNodeData({ isEnabled: nextEnabled });
-          if (nextEnabled) {
-            showInfo("Node enabled", "Input connection detected");
-          } else {
-            showWarning("Node disabled", "No input connection");
-          }
+        const hasValue = Boolean(currentInputs?.trim());
+        if (hasValue && !isEnabled) {
+          updateNodeData({ isEnabled: true });
+          showInfo("Node enabled", "Input connection detected");
         }
       }
-    }, [nodeData, isEnabled, updateNodeData, showInfo, showWarning]);
+    }, [nodeData, isEnabled, updateNodeData, showInfo]);
 
     useEffect(() => {
       const currentStore = store ?? "";
@@ -491,7 +486,6 @@ const createJsonNode = memo(
     // Validation status and parameter count display for collapsed view
     const CollapsedEditor = useMemo(
       () => (
-
         <div className="">
           <CounterBoxContainer
             className="w-full mt-2"

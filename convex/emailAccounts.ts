@@ -1,13 +1,14 @@
 import { v } from "convex/values";
 import { api } from "./_generated/api";
-import { action, mutation, query, internalMutation } from "./_generated/server";
-import { 
+import { action, mutation, query } from "./_generated/server";
+import {
+  debug,
   getAuthContext,
+  logAuthState,
   requireAuth,
   requireUser,
-  logAuthState,
-  debug,
 } from "./authHelpers";
+import { resend } from "./sendEmails";
 
 // Query to get authenticated user from token hash (for use in mutations/queries)
 // Removed legacy token lookup – Convex Auth only
@@ -17,7 +18,9 @@ async function getAuthenticatedUserInAction(ctx: any) {
   try {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity?.email) return null;
-    const user = await ctx.runQuery(api.users.getUserByEmail as any, { email: identity.email });
+    const user = await ctx.runQuery(api.users.getUserByEmail as any, {
+      email: identity.email,
+    });
     return user;
   } catch {
     return null;
@@ -75,7 +78,9 @@ export const upsertEmailAccount = mutation({
       v.literal("outlook"),
       v.literal("yahoo"),
       v.literal("imap"),
-      v.literal("smtp")
+      v.literal("smtp"),
+      // Accept dev-only alias; normalize to smtp inside handler
+      v.literal("resend-test")
     ),
     email: v.string(),
     displayName: v.string(),
@@ -142,7 +147,10 @@ export const upsertEmailAccount = mutation({
 
     const accountData = {
       user_id: user._id,
-      provider: args.provider,
+      provider:
+        (args.provider as string) === "resend-test"
+          ? ("smtp" as any)
+          : args.provider,
       email: args.email,
       display_name: args.displayName,
       encrypted_credentials: JSON.stringify(credentials),
@@ -160,7 +168,9 @@ export const upsertEmailAccount = mutation({
         created_at: existingAccount.created_at, // Keep original creation date
       });
       accountId = existingAccount._id;
-      debug("upsertEmailAccount", "✅ Updated existing account:", { accountId });
+      debug("upsertEmailAccount", "✅ Updated existing account:", {
+        accountId,
+      });
     } else {
       // Create new account
       accountId = await ctx.db.insert("email_accounts", accountData);
@@ -188,6 +198,8 @@ export const upsertEmailAccountForUser = mutation({
       v.literal("yahoo"),
       v.literal("imap"),
       v.literal("smtp"),
+      // Accept dev-only alias; will be normalized to smtp before persisting
+      v.literal("resend-test")
     ),
     email: v.string(),
     displayName: v.string(),
@@ -201,7 +213,7 @@ export const upsertEmailAccountForUser = mutation({
         secure: v.boolean(),
         username: v.string(),
         password: v.string(),
-      }),
+      })
     ),
     smtpConfig: v.optional(
       v.object({
@@ -210,7 +222,7 @@ export const upsertEmailAccountForUser = mutation({
         secure: v.boolean(),
         username: v.string(),
         password: v.string(),
-      }),
+      })
     ),
   },
   handler: async (ctx, args) => {
@@ -239,7 +251,10 @@ export const upsertEmailAccountForUser = mutation({
 
     const accountData = {
       user_id: userId,
-      provider: args.provider,
+      provider:
+        (args.provider as string) === "resend-test"
+          ? ("smtp" as any)
+          : args.provider,
       email: args.email,
       display_name: args.displayName,
       encrypted_credentials: JSON.stringify(credentials),
@@ -256,10 +271,14 @@ export const upsertEmailAccountForUser = mutation({
         created_at: existingAccount.created_at,
       });
       accountId = existingAccount._id;
-      debug("upsertEmailAccountForUser", "✅ Updated existing account:", { accountId });
+      debug("upsertEmailAccountForUser", "✅ Updated existing account:", {
+        accountId,
+      });
     } else {
       accountId = await ctx.db.insert("email_accounts", accountData);
-      debug("upsertEmailAccountForUser", "✅ Created new account:", { accountId });
+      debug("upsertEmailAccountForUser", "✅ Created new account:", {
+        accountId,
+      });
     }
 
     return accountId;
@@ -275,6 +294,8 @@ export const upsertEmailAccountAction = action({
       v.literal("yahoo"),
       v.literal("imap"),
       v.literal("smtp"),
+      // Dev-only alias; will be normalized to "smtp" before storing
+      v.literal("resend-test")
     ),
     email: v.string(),
     displayName: v.string(),
@@ -288,7 +309,7 @@ export const upsertEmailAccountAction = action({
         secure: v.boolean(),
         username: v.string(),
         password: v.string(),
-      }),
+      })
     ),
     smtpConfig: v.optional(
       v.object({
@@ -297,7 +318,7 @@ export const upsertEmailAccountAction = action({
         secure: v.boolean(),
         username: v.string(),
         password: v.string(),
-      }),
+      })
     ),
     // Optional client-provided hint to recover user context if auth propagation lags
     userEmailHint: v.optional(v.string()),
@@ -315,7 +336,9 @@ export const upsertEmailAccountAction = action({
       // Fallback: recover via userEmailHint if provided
       if (args.userEmailHint) {
         try {
-          userObj = await ctx.runQuery(api.users.getUserByEmail as any, { email: args.userEmailHint });
+          userObj = await ctx.runQuery(api.users.getUserByEmail as any, {
+            email: args.userEmailHint,
+          });
         } catch {}
       }
       if (!userObj) {
@@ -324,6 +347,11 @@ export const upsertEmailAccountAction = action({
     }
 
     const { userEmailHint: _omit, ...rest } = args as any;
+    // Normalize provider: map dev-only alias to a supported provider for storage
+    const providerNormalized =
+      (rest.provider as string) === "resend-test"
+        ? "smtp"
+        : (rest.provider as string);
     const resolvedUserId = (userObj as any)._id ?? (userObj as any).id;
     if (!resolvedUserId) {
       throw new Error("Authentication required. Please sign in to continue.");
@@ -334,7 +362,8 @@ export const upsertEmailAccountAction = action({
       {
         userId: resolvedUserId,
         ...rest,
-      },
+        provider: providerNormalized,
+      }
     );
 
     return accountId;
@@ -418,7 +447,9 @@ export const deactivateEmailAccountAction = action({
     } catch {
       if (args.userEmailHint) {
         try {
-          userObj = await ctx.runQuery(api.users.getUserByEmail as any, { email: args.userEmailHint });
+          userObj = await ctx.runQuery(api.users.getUserByEmail as any, {
+            email: args.userEmailHint,
+          });
         } catch {}
       }
       if (!userObj) {
@@ -427,9 +458,12 @@ export const deactivateEmailAccountAction = action({
     }
 
     // Verify account ownership before deactivation
-    const account = await ctx.runQuery(api.emailAccounts.getAccountById as any, {
-      accountId: args.accountId,
-    });
+    const account = await ctx.runQuery(
+      api.emailAccounts.getAccountById as any,
+      {
+        accountId: args.accountId,
+      }
+    );
     if (!account) {
       throw new Error("Account not found");
     }
@@ -451,7 +485,7 @@ export const getUserEmailAccounts = query({
   args: {},
   handler: async (ctx, args) => {
     const authContext = await getAuthContext(ctx);
-    
+
     if (!authContext.isAuthenticated || !authContext.user) {
       debug("getUserEmailAccounts", "No authentication available");
       return [];
@@ -466,9 +500,9 @@ export const getUserEmailAccounts = query({
       .filter((q) => q.eq(q.field("is_active"), true))
       .collect();
 
-    debug("getUserEmailAccounts", "Retrieved accounts:", { 
+    debug("getUserEmailAccounts", "Retrieved accounts:", {
       count: accounts.length,
-      userId: authContext.user._id 
+      userId: authContext.user._id,
     });
 
     return accounts;
@@ -723,8 +757,14 @@ export const sendEmail = action({
         })
       )
     ),
+    // Optional client-provided hint to recover user context if auth propagation lags
+    // [Explanation], basically allow fallback lookup by email if ctx.auth is briefly null
+    userEmailHint: v.optional(v.string()),
   },
-  handler: async (ctx, args): Promise<{ success: boolean; messageId: string; sentAt: number }> => {
+  handler: async (
+    ctx,
+    args
+  ): Promise<{ success: boolean; messageId: string; sentAt: number }> => {
     debug("sendEmail", "=== EMAIL SEND START ===", {
       accountId: args.accountId,
       to: args.to,
@@ -732,12 +772,32 @@ export const sendEmail = action({
       hasAttachments: !!(args.attachments && args.attachments.length > 0),
     });
 
-    const authContext = await requireAuth(ctx);
+    // Resolve identity via Convex Auth first, then fallback hint for email
+    const identity = await ctx.auth.getUserIdentity();
+    const resolvedEmail: string | undefined =
+      identity?.email ?? args.userEmailHint ?? undefined;
+    let resolvedUser: any | null = null;
+    try {
+      if (identity?.email) {
+        resolvedUser = await ctx.runQuery(api.users.getUserByEmail as any, {
+          email: identity.email,
+        });
+      } else if (args.userEmailHint) {
+        resolvedUser = await ctx.runQuery(api.users.getUserByEmail as any, {
+          email: args.userEmailHint,
+        });
+      }
+    } catch {}
 
-    logAuthState("sendEmail", authContext, {
-      accountId: args.accountId,
-      operation: "email_send",
-      recipients: args.to.length,
+    if (!resolvedEmail) {
+      throw new Error("Authentication required. Please sign in to continue.");
+    }
+
+    debug("sendEmail", "Auth context resolved:", {
+      hasIdentity: !!identity,
+      identityEmail: identity?.email,
+      hasDbUser: !!resolvedUser,
+      emailHint: args.userEmailHint,
     });
 
     // Get the email account
@@ -749,37 +809,59 @@ export const sendEmail = action({
       throw new Error("Email account not found");
     }
 
-    // Verify account ownership by checking if the account belongs to the authenticated user
-    // We can check this by comparing the account's email with the authenticated user's email
-    // or by using a helper query to find the user and verify ownership
-
-    // For now, we'll use a simple approach: verify the account is active and belongs to a valid user
+    // Verify account ownership - ensure the account belongs to the authenticated user
     if (!account.is_active) {
       throw new Error("Email account is not active");
     }
 
+    // Verify account ownership: prefer DB user id check, otherwise compare account email
+    const resolvedUserId =
+      (resolvedUser && (resolvedUser._id || resolvedUser.id)) || null;
+    const ownsByUserId = resolvedUserId
+      ? String(account.user_id) === String(resolvedUserId)
+      : false;
+    const ownsByEmail =
+      account.email && resolvedEmail
+        ? String(account.email).toLowerCase() ===
+          String(resolvedEmail).toLowerCase()
+        : false;
+    if (!(ownsByUserId || ownsByEmail)) {
+      throw new Error(
+        "Forbidden: Email account does not belong to the current user"
+      );
+    }
+
     try {
-      // Use Convex Resend component for durable sending
-      const { Resend } = await import("@convex-dev/resend");
-      const { components } = (await import("./_generated/api")) as any;
-      const resendInstance: InstanceType<typeof Resend> = new Resend(components.resend, {} as any) as any;
+      const IS_DEV = process.env.NODE_ENV !== "production";
+      const fromAddress: string = IS_DEV
+        ? `${account.display_name || "Agenitix"} <onboarding@resend.dev>`
+        : `${account.display_name || "Agenitix"} <${account.email}>`;
 
-      const fromAddress: string = `${account.display_name || "Agenitix"} <${account.email}>`;
+      // Map recipients per component API (to: string, optional headers)
+      const toHeader = (
+        args.to && args.to.length > 0
+          ? args.to
+          : IS_DEV
+            ? ["delivered@resend.dev"]
+            : []
+      ).join(", ");
+      const headers: Array<{ name: string; value: string }> = [];
+      if (args.cc && args.cc.length > 0)
+        headers.push({ name: "Cc", value: args.cc.join(", ") });
+      if (args.bcc && args.bcc.length > 0)
+        headers.push({ name: "Bcc", value: args.bcc.join(", ") });
 
-      const emailId: unknown = await (resendInstance as any).sendEmail(ctx as any, {
-        from: fromAddress,
-        to: args.to,
-        subject: args.subject,
-        html: args.htmlContent || undefined,
-        text: args.textContent || undefined,
-        cc: args.cc && args.cc.length > 0 ? args.cc : undefined,
-        bcc: args.bcc && args.bcc.length > 0 ? args.bcc : undefined,
-        attachments: (args.attachments || []).map((a) => ({
-          filename: a.filename,
-          content: a.content || "",
-          contentType: a.mimeType,
-        })),
-      } as any);
+      const emailId: unknown = await resend.sendEmail(
+        ctx as any,
+        {
+          from: fromAddress,
+          to: toHeader,
+          subject: args.subject,
+          html: args.htmlContent || undefined,
+          text: args.textContent || undefined,
+          headers: headers.length > 0 ? headers : undefined,
+        } as any
+      );
 
       debug("sendEmail", "Email enqueued via Resend:", {
         accountId: args.accountId,

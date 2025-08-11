@@ -10,6 +10,7 @@
  * Keywords: form-inputs, provider-selection, validation, responsive-design
  */
 
+import RenderStatusDot from "@/components/RenderStatusDot";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -22,12 +23,12 @@ import { memo, useCallback, useMemo } from "react";
 import { FaMicrosoft } from "react-icons/fa";
 import { FcGoogle } from "react-icons/fc";
 import { MdEmail } from "react-icons/md";
-import RenderStatusDot from "@/components/RenderStatusDot";
 import type { EmailProviderType } from "../types";
 
 // Form styling constants
 const FORM_STYLES = {
-  label: "text-[--node-email-text] text-[10px] font-medium mb-1 block w-full flex items-center justify-between",
+  label:
+    "text-[--node-email-text] text-[10px] font-medium mb-1 block w-full flex items-center justify-between",
   fieldGroup: "space-y-1",
   input:
     "h-6 text-[10px] border border-[--node-email-border] bg-[--node-email-bg] text-[--node-email-text] rounded-md px-2 focus:ring-1 focus:ring-[--node-email-border-hover] focus:border-[--node-email-border-hover] disabled:opacity-50 disabled:cursor-not-allowed placeholder:text-[--node-email-text-secondary] placeholder:text-[10px] transition-all duration-200",
@@ -49,11 +50,19 @@ export const EmailAccountForm = memo(
     isEnabled,
     isAuthenticating,
   }: EmailAccountFormProps) => {
-    const { provider, email, displayName, isConnected, connectionStatus, lastError } = nodeData;
+    const {
+      provider,
+      email,
+      displayName,
+      isConnected,
+      connectionStatus,
+      lastError,
+    } = nodeData;
 
     // Compute status props for status dot beside Provider label
     const providerStatusProps = useMemo(() => {
-      const isConnecting = connectionStatus === "connecting" || !!isAuthenticating;
+      const isConnecting =
+        connectionStatus === "connecting" || !!isAuthenticating;
       const isError = connectionStatus === "error" || !!lastError;
 
       return {
@@ -74,12 +83,20 @@ export const EmailAccountForm = memo(
 
     // Available providers with icons
     const availableProviders = useMemo(() => {
-      return [
+      const base = [
         { value: "gmail", label: "Gmail", icon: FcGoogle },
         { value: "outlook", label: "Outlook", icon: FaMicrosoft },
         { value: "imap", label: "IMAP", icon: MdEmail },
         { value: "smtp", label: "SMTP", icon: MdEmail },
       ];
+      if (process.env.NODE_ENV !== "production") {
+        base.push({
+          value: "resend-test",
+          label: "Resend (dev test)",
+          icon: MdEmail as any,
+        });
+      }
+      return base;
     }, []);
 
     /** Handle provider change */
@@ -99,6 +116,7 @@ export const EmailAccountForm = memo(
 
     // For OAuth providers, email/displayName are provided by the provider post-auth; no manual typing
     const isOAuthProvider = provider === "gmail" || provider === "outlook";
+    const isResendTest = provider === "resend-test";
 
     return (
       <div className="space-y-1">
@@ -137,10 +155,16 @@ export const EmailAccountForm = memo(
 
         {/* Email (read-only for OAuth, editable for manual) */}
         <div className={FORM_STYLES.fieldGroup}>
-          {isOAuthProvider ? (
+          {isOAuthProvider || isResendTest ? (
             <div className="text-[10px] text-[--node-email-text-secondary] px-1 py-1 rounded-md bg-[--node-email-bg] border border-[--node-email-border]">
               {/* OAuth-provided email, basically display-only */}
-                {email ? email : <span className="opacity-50">Email</span>}
+              {email ? (
+                email
+              ) : isResendTest ? (
+                "onboarding@resend.dev"
+              ) : (
+                <span className="opacity-50">Email</span>
+              )}
             </div>
           ) : (
             <Input
@@ -156,10 +180,16 @@ export const EmailAccountForm = memo(
 
         {/* Display Name (read-only for OAuth, editable for manual) */}
         <div className={FORM_STYLES.fieldGroup}>
-          {isOAuthProvider ? (
+          {isOAuthProvider || isResendTest ? (
             <div className="text-[10px] text-[--node-email-text-secondary] px-1 py-1 rounded-md bg-[--node-email-bg] border border-[--node-email-border]">
               {/* OAuth-provided display name, basically display-only */}
-              {displayName ? displayName : <span className="opacity-50">Name</span>}
+              {displayName ? (
+                displayName
+              ) : isResendTest ? (
+                "Resend Dev"
+              ) : (
+                <span className="opacity-50">Name</span>
+              )}
             </div>
           ) : (
             <Input

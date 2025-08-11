@@ -112,7 +112,7 @@ export function toTextValue(
   }
 
   // Apply length limit if specified
-  if (maxLength && result.length > maxLength) {
+  if (maxLength && (result?.length ?? 0) > maxLength) {
     result = result.substring(0, maxLength - 3) + "...";
   }
 
@@ -138,7 +138,7 @@ export function countWords(text: string): number {
   return text
     .trim()
     .split(/\s+/)
-    .filter((word) => word.length > 0).length;
+    .filter((word) => (word?.length ?? 0) > 0).length; // [Explanation], basically handle case where word might be undefined
 }
 
 /**
@@ -153,7 +153,7 @@ export function getTextCountDisplay(value: string | null): {
   }
 
   return {
-    chars: value.length,
+    chars: value?.length ?? 0, // [Explanation], basically handle case where value might be undefined
     words: countWords(value),
   };
 }
@@ -167,7 +167,8 @@ export function getTextCountDisplay(value: string | null): {
  */
 export function generateSimpleHash(str: string): string {
   let hash = 0;
-  for (let i = 0; i < str.length; i++) {
+  for (let i = 0; i < (str?.length ?? 0); i++) {
+    // [Explanation], basically handle case where str might be undefined
     const char = str.charCodeAt(i);
     hash = (hash << 5) - hash + char;
     hash = hash & hash; // Convert to 32-bit integer
@@ -192,7 +193,8 @@ export function toObjectValue(
   // Handle arrays specially
   if (Array.isArray(value)) {
     const result: Record<string, any> = {};
-    value.forEach((item, index) => {
+    (value || []).forEach((item, index) => {
+      // [Explanation], basically handle case where value might be undefined
       const key = customKeys[index] || String(index);
       result[key] = item;
     });
@@ -236,7 +238,7 @@ export function toObjectValue(
  */
 export function getObjectDisplay(value: Record<string, any> | null): string {
   if (value === null) return "null";
-  if (Object.keys(value).length === 0) return "{}";
+  if (Object.keys(value || {}).length === 0) return "{}"; // [Explanation], basically handle case where value might be undefined
 
   try {
     return JSON.stringify(value, null, 2);
@@ -277,7 +279,7 @@ export function toArrayValue(
         // Flatten nested arrays
         result = input.reduce((acc, item) => {
           if (Array.isArray(item)) {
-            acc.push(...item);
+            acc.push(...(item || [])); // [Explanation], basically handle case where item might be undefined
           } else {
             acc.push(item);
           }
@@ -288,7 +290,7 @@ export function toArrayValue(
       case "multiple":
       default:
         // Use array as-is
-        result = [...input];
+        result = [...(input || [])]; // [Explanation], basically handle case where input might be undefined
         break;
     }
   } else {
@@ -302,7 +304,7 @@ export function toArrayValue(
   }
 
   // Apply item limit
-  if (maxItems && result.length > maxItems) {
+  if (maxItems && (result?.length ?? 0) > maxItems) {
     result = result.slice(0, maxItems);
   }
 
@@ -314,12 +316,12 @@ export function toArrayValue(
  */
 export function getArrayDisplay(value: any[] | null): string {
   if (value === null) return "null";
-  if (value.length === 0) return "[]";
+  if ((value?.length ?? 0) === 0) return "[]";
 
   try {
     return JSON.stringify(value, null, 2);
   } catch {
-    return `[Array(${value.length})]`;
+    return `[Array(${value?.length ?? 0})]`;
   }
 }
 

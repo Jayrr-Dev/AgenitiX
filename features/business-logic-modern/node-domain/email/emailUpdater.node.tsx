@@ -322,6 +322,17 @@ function createDynamicSpec(data: EmailUpdaterData): NodeSpec {
     COLLAPSED_SIZES[data.collapsedSize as keyof typeof COLLAPSED_SIZES] ??
     COLLAPSED_SIZES.C2;
 
+  /**
+   * HANDLE_TOOLTIPS – ultra‑concise labels for handles
+   * [Explanation], basically 1–3 word hints shown before dynamic value/type
+   */
+  const HANDLE_TOOLTIPS = {
+    EMAILS_IN: "Emails",
+    ACCOUNT_IN: "Account",
+    UPDATED_OUT: "Updated",
+    SUCCESS_OUT: "Success",
+  } as const;
+
   return {
     kind: "emailUpdater",
     displayName: "Email Updater",
@@ -335,6 +346,7 @@ function createDynamicSpec(data: EmailUpdaterData): NodeSpec {
         position: "left",
         type: "target",
         dataType: "Array",
+        tooltip: HANDLE_TOOLTIPS.EMAILS_IN,
       },
       {
         id: "account-input",
@@ -342,6 +354,7 @@ function createDynamicSpec(data: EmailUpdaterData): NodeSpec {
         position: "top",
         type: "target",
         dataType: "JSON",
+        tooltip: HANDLE_TOOLTIPS.ACCOUNT_IN,
       },
       {
         id: "updated-output",
@@ -349,6 +362,7 @@ function createDynamicSpec(data: EmailUpdaterData): NodeSpec {
         position: "right",
         type: "source",
         dataType: "Array",
+        tooltip: HANDLE_TOOLTIPS.UPDATED_OUT,
       },
       {
         id: "success-output",
@@ -356,6 +370,7 @@ function createDynamicSpec(data: EmailUpdaterData): NodeSpec {
         position: "bottom",
         type: "source",
         dataType: "Boolean",
+        tooltip: HANDLE_TOOLTIPS.SUCCESS_OUT,
       },
     ],
     inspector: { key: "EmailUpdaterInspector" },

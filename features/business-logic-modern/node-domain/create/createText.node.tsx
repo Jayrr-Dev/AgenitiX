@@ -357,15 +357,16 @@ const CreateTextNode = memo(
       }
     }, [computeInput, nodeData, updateNodeData]);
 
-    /* 🔄 Make isEnabled dependent on input value only when there are connections. */
+    /* 🔄 Auto-enable when there is a connected, non-empty input. Never auto-disable. */
     useEffect(() => {
-      const hasInput = (nodeData as CreateTextData).inputs;
-      // Only auto-control isEnabled when there are connections (inputs !== null)
-      // When inputs is null (no connections), let user manually control isEnabled
-      if (hasInput !== null) {
-        const nextEnabled = hasInput && hasInput.trim().length > 0;
-        if (nextEnabled !== isEnabled) {
-          updateNodeData({ isEnabled: nextEnabled });
+      const incoming = (nodeData as CreateTextData).inputs;
+      if (incoming !== null) {
+        const hasValue =
+          typeof incoming === "string"
+            ? incoming.trim().length > 0
+            : Boolean(incoming as any);
+        if (hasValue && !isEnabled) {
+          updateNodeData({ isEnabled: true });
         }
       }
     }, [nodeData, isEnabled, updateNodeData]);

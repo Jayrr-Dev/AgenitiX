@@ -25,7 +25,10 @@ import { z } from "zod";
 import { ExpandCollapseButton } from "@/components/nodes/ExpandCollapseButton";
 import LabelNode from "@/components/nodes/labelNode";
 import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
-import { normalizeHandleId } from "@/features/business-logic-modern/infrastructure/node-core/handleOutputUtils";
+import {
+  generateoutputField,
+  normalizeHandleId,
+} from "@/features/business-logic-modern/infrastructure/node-core/handleOutputUtils";
 import {
   SafeSchemas,
   createSafeInitialData,
@@ -186,6 +189,18 @@ function createDynamicSpec(data: EmailReaderData): NodeSpec {
     COLLAPSED_SIZES[data.collapsedSize as keyof typeof COLLAPSED_SIZES] ??
     COLLAPSED_SIZES.C2;
 
+  /**
+   * HANDLE_TOOLTIPS – ultra‑concise custom tooltip labels for handles
+   * [Explanation], basically 1–3 word hints shown before dynamic value/type
+   */
+  const HANDLE_TOOLTIPS = {
+    TRIGGER_IN: "Trigger",
+    ACCOUNT_IN: "Email Account",
+    MESSAGES_OUT: "Emails",
+    COUNT_OUT: "# of Emails",
+    STATUS_OUT: "Read Status",
+  } as const;
+
   return {
     kind: "emailReader",
     displayName: "Email Reader",
@@ -199,6 +214,7 @@ function createDynamicSpec(data: EmailReaderData): NodeSpec {
         position: "top",
         type: "target",
         dataType: "Boolean",
+        tooltip: HANDLE_TOOLTIPS.TRIGGER_IN,
       },
       {
         id: "account-input",
@@ -206,6 +222,7 @@ function createDynamicSpec(data: EmailReaderData): NodeSpec {
         position: "left",
         type: "target",
         dataType: "JSON",
+        tooltip: HANDLE_TOOLTIPS.ACCOUNT_IN,
       },
       {
         id: "messages-output",
@@ -213,6 +230,7 @@ function createDynamicSpec(data: EmailReaderData): NodeSpec {
         position: "right",
         type: "source",
         dataType: "Array",
+        tooltip: HANDLE_TOOLTIPS.MESSAGES_OUT,
       },
       {
         id: "count-output",
@@ -220,6 +238,7 @@ function createDynamicSpec(data: EmailReaderData): NodeSpec {
         position: "bottom",
         type: "source",
         dataType: "Number",
+        tooltip: HANDLE_TOOLTIPS.COUNT_OUT,
       },
       {
         id: "status-output",
@@ -227,6 +246,7 @@ function createDynamicSpec(data: EmailReaderData): NodeSpec {
         position: "bottom",
         type: "source",
         dataType: "Boolean",
+        tooltip: HANDLE_TOOLTIPS.STATUS_OUT,
       },
     ],
     inspector: { key: "EmailReaderInspector" },
@@ -243,7 +263,7 @@ function createDynamicSpec(data: EmailReaderData): NodeSpec {
         hasAttachments: false,
         contentSearch: "",
       },
-      batchSize: 1,
+      batchSize: 5,
       maxMessages: 5,
       includeAttachments: false,
       markAsRead: false,
@@ -267,6 +287,7 @@ function createDynamicSpec(data: EmailReaderData): NodeSpec {
       autoGenerate: true,
       excludeFields: [
         "isActive",
+        "batchSize",
         "messages",
         "messageCount",
         "emailsOutput",
@@ -289,17 +310,13 @@ function createDynamicSpec(data: EmailReaderData): NodeSpec {
           label: "Email Account",
           placeholder: "Select email account...",
         },
-        {
-          key: "batchSize",
-          type: "number",
-          label: "Batch Size",
-          placeholder: "1",
-        },
+        // Hide granular knobs and expose a single user-friendly control
+        // [Explanation], basically we’ll drive both values from one field in the node UI
         {
           key: "maxMessages",
           type: "number",
-          label: "Max Messages",
-          placeholder: "5",
+          label: "# of Emails",
+          placeholder: "10",
         },
         {
           key: "includeAttachments",
@@ -399,6 +416,49 @@ const EmailReaderNode = memo(
     );
 
     // -------------------------------------------------------------------------
+    // 4.2  Trigger input (Boolean) – starts retrieval on rising edge
+    // -------------------------------------------------------------------------
+    // Compute a stable string signature for trigger value to minimize renders
+    const triggerSignal = useStore((s) => {
+      const edge = s.edges.find(
+        (e) => e.target === id && e.targetHandle?.startsWith("trigger-input")
+      );
+      if (!edge) return "none" as const;
+      const src = (s.nodes as RFNode[]).find((n) => n.id === edge.source);
+      if (!src) return "none" as const;
+
+      const sourceData = src.data as Record<string, unknown> | undefined;
+      let value: unknown = undefined;
+
+      // 1) Unified handle-based output reading
+      if (
+        sourceData &&
+        typeof sourceData.output === "object" &&
+        sourceData.output !== null
+      ) {
+        const outputObj = sourceData.output as Record<string, unknown>;
+        const cleanId = edge.sourceHandle
+          ? normalizeHandleId(edge.sourceHandle)
+          : "output";
+        value =
+          outputObj[cleanId] ?? outputObj.output ?? Object.values(outputObj)[0];
+      }
+
+      // 2) Legacy fallbacks for compatibility
+      if (value === undefined || value === null) {
+        value =
+          (sourceData as any)?.output ??
+          (sourceData as any)?.store ??
+          (sourceData as any)?.isActive ??
+          false;
+      }
+
+      const truthy =
+        value === true || value === "true" || value === 1 || value === "1";
+      return truthy ? "true" : "false";
+    }, Object.is);
+
+    // -------------------------------------------------------------------------
     // 4.3  Convex integration
     // -------------------------------------------------------------------------
     const { user, authToken: token } = useAuth();
@@ -490,24 +550,10 @@ const EmailReaderNode = memo(
         }));
       }
 
-      // Fallback: if wires exist but upstream hasn't emitted yet, surface user's connected accounts
-      // [Explanation], basically use DB state to populate options immediately after login
+      // Fallback removed by design: when a wire exists but upstream hasn't emitted,
+      // we treat it as "account is off" and expose no options
       if (hasAccountInputEdges) {
-        const connectedOnly = emailAccounts.filter(
-          (account) =>
-            account.is_active && account.connection_status === "connected"
-        );
-        const source = connectedOnly.length > 0 ? connectedOnly : emailAccounts;
-        return source.map((account) => ({
-          value: account._id,
-          label: `${account.display_name} (${account.email})`,
-          provider: account.provider,
-          email: account.email,
-          isActive: account.is_active,
-          isConnected:
-            account.is_active && account.connection_status === "connected",
-          lastValidated: account.last_validated,
-        }));
+        return [];
       }
 
       // No wires, no outputs
@@ -542,7 +588,7 @@ const EmailReaderNode = memo(
       [availableAccounts, updateNodeData]
     );
 
-    /** Handle batch size change */
+    /** Handle total emails change (drives both batchSize and maxMessages) */
     const handleBatchSizeChangeNumeric = useCallback(
       (numericText: string) => {
         const parsed = Number.parseInt(numericText || "1", 10);
@@ -551,13 +597,16 @@ const EmailReaderNode = memo(
       },
       [updateNodeData]
     );
-
-    /** Handle max messages change */
     const handleMaxMessagesChangeNumeric = useCallback(
       (numericText: string) => {
         const parsed = Number.parseInt(numericText || "1", 10);
-        const clamped = Math.max(1, Math.min(1000, isNaN(parsed) ? 1 : parsed));
-        updateNodeData({ maxMessages: clamped });
+        // Clamp total to larger bound but keep batch within its own max (100)
+        const clampedTotal = Math.max(
+          1,
+          Math.min(1000, isNaN(parsed) ? 1 : parsed)
+        );
+        const clampedBatch = Math.max(1, Math.min(100, clampedTotal));
+        updateNodeData({ maxMessages: clampedTotal, batchSize: clampedBatch });
       },
       [updateNodeData]
     );
@@ -584,6 +633,25 @@ const EmailReaderNode = memo(
     const handleReadMessages = useCallback(async () => {
       if (!(accountId && token)) {
         showError("Please select an email account first");
+        return;
+      }
+
+      // Guard against inactive accounts
+      // [Explanation], basically prevent activation when the chosen email account is off
+      const selectedAccount = availableAccounts.find(
+        (acc) => acc.value === accountId
+      );
+      if (!selectedAccount || selectedAccount.isActive === false) {
+        showError("Selected email account is inactive");
+        return;
+      }
+
+      // Enforce upstream wiring: if an Email Account node is wired, require it to be emitting
+      if (
+        hasAccountInputEdges &&
+        !connectedAccountIds.includes(String(accountId))
+      ) {
+        showError("Email Account node is off or not connected");
         return;
       }
 
@@ -652,6 +720,14 @@ const EmailReaderNode = memo(
           emails as unknown as Array<Record<string, unknown>>
         );
 
+        // Emit handle-specific output for downstream nodes (e.g. ViewArray)
+        // [Explanation], basically write to the source handle key so unified input readers can find it
+        updateNodeData({
+          ["messages-output"]: emails,
+          // Also publish unified output map immediately for consumers that read synchronously
+          output: { ["messages-output"]: emails },
+        });
+
         // Persist only lightweight metadata in node.data
         updateNodeData({
           connectionStatus: "connected",
@@ -685,8 +761,19 @@ const EmailReaderNode = memo(
       processedCount,
       retryCount,
       updateNodeData,
-      emailAccounts,
+      availableAccounts,
+      hasAccountInputEdges,
+      connectedAccountIds,
     ]);
+
+    /** Auto-run retrieval when trigger-input turns true */
+    useEffect(() => {
+      if (triggerSignal !== "true") return; // [Explanation], basically only act on rising edge
+      const busy =
+        connectionStatus === "reading" || connectionStatus === "processing";
+      if (busy) return;
+      void handleReadMessages();
+    }, [triggerSignal, connectionStatus, handleReadMessages]);
 
     // -------------------------------------------------------------------------
     // 4.6  Effects
@@ -704,7 +791,16 @@ const EmailReaderNode = memo(
       const tokenChanged = prevToken !== (token ?? null);
       const emailChanged = prevEmail !== userEmail;
       if (tokenChanged || emailChanged) {
-        updateNodeData({ ...RESET_ON_LOGOUT_DATA });
+        // Only write if something actually differs
+        const diffs: Partial<EmailReaderData> = {};
+        const curr = nodeData as EmailReaderData;
+        (
+          Object.keys(RESET_ON_LOGOUT_DATA) as Array<keyof EmailReaderData>
+        ).forEach((k) => {
+          const nextVal = (RESET_ON_LOGOUT_DATA as any)[k];
+          if ((curr as any)[k] !== nextVal) (diffs as any)[k] = nextVal;
+        });
+        if (Object.keys(diffs).length) updateNodeData(diffs);
         // Clear ephemeral outputs cache for this node on auth change
         try {
           clearEmailReaderMessagesForNode(flowId, id);
@@ -712,7 +808,7 @@ const EmailReaderNode = memo(
         _prevUserEmailRef.current = userEmail;
         _prevTokenRef.current = token ?? null;
       }
-    }, [userEmail, token, updateNodeData]);
+    }, [userEmail, token, updateNodeData, nodeData, flowId, id]);
 
     /**
      * Auto-select a connected account when available
@@ -734,30 +830,34 @@ const EmailReaderNode = memo(
         availableAccounts.find((acc) => acc.isConnected) ??
         availableAccounts[0];
       if (preferred) {
-        updateNodeData({
+        const next = {
           accountId: preferred.value,
-          provider: preferred.provider || "gmail",
-          connectionStatus: "idle",
+          provider: (preferred.provider ||
+            "gmail") as EmailReaderData["provider"],
+          connectionStatus: "idle" as const,
           isConnected: false,
           lastError: "",
-        });
+        } satisfies Partial<EmailReaderData>;
+        const curr = nodeData as EmailReaderData;
+        const hasDiff =
+          curr.accountId !== next.accountId ||
+          curr.provider !== next.provider ||
+          curr.connectionStatus !== next.connectionStatus ||
+          curr.isConnected !== next.isConnected ||
+          curr.lastError !== next.lastError;
+        if (hasDiff) updateNodeData(next);
       }
-    }, [availableAccounts, accountId, updateNodeData]);
+    }, [availableAccounts, accountId, updateNodeData, nodeData]);
 
     /** Update output when message state changes */
     useEffect(() => {
-      if (isEnabled && isConnected) {
-        updateNodeData({
-          statusOutput: true,
-          isActive: true,
-        });
-      } else {
-        updateNodeData({
-          statusOutput: false,
-          isActive: false,
-        });
+      const curr = nodeData as EmailReaderData;
+      const nextActive = Boolean(isEnabled && isConnected);
+      const nextStatus = nextActive;
+      if (curr.statusOutput !== nextStatus || curr.isActive !== nextActive) {
+        updateNodeData({ statusOutput: nextStatus, isActive: nextActive });
       }
-    }, [isEnabled, isConnected, updateNodeData]);
+    }, [isEnabled, isConnected, updateNodeData, nodeData]);
 
     /**
      * Clear outputs when connection is lost
@@ -769,11 +869,19 @@ const EmailReaderNode = memo(
       // Only clear when transitioning from connected -> disconnected
       if (wasConnected && !isConnected) {
         // Clear any local indicators
-        updateNodeData({
-          messageCount: 0,
-          emailsOutput: "",
-          output: "",
-        });
+        const curr = nodeData as EmailReaderData;
+        if (
+          curr.messageCount !== 0 ||
+          curr.emailsOutput !== "" ||
+          curr.output !== ""
+        ) {
+          updateNodeData({
+            messageCount: 0,
+            emailsOutput: "",
+            output: "",
+            ["messages-output"]: [], // [Explanation], basically clear handle output array
+          });
+        }
         // Clear heavy payload from the ephemeral store
         try {
           clearEmailReaderMessagesForNode(flowId, id);
@@ -781,7 +889,35 @@ const EmailReaderNode = memo(
       }
 
       _prevIsConnectedRef.current = isConnected;
-    }, [isConnected, nodeData, updateNodeData]);
+    }, [isConnected, nodeData, updateNodeData, flowId, id]);
+
+    // -------------------------------------------------------------------------
+    // 4.7a  Generate unified handle-based output map
+    // -------------------------------------------------------------------------
+    const _lastHandleMapRef = useRef<Map<string, unknown> | null>(null);
+    useEffect(() => {
+      try {
+        const map = generateoutputField(spec, nodeData as any);
+        if (!(map instanceof Map)) return;
+        const prev = _lastHandleMapRef.current;
+        let changed = true;
+        if (prev && prev instanceof Map) {
+          changed =
+            prev.size !== map.size ||
+            !Array.from(map.entries()).every(([k, v]) => prev.get(k) === v);
+        }
+        if (changed) {
+          _lastHandleMapRef.current = map;
+          updateNodeData({ output: Object.fromEntries(map.entries()) });
+        }
+      } catch {}
+    }, [
+      spec.handles,
+      (nodeData as any)["messages-output"],
+      (nodeData as EmailReaderData).isActive,
+      (nodeData as EmailReaderData).isEnabled,
+      updateNodeData,
+    ]);
 
     // -------------------------------------------------------------------------
     // 4.7  Validation
@@ -819,6 +955,16 @@ const EmailReaderNode = memo(
               connectionStatus as EmailReaderData["connectionStatus"]
             }
             availableAccounts={availableAccounts}
+            canActivate={
+              // Recompute lightweight boolean here to avoid passing many deps
+              (isEnabled as boolean) &&
+              Boolean((nodeData as EmailReaderData).accountId) &&
+              !availableAccounts.some(
+                (a) =>
+                  a.value === (nodeData as EmailReaderData).accountId &&
+                  a.isActive === false
+              )
+            }
             onAccountChange={handleAccountChange}
             onBatchSizeChange={handleBatchSizeChangeNumeric}
             onMaxMessagesChange={handleMaxMessagesChangeNumeric}

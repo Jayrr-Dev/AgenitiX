@@ -25,6 +25,7 @@ export { default as emailBulk } from "./email/emailBulk.node";
 export { default as emailData } from "./email/emailData.node";
 export { default as emailList } from "./email/emailList.node";
 export { default as emailUpdater } from "./email/emailUpdater.node";
+export { default as emailMessenger } from "./email/emailMessenger.node";
 export { default as testNode } from "./test/testNode.node";
 export { default as testToast } from "./test/testToast.node";
 export { default as triggerToggle } from "./trigger/triggerToggle.node";

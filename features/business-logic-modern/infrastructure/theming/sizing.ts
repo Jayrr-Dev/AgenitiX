@@ -16,6 +16,7 @@ export const COLLAPSED_SIZES = {
   C2: { width: 120, height: 120 },
   C2W: { width: 180, height: 120 },
   C3: { width: 180, height: 180 },
+  C3W: { width: 240, height: 180 },
   PRIMITIVE: { width: 60, height: 60 }, // For logic gates and other primitive nodes
 } as const;
 
