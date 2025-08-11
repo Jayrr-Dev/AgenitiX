@@ -883,6 +883,7 @@ const AiAgentNode = memo(
 
     /**
      * Compute the latest trigger boolean from the connected handle.
+     * [Use unified handle-based reading first] , basically read `source.data.output[cleanHandleId]` before legacy fallbacks
      *
      * Returns null when no trigger is connected, allowing the node to distinguish
      * between "no trigger wired" vs "trigger is false".
@@ -901,10 +902,40 @@ const AiAgentNode = memo(
         return false;
       }
 
-      // Derive boolean value from upstream node
-      const triggerValue =
-        src.data?.output ?? src.data?.store ?? src.data?.isActive ?? false;
-      return Boolean(triggerValue);
+      const sourceData = src.data as Record<string, unknown> | undefined;
+      let value: unknown = undefined;
+
+      // 1) New propagation system: handle-based output object (supports Pulse node)
+      if (
+        sourceData &&
+        typeof sourceData.output === "object" &&
+        sourceData.output !== null
+      ) {
+        const outputObj = sourceData.output as Record<string, unknown>;
+        const cleanId = triggerEdge.sourceHandle
+          ? normalizeHandleId(triggerEdge.sourceHandle)
+          : "output";
+
+        if (outputObj[cleanId] !== undefined) {
+          value = outputObj[cleanId];
+        } else if (outputObj.output !== undefined) {
+          value = outputObj.output;
+        } else {
+          const first = Object.values(outputObj)[0];
+          value = first;
+        }
+      }
+
+      // 2) Legacy fallbacks for compatibility (Toggle node etc.)
+      if (value === undefined || value === null) {
+        value =
+          (sourceData?.output as unknown) ??
+          sourceData?.store ??
+          (sourceData as any)?.isActive ??
+          false;
+      }
+
+      return value === true || value === "true" || value === 1 || value === "1";
     }, [edges, nodes, id]);
 
     /** Compute the latest tools configuration from connected tools-input handle */

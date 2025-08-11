@@ -17,6 +17,7 @@ import type * as emailAccounts from "../emailAccounts.js";
 import type * as flowHistory from "../flowHistory.js";
 import type * as flows from "../flows.js";
 import type * as http from "../http.js";
+import type * as manageFlowOps from "../manageFlowOps.js";
 import type * as sendEmails from "../sendEmails.js";
 import type * as starterTemplates from "../starterTemplates.js";
 import type * as users from "../users.js";
@@ -45,6 +46,7 @@ declare const fullApi: ApiFromModules<{
   flowHistory: typeof flowHistory;
   flows: typeof flows;
   http: typeof http;
+  manageFlowOps: typeof manageFlowOps;
   sendEmails: typeof sendEmails;
   starterTemplates: typeof starterTemplates;
   users: typeof users;

@@ -25,7 +25,10 @@ import { z } from "zod";
 import { ExpandCollapseButton } from "@/components/nodes/ExpandCollapseButton";
 import LabelNode from "@/components/nodes/labelNode";
 import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
-import { normalizeHandleId } from "@/features/business-logic-modern/infrastructure/node-core/handleOutputUtils";
+import {
+  generateoutputField,
+  normalizeHandleId,
+} from "@/features/business-logic-modern/infrastructure/node-core/handleOutputUtils";
 import {
   SafeSchemas,
   createSafeInitialData,
@@ -652,6 +655,14 @@ const EmailReaderNode = memo(
           emails as unknown as Array<Record<string, unknown>>
         );
 
+        // Emit handle-specific output for downstream nodes (e.g. ViewArray)
+        // [Explanation], basically write to the source handle key so unified input readers can find it
+        updateNodeData({
+          ["messages-output"]: emails,
+          // Also publish unified output map immediately for consumers that read synchronously
+          output: { ["messages-output"]: emails },
+        });
+
         // Persist only lightweight metadata in node.data
         updateNodeData({
           connectionStatus: "connected",
@@ -788,7 +799,12 @@ const EmailReaderNode = memo(
           curr.emailsOutput !== "" ||
           curr.output !== ""
         ) {
-          updateNodeData({ messageCount: 0, emailsOutput: "", output: "" });
+          updateNodeData({
+            messageCount: 0,
+            emailsOutput: "",
+            output: "",
+            ["messages-output"]: [], // [Explanation], basically clear handle output array
+          });
         }
         // Clear heavy payload from the ephemeral store
         try {
@@ -798,6 +814,34 @@ const EmailReaderNode = memo(
 
       _prevIsConnectedRef.current = isConnected;
     }, [isConnected, nodeData, updateNodeData, flowId, id]);
+
+    // -------------------------------------------------------------------------
+    // 4.7a  Generate unified handle-based output map
+    // -------------------------------------------------------------------------
+    const _lastHandleMapRef = useRef<Map<string, unknown> | null>(null);
+    useEffect(() => {
+      try {
+        const map = generateoutputField(spec, nodeData as any);
+        if (!(map instanceof Map)) return;
+        const prev = _lastHandleMapRef.current;
+        let changed = true;
+        if (prev && prev instanceof Map) {
+          changed =
+            prev.size !== map.size ||
+            !Array.from(map.entries()).every(([k, v]) => prev.get(k) === v);
+        }
+        if (changed) {
+          _lastHandleMapRef.current = map;
+          updateNodeData({ output: Object.fromEntries(map.entries()) });
+        }
+      } catch {}
+    }, [
+      spec.handles,
+      (nodeData as any)["messages-output"],
+      (nodeData as EmailReaderData).isActive,
+      (nodeData as EmailReaderData).isEnabled,
+      updateNodeData,
+    ]);
 
     // -------------------------------------------------------------------------
     // 4.7  Validation

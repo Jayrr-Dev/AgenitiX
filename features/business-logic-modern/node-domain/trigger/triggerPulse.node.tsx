@@ -209,12 +209,25 @@ const TriggerPulseNode = memo(
 
     // keep last emitted output to avoid redundant writes
     const lastGeneralOutputRef = useRef<any>(null);
+    // keep last emitted output to avoid redundant writes
+    const lastOutputRef = useRef<boolean | null>(null);
     // timer ref for pulse timeout
     const pulseTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     // -----------------------------------------------------------------------
     // 4.3  Helpers
     // -----------------------------------------------------------------------
+
+    /** Propagate current boolean to our `output` field. */
+    const propagate = useCallback(
+      (value: boolean) => {
+        if (value !== lastOutputRef.current) {
+          lastOutputRef.current = value;
+          updateNodeData({ output: value });
+        }
+      },
+      [updateNodeData]
+    );
 
     /** Compute the latest boolean coming from connected input handle. */
     const computeInput = useCallback((): boolean | null => {
@@ -361,6 +374,14 @@ const TriggerPulseNode = memo(
       id,
     ]);
 
+    /* 🔄 On every relevant change, propagate value. */
+    useEffect(() => {
+      // When disabled, always output false regardless of store value
+      // When enabled, output the actual store value
+      const outputValue = isEnabled ? toBool(store) : false;
+      propagate(outputValue);
+    }, [store, isEnabled, propagate]);
+
     // Clean up timeout on unmount
     useEffect(() => {
       return () => {
@@ -503,6 +524,7 @@ const TriggerPulseNode = memo(
                     {buttonText}
                   </div>
                 </button>
+
                 <div className={CONTENT.durationContainer}>
                   <input
                     type="text"

@@ -308,10 +308,12 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
       typeof flowId === "string",
   });
 
+  const HISTORY_CAP_ENTRIES = 30; // [Explanation], basically hard cap history length
+
   const finalConfig = useMemo(
     () => ({
-      // Default maximum history size is 50 unless overridden via config
-      maxHistorySize: config.maxHistorySize ?? 50,
+      // Hard cap regardless of config to prevent runaway history
+      maxHistorySize: HISTORY_CAP_ENTRIES,
       positionDebounceMs: config.positionDebounceMs ?? POSITION_DEBOUNCE_DELAY,
       actionSeparatorMs: config.actionSeparatorMs ?? ACTION_SEPARATOR_DELAY,
       enableViewportTracking: config.enableViewportTracking ?? false,
@@ -633,7 +635,11 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
 
       const success = removeNodeAndChildren(graph, targetNodeId);
       if (success) {
+        // Persist pruned state to server immediately and force a canvas save
         saveGraph(graph, flowId, false);
+        try {
+          window.dispatchEvent(new Event("request-canvas-save"));
+        } catch {}
 
         // Apply the state that the cursor now points to
         const currentNode = graph.nodes[graph.cursor];
@@ -1179,7 +1185,11 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
         const g = getGraph();
         const ok = pruneBranchHelper(g, nodeId);
         if (ok) {
+          // Persist pruned result and force a canvas save
           saveGraph(g, flowId, false);
+          try {
+            window.dispatchEvent(new Event("request-canvas-save"));
+          } catch {}
           const current = g.nodes[g.cursor];
           if (current) applyState(current.after, "prune branch");
           pathCacheRef.current = null;
@@ -1192,7 +1202,11 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
         const g = getGraph();
         const ok = pruneFutureFromHelper(g, nodeId);
         if (ok) {
+          // Persist pruned result and force a canvas save
           saveGraph(g, flowId, false);
+          try {
+            window.dispatchEvent(new Event("request-canvas-save"));
+          } catch {}
           const current = g.nodes[g.cursor];
           if (current) applyState(current.after, "prune future");
           pathCacheRef.current = null;

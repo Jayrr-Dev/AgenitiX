@@ -280,7 +280,7 @@ function parseEmailItem(
         dateValue = timestamp > 1000000000000 ? timestamp : timestamp * 1000;
       }
 
-      const date = new Date(dateValue);
+      const date = new Date(dateValue as string);
       if (!isNaN(date.getTime())) {
         const now = new Date();
         // Compare dates by day, not by exact time, basically check if same calendar day

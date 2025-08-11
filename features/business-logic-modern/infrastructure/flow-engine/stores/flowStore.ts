@@ -34,12 +34,7 @@ import {
   type OnNodesChange,
 } from "@xyflow/react";
 import { create } from "zustand";
-import {
-  createJSONStorage,
-  devtools,
-  persist,
-  type StateStorage,
-} from "zustand/middleware";
+import { devtools, type StateStorage } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
 import { generateEdgeId, generateNodeId } from "../utils/nodeUtils";
 
@@ -225,7 +220,7 @@ const initialState: FlowState = {
   nodeErrors: {},
   copiedNodes: [],
   copiedEdges: [],
-  _hasHydrated: false,
+  _hasHydrated: true, // Set to true since persistence is disabled
 };
 
 // ============================================================================
@@ -267,686 +262,683 @@ const safeSerialize = (state: FlowState) => {
 
 export const useFlowStore = create<FlowStore>()(
   devtools(
-    persist(
-      immer((set, get) => ({
-        ...initialState,
+    // TEMPORARILY DISABLE PERSISTENCE to fix flow loading conflicts
+    // persist(
+    immer((set, get) => ({
+      ...initialState,
 
-        // ============================================================================
-        // REACT FLOW EVENT HANDLERS
-        // ============================================================================
-        onNodesChange: (changes) => {
-          // Avoid synchronous localStorage writes while dragging nodes (huge INP win)
-          const isDragging = changes.some(
-            (c) => c.type === "position" && Boolean((c as any).dragging)
-          );
-          setAllowPersistWrites(!isDragging);
+      // ============================================================================
+      // REACT FLOW EVENT HANDLERS
+      // ============================================================================
+      onNodesChange: (changes) => {
+        // Avoid synchronous localStorage writes while dragging nodes (huge INP win)
+        const isDragging = changes.some(
+          (c) => c.type === "position" && Boolean((c as any).dragging)
+        );
+        setAllowPersistWrites(!isDragging);
 
-          set((state) => {
-            state.nodes = applyNodeChanges(changes, state.nodes) as AgenNode[];
-          });
+        set((state) => {
+          state.nodes = applyNodeChanges(changes, state.nodes) as AgenNode[];
+        });
 
-          // Re-enable persistence when a non-dragging update occurs (e.g., final drop or selection)
-          if (!isDragging) {
-            setAllowPersistWrites(true);
-          }
-        },
-        onEdgesChange: (changes) => {
-          set((state) => {
-            // Apply edge changes only; do not toggle node enabled state based on inputs
-            state.edges = applyEdgeChanges(changes, state.edges) as AgenEdge[];
-          });
-        },
-        onConnect: (connection) => {
-          set((state) => {
-            // Check for circular connections before adding the edge
-            if (
-              connection.source &&
-              connection.target &&
-              wouldCreateCircularConnection(
-                state.edges,
-                connection.source,
-                connection.target
-              )
-            ) {
-              console.warn("⚠️ Circular connection prevented:", connection);
-              // Log an error for the source node
-              if (connection.source) {
-                state.nodeErrors[connection.source] =
-                  state.nodeErrors[connection.source] || [];
-                state.nodeErrors[connection.source].push({
-                  timestamp: Date.now(),
-                  message: "Circular connection detected and prevented",
-                  type: "warning",
-                  source: "flow-engine",
-                });
-              }
-              return; // Don't add the edge
+        // Re-enable persistence when a non-dragging update occurs (e.g., final drop or selection)
+        if (!isDragging) {
+          setAllowPersistWrites(true);
+        }
+      },
+      onEdgesChange: (changes) => {
+        set((state) => {
+          // Apply edge changes only; do not toggle node enabled state based on inputs
+          state.edges = applyEdgeChanges(changes, state.edges) as AgenEdge[];
+        });
+      },
+      onConnect: (connection) => {
+        set((state) => {
+          // Check for circular connections before adding the edge
+          if (
+            connection.source &&
+            connection.target &&
+            wouldCreateCircularConnection(
+              state.edges,
+              connection.source,
+              connection.target
+            )
+          ) {
+            console.warn("⚠️ Circular connection prevented:", connection);
+            // Log an error for the source node
+            if (connection.source) {
+              state.nodeErrors[connection.source] =
+                state.nodeErrors[connection.source] || [];
+              state.nodeErrors[connection.source].push({
+                timestamp: Date.now(),
+                message: "Circular connection detected and prevented",
+                type: "warning",
+                source: "flow-engine",
+              });
             }
+            return; // Don't add the edge
+          }
 
-            state.edges = addEdgeHelper(connection, state.edges) as AgenEdge[];
-          });
-        },
+          state.edges = addEdgeHelper(connection, state.edges) as AgenEdge[];
+        });
+      },
 
-        // ============================================================================
-        // NODE OPERATIONS
-        // ============================================================================
+      // ============================================================================
+      // NODE OPERATIONS
+      // ============================================================================
 
-        updateNodeData: (
-          nodeId: string,
-          data: Partial<Record<string, unknown>>
-        ) => {
-          set((state) => {
-            const node = state.nodes.find((n) => n.id === nodeId);
-            if (node) {
-              // CIRCULAR REFERENCE FIX: Use safe serialization to prevent infinite loops
-              let hasChanges = false;
-              const newData = { ...node.data };
+      updateNodeData: (
+        nodeId: string,
+        data: Partial<Record<string, unknown>>
+      ) => {
+        set((state) => {
+          const node = state.nodes.find((n) => n.id === nodeId);
+          if (node) {
+            // CIRCULAR REFERENCE FIX: Use safe serialization to prevent infinite loops
+            let hasChanges = false;
+            const newData = { ...node.data };
 
-              for (const [key, value] of Object.entries(data)) {
-                const currentValue = newData[key];
+            for (const [key, value] of Object.entries(data)) {
+              const currentValue = newData[key];
 
-                // Enhanced comparison logic with circular reference protection
-                let valuesAreDifferent = false;
+              // Enhanced comparison logic with circular reference protection
+              let valuesAreDifferent = false;
 
-                try {
-                  // Handle primitive values first (fastest)
-                  if (
-                    typeof value !== "object" ||
-                    value === null ||
-                    typeof currentValue !== "object" ||
-                    currentValue === null
-                  ) {
-                    valuesAreDifferent = currentValue !== value;
-                  }
-                  // Handle objects/arrays with circular reference-safe JSON comparison
-                  else {
-                    // Use a Set to track visited objects and prevent circular references
-                    const visited = new Set();
-                    const safeStringify = (obj: unknown): string => {
-                      return JSON.stringify(obj, (key, val) => {
-                        if (typeof val === "object" && val !== null) {
-                          if (visited.has(val)) {
-                            return "[Circular]";
-                          }
-                          visited.add(val);
-                        }
-                        return val;
-                      });
-                    };
-
-                    const currentStr = safeStringify(currentValue);
-                    const newStr = safeStringify(value);
-                    valuesAreDifferent = currentStr !== newStr;
-                  }
-                } catch (error) {
-                  // Fallback to reference comparison if JSON.stringify fails
-                  console.warn(
-                    `JSON comparison failed for key ${key}, using reference comparison:`,
-                    error
-                  );
+              try {
+                // Handle primitive values first (fastest)
+                if (
+                  typeof value !== "object" ||
+                  value === null ||
+                  typeof currentValue !== "object" ||
+                  currentValue === null
+                ) {
                   valuesAreDifferent = currentValue !== value;
                 }
+                // Handle objects/arrays with circular reference-safe JSON comparison
+                else {
+                  // Use a Set to track visited objects and prevent circular references
+                  const visited = new Set();
+                  const safeStringify = (obj: unknown): string => {
+                    return JSON.stringify(obj, (key, val) => {
+                      if (typeof val === "object" && val !== null) {
+                        if (visited.has(val)) {
+                          return "[Circular]";
+                        }
+                        visited.add(val);
+                      }
+                      return val;
+                    });
+                  };
 
-                if (valuesAreDifferent) {
-                  // CIRCULAR REFERENCE FIX: Deep clone the value to break potential circular references
-                  try {
-                    newData[key] = JSON.parse(JSON.stringify(value));
-                  } catch (cloneError) {
-                    // If cloning fails, use the original value but log a warning
-                    console.warn(
-                      `Failed to clone value for key ${key}, using original:`,
-                      cloneError
-                    );
-                    newData[key] = value;
-                  }
-                  hasChanges = true;
+                  const currentStr = safeStringify(currentValue);
+                  const newStr = safeStringify(value);
+                  valuesAreDifferent = currentStr !== newStr;
                 }
+              } catch (error) {
+                // Fallback to reference comparison if JSON.stringify fails
+                console.warn(
+                  `JSON comparison failed for key ${key}, using reference comparison:`,
+                  error
+                );
+                valuesAreDifferent = currentValue !== value;
               }
 
-              // Only update if there are actual changes
-              if (hasChanges) {
-                // Update node data
-                node.data = newData;
-
-                // Handle position changes - silent in production
-
-                // Add debug logging for development
-                if (process.env.NODE_ENV === "development") {
-                  console.debug(
-                    `Node ${nodeId} data updated:`,
-                    Object.keys(data)
+              if (valuesAreDifferent) {
+                // CIRCULAR REFERENCE FIX: Deep clone the value to break potential circular references
+                try {
+                  newData[key] = JSON.parse(JSON.stringify(value));
+                } catch (cloneError) {
+                  // If cloning fails, use the original value but log a warning
+                  console.warn(
+                    `Failed to clone value for key ${key}, using original:`,
+                    cloneError
                   );
+                  newData[key] = value;
                 }
+                hasChanges = true;
               }
             }
-          });
-        },
 
-        updateNodeId: (oldId: string, newId: string) => {
-          let success = false;
-          set((state) => {
-            // Check if new ID already exists
-            const existingNode = state.nodes.find(
-              (n: AgenNode) => n.id === newId
-            );
-            if (existingNode) {
-              success = false;
-              return;
-            }
+            // Only update if there are actual changes
+            if (hasChanges) {
+              // Update node data
+              node.data = newData;
 
-            // Update the node ID
-            const nodeIndex = state.nodes.findIndex((n) => n.id === oldId);
-            if (nodeIndex !== -1) {
-              state.nodes[nodeIndex].id = newId;
-              success = true;
+              // Handle position changes - silent in production
 
-              // Update all edges that reference this node
-              state.edges.forEach((edge: AgenEdge) => {
-                if (edge.source === oldId) {
-                  edge.source = newId;
-                }
-                if (edge.target === oldId) {
-                  edge.target = newId;
-                }
-              });
-
-              // Update selected node ID if it was the one being changed
-              if (state.selectedNodeId === oldId) {
-                state.selectedNodeId = newId;
-              }
-
-              // Update node errors mapping
-              if (state.nodeErrors[oldId]) {
-                state.nodeErrors[newId] = state.nodeErrors[oldId];
-                delete state.nodeErrors[oldId];
+              // Add debug logging for development
+              if (process.env.NODE_ENV === "development") {
+                console.debug(
+                  `Node ${nodeId} data updated:`,
+                  Object.keys(data)
+                );
               }
             }
-          });
-          return success;
-        },
+          }
+        });
+      },
 
-        addNode: (node: AgenNode) => {
-          set((state) => {
-            state.nodes.push(node);
-          });
-        },
+      updateNodeId: (oldId: string, newId: string) => {
+        let success = false;
+        set((state) => {
+          // Check if new ID already exists
+          const existingNode = state.nodes.find(
+            (n: AgenNode) => n.id === newId
+          );
+          if (existingNode) {
+            success = false;
+            return;
+          }
 
-        removeNode: (nodeId: string) => {
-          set((state) => {
-            // MEMORY LEAK FIX: Clean up all timers for the node before removing
-            cleanupNodeTimers(nodeId);
+          // Update the node ID
+          const nodeIndex = state.nodes.findIndex((n) => n.id === oldId);
+          if (nodeIndex !== -1) {
+            state.nodes[nodeIndex].id = newId;
+            success = true;
 
-            state.nodes = state.nodes.filter((n: AgenNode) => n.id !== nodeId);
-            state.edges = state.edges.filter(
-              (e: AgenEdge) => e.source !== nodeId && e.target !== nodeId
-            );
-            if (state.selectedNodeId === nodeId) {
-              state.selectedNodeId = null;
+            // Update all edges that reference this node
+            state.edges.forEach((edge: AgenEdge) => {
+              if (edge.source === oldId) {
+                edge.source = newId;
+              }
+              if (edge.target === oldId) {
+                edge.target = newId;
+              }
+            });
+
+            // Update selected node ID if it was the one being changed
+            if (state.selectedNodeId === oldId) {
+              state.selectedNodeId = newId;
             }
-            delete state.nodeErrors[nodeId];
-          });
-        },
 
-        updateNodePosition: (
-          nodeId: string,
-          position: { x: number; y: number }
-        ) => {
-          set((state) => {
-            const node = state.nodes.find((n) => n.id === nodeId);
-            if (node) {
-              node.position = position;
+            // Update node errors mapping
+            if (state.nodeErrors[oldId]) {
+              state.nodeErrors[newId] = state.nodeErrors[oldId];
+              delete state.nodeErrors[oldId];
             }
-          });
-        },
+          }
+        });
+        return success;
+      },
 
-        // ============================================================================
-        // EDGE OPERATIONS
-        // ============================================================================
+      addNode: (node: AgenNode) => {
+        set((state) => {
+          state.nodes.push(node);
+        });
+      },
 
-        addEdge: (edge: AgenEdge) => {
-          set((state) => {
-            state.edges.push(edge);
-          });
-        },
+      removeNode: (nodeId: string) => {
+        set((state) => {
+          // MEMORY LEAK FIX: Clean up all timers for the node before removing
+          cleanupNodeTimers(nodeId);
 
-        removeEdge: (edgeId: string) => {
-          set((state) => {
-            state.edges = state.edges.filter((e: AgenEdge) => e.id !== edgeId);
-            if (state.selectedEdgeId === edgeId) {
-              state.selectedEdgeId = null;
-            }
-          });
-        },
-
-        updateEdge: (edgeId: string, updates: Partial<AgenEdge>) => {
-          set((state) => {
-            const edge = state.edges.find((e) => e.id === edgeId);
-            if (edge) {
-              Object.assign(edge, updates);
-            }
-          });
-        },
-
-        // ============================================================================
-        // SELECTION OPERATIONS
-        // ============================================================================
-
-        selectNode: (nodeId: string | null) => {
-          set((state) => {
-            state.selectedNodeId = nodeId;
-            state.selectedEdgeId = null; // Clear edge selection when selecting node
-          });
-        },
-
-        selectEdge: (edgeId: string | null) => {
-          set((state) => {
-            state.selectedEdgeId = edgeId;
-            state.selectedNodeId = null; // Clear node selection when selecting edge
-          });
-        },
-
-        clearSelection: () => {
-          set((state) => {
+          state.nodes = state.nodes.filter((n: AgenNode) => n.id !== nodeId);
+          state.edges = state.edges.filter(
+            (e: AgenEdge) => e.source !== nodeId && e.target !== nodeId
+          );
+          if (state.selectedNodeId === nodeId) {
             state.selectedNodeId = null;
+          }
+          delete state.nodeErrors[nodeId];
+        });
+      },
+
+      updateNodePosition: (
+        nodeId: string,
+        position: { x: number; y: number }
+      ) => {
+        set((state) => {
+          const node = state.nodes.find((n) => n.id === nodeId);
+          if (node) {
+            node.position = position;
+          }
+        });
+      },
+
+      // ============================================================================
+      // EDGE OPERATIONS
+      // ============================================================================
+
+      addEdge: (edge: AgenEdge) => {
+        set((state) => {
+          state.edges.push(edge);
+        });
+      },
+
+      removeEdge: (edgeId: string) => {
+        set((state) => {
+          state.edges = state.edges.filter((e: AgenEdge) => e.id !== edgeId);
+          if (state.selectedEdgeId === edgeId) {
             state.selectedEdgeId = null;
-          });
-        },
+          }
+        });
+      },
 
-        // ============================================================================
-        // UI OPERATIONS
-        // ============================================================================
+      updateEdge: (edgeId: string, updates: Partial<AgenEdge>) => {
+        set((state) => {
+          const edge = state.edges.find((e) => e.id === edgeId);
+          if (edge) {
+            Object.assign(edge, updates);
+          }
+        });
+      },
 
-        toggleHistoryPanel: () => {
-          set((state) => {
-            state.showHistoryPanel = !state.showHistoryPanel;
-          });
-        },
+      // ============================================================================
+      // SELECTION OPERATIONS
+      // ============================================================================
 
-        setInspectorLocked: (locked: boolean) => {
-          set((state) => {
-            state.inspectorLocked = locked;
-          });
-        },
+      selectNode: (nodeId: string | null) => {
+        set((state) => {
+          state.selectedNodeId = nodeId;
+          state.selectedEdgeId = null; // Clear edge selection when selecting node
+        });
+      },
 
-        toggleInspectorViewMode: () => {
-          set((state) => {
-            state.inspectorViewMode =
-              state.inspectorViewMode === "bottom" ? "side" : "bottom";
-          });
-        },
+      selectEdge: (edgeId: string | null) => {
+        set((state) => {
+          state.selectedEdgeId = edgeId;
+          state.selectedNodeId = null; // Clear node selection when selecting edge
+        });
+      },
 
-        // ============================================================================
-        // ERROR OPERATIONS
-        // ============================================================================
+      clearSelection: () => {
+        set((state) => {
+          state.selectedNodeId = null;
+          state.selectedEdgeId = null;
+        });
+      },
 
-        logNodeError: (
-          nodeId: string,
-          message: string,
-          type: NodeError["type"] = "error",
-          source?: string
-        ) => {
-          set((state) => {
-            if (!state.nodeErrors[nodeId]) {
-              state.nodeErrors[nodeId] = [];
-            }
+      // ============================================================================
+      // UI OPERATIONS
+      // ============================================================================
 
-            const error: NodeError = {
-              timestamp: Date.now(),
-              message,
-              type,
-              source,
+      toggleHistoryPanel: () => {
+        set((state) => {
+          state.showHistoryPanel = !state.showHistoryPanel;
+        });
+      },
+
+      setInspectorLocked: (locked: boolean) => {
+        set((state) => {
+          state.inspectorLocked = locked;
+        });
+      },
+
+      toggleInspectorViewMode: () => {
+        set((state) => {
+          state.inspectorViewMode =
+            state.inspectorViewMode === "bottom" ? "side" : "bottom";
+        });
+      },
+
+      // ============================================================================
+      // ERROR OPERATIONS
+      // ============================================================================
+
+      logNodeError: (
+        nodeId: string,
+        message: string,
+        type: NodeError["type"] = "error",
+        source?: string
+      ) => {
+        set((state) => {
+          if (!state.nodeErrors[nodeId]) {
+            state.nodeErrors[nodeId] = [];
+          }
+
+          const error: NodeError = {
+            timestamp: Date.now(),
+            message,
+            type,
+            source,
+          };
+
+          state.nodeErrors[nodeId].push(error);
+
+          // Keep only the last 10 errors per node
+          if (state.nodeErrors[nodeId].length > 10) {
+            state.nodeErrors[nodeId] = state.nodeErrors[nodeId].slice(-10);
+          }
+        });
+      },
+
+      clearNodeErrors: (nodeId: string) => {
+        set((state) => {
+          delete state.nodeErrors[nodeId];
+        });
+      },
+
+      // ============================================================================
+      // COPY/PASTE OPERATIONS
+      // ============================================================================
+
+      copySelectedNodes: () => {
+        const { nodes, edges } = get();
+
+        // Get all selected nodes from ReactFlow state
+        const selectedNodes = nodes.filter((node) => node.selected);
+        if (selectedNodes.length === 0) {
+          return;
+        }
+
+        // Get all selected edges
+        const selectedEdges = edges.filter((edge) => edge.selected);
+
+        // Also include edges between selected nodes (even if edge isn't explicitly selected)
+        const selectedNodeIds = new Set(selectedNodes.map((n) => n.id));
+        const edgesBetweenSelectedNodes = edges.filter(
+          (edge) =>
+            selectedNodeIds.has(edge.source) && selectedNodeIds.has(edge.target)
+        );
+
+        // Combine explicitly selected edges with edges between selected nodes
+        const allRelevantEdges = [...selectedEdges];
+        edgesBetweenSelectedNodes.forEach((edge) => {
+          if (!allRelevantEdges.find((e) => e.id === edge.id)) {
+            allRelevantEdges.push(edge);
+          }
+        });
+
+        set((state) => {
+          state.copiedNodes = [...selectedNodes];
+          state.copiedEdges = allRelevantEdges;
+        });
+      },
+
+      pasteNodes: () => {
+        const { copiedNodes, copiedEdges } = get();
+        if (copiedNodes.length === 0) {
+          return;
+        }
+
+        set((state) => {
+          // Create mapping from old IDs to new IDs
+          const nodeIdMap = new Map<string, string>();
+
+          // Generate new nodes with unique IDs and offset positions
+          copiedNodes.forEach((node) => {
+            const newId = generateNodeId();
+            nodeIdMap.set(node.id, newId);
+
+            const newNode: AgenNode = {
+              ...node,
+              id: newId,
+              position: {
+                x: node.position.x + 40, // Standard offset
+                y: node.position.y + 40,
+              },
+              selected: false, // Don't select pasted nodes initially
             };
 
-            state.nodeErrors[nodeId].push(error);
+            state.nodes.push(newNode);
+          });
 
-            // Keep only the last 10 errors per node
-            if (state.nodeErrors[nodeId].length > 10) {
-              state.nodeErrors[nodeId] = state.nodeErrors[nodeId].slice(-10);
+          // Create new edges with updated node references
+          copiedEdges.forEach((edge) => {
+            const newSourceId = nodeIdMap.get(edge.source);
+            const newTargetId = nodeIdMap.get(edge.target);
+
+            // Only create edge if both nodes were copied
+            if (newSourceId && newTargetId) {
+              const newEdge: AgenEdge = {
+                ...edge,
+                id: generateEdgeId(),
+                source: newSourceId,
+                target: newTargetId,
+                selected: false, // Don't select pasted edges initially
+              };
+
+              state.edges.push(newEdge);
             }
           });
-        },
+        });
+      },
 
-        clearNodeErrors: (nodeId: string) => {
-          set((state) => {
-            delete state.nodeErrors[nodeId];
-          });
-        },
+      pasteNodesAtPosition: (position?: { x: number; y: number }) => {
+        const { copiedNodes, copiedEdges } = get();
+        if (copiedNodes.length === 0) {
+          return;
+        }
 
-        // ============================================================================
-        // COPY/PASTE OPERATIONS
-        // ============================================================================
-
-        copySelectedNodes: () => {
-          const { nodes, edges } = get();
-
-          // Get all selected nodes from ReactFlow state
-          const selectedNodes = nodes.filter((node) => node.selected);
-          if (selectedNodes.length === 0) {
-            return;
-          }
-
-          // Get all selected edges
-          const selectedEdges = edges.filter((edge) => edge.selected);
-
-          // Also include edges between selected nodes (even if edge isn't explicitly selected)
-          const selectedNodeIds = new Set(selectedNodes.map((n) => n.id));
-          const edgesBetweenSelectedNodes = edges.filter(
-            (edge) =>
-              selectedNodeIds.has(edge.source) &&
-              selectedNodeIds.has(edge.target)
+        set((state) => {
+          // Calculate the center of the copied nodes
+          const bounds = copiedNodes.reduce(
+            (acc, node) => {
+              return {
+                minX: Math.min(acc.minX, node.position.x),
+                minY: Math.min(acc.minY, node.position.y),
+                maxX: Math.max(acc.maxX, node.position.x),
+                maxY: Math.max(acc.maxY, node.position.y),
+              };
+            },
+            {
+              minX: Number.POSITIVE_INFINITY,
+              minY: Number.POSITIVE_INFINITY,
+              maxX: Number.NEGATIVE_INFINITY,
+              maxY: Number.NEGATIVE_INFINITY,
+            }
           );
 
-          // Combine explicitly selected edges with edges between selected nodes
-          const allRelevantEdges = [...selectedEdges];
-          edgesBetweenSelectedNodes.forEach((edge) => {
-            if (!allRelevantEdges.find((e) => e.id === edge.id)) {
-              allRelevantEdges.push(edge);
-            }
-          });
+          const centerX = (bounds.minX + bounds.maxX) / 2;
+          const centerY = (bounds.minY + bounds.maxY) / 2;
 
-          set((state) => {
-            state.copiedNodes = [...selectedNodes];
-            state.copiedEdges = allRelevantEdges;
-          });
-        },
+          // Determine paste position
+          let pasteX: number;
+          let pasteY: number;
 
-        pasteNodes: () => {
-          const { copiedNodes, copiedEdges } = get();
-          if (copiedNodes.length === 0) {
-            return;
+          if (position) {
+            // Paste at specified position (e.g., mouse cursor)
+            pasteX = position.x;
+            pasteY = position.y;
+          } else {
+            // Default offset paste (original behavior)
+            pasteX = centerX + 40;
+            pasteY = centerY + 40;
           }
 
-          set((state) => {
-            // Create mapping from old IDs to new IDs
-            const nodeIdMap = new Map<string, string>();
+          // Calculate offset from original center to paste position
+          const offsetX = pasteX - centerX;
+          const offsetY = pasteY - centerY;
 
-            // Generate new nodes with unique IDs and offset positions
-            copiedNodes.forEach((node) => {
-              const newId = generateNodeId();
-              nodeIdMap.set(node.id, newId);
+          // Create mapping from old IDs to new IDs
+          const nodeIdMap = new Map<string, string>();
 
-              const newNode: AgenNode = {
-                ...node,
-                id: newId,
-                position: {
-                  x: node.position.x + 40, // Standard offset
-                  y: node.position.y + 40,
-                },
-                selected: false, // Don't select pasted nodes initially
-              };
+          // Generate new nodes with unique IDs and calculated positions
+          copiedNodes.forEach((node) => {
+            const newId = generateNodeId();
+            nodeIdMap.set(node.id, newId);
 
-              state.nodes.push(newNode);
-            });
-
-            // Create new edges with updated node references
-            copiedEdges.forEach((edge) => {
-              const newSourceId = nodeIdMap.get(edge.source);
-              const newTargetId = nodeIdMap.get(edge.target);
-
-              // Only create edge if both nodes were copied
-              if (newSourceId && newTargetId) {
-                const newEdge: AgenEdge = {
-                  ...edge,
-                  id: generateEdgeId(),
-                  source: newSourceId,
-                  target: newTargetId,
-                  selected: false, // Don't select pasted edges initially
-                };
-
-                state.edges.push(newEdge);
-              }
-            });
-          });
-        },
-
-        pasteNodesAtPosition: (position?: { x: number; y: number }) => {
-          const { copiedNodes, copiedEdges } = get();
-          if (copiedNodes.length === 0) {
-            return;
-          }
-
-          set((state) => {
-            // Calculate the center of the copied nodes
-            const bounds = copiedNodes.reduce(
-              (acc, node) => {
-                return {
-                  minX: Math.min(acc.minX, node.position.x),
-                  minY: Math.min(acc.minY, node.position.y),
-                  maxX: Math.max(acc.maxX, node.position.x),
-                  maxY: Math.max(acc.maxY, node.position.y),
-                };
+            const newNode: AgenNode = {
+              ...node,
+              id: newId,
+              position: {
+                x: node.position.x + offsetX,
+                y: node.position.y + offsetY,
               },
-              {
-                minX: Number.POSITIVE_INFINITY,
-                minY: Number.POSITIVE_INFINITY,
-                maxX: Number.NEGATIVE_INFINITY,
-                maxY: Number.NEGATIVE_INFINITY,
-              }
-            );
+              selected: false, // Don't select pasted nodes initially
+            };
 
-            const centerX = (bounds.minX + bounds.maxX) / 2;
-            const centerY = (bounds.minY + bounds.maxY) / 2;
+            state.nodes.push(newNode);
+          });
 
-            // Determine paste position
-            let pasteX: number;
-            let pasteY: number;
+          // Create new edges with updated node references
+          copiedEdges.forEach((edge) => {
+            const newSourceId = nodeIdMap.get(edge.source);
+            const newTargetId = nodeIdMap.get(edge.target);
 
-            if (position) {
-              // Paste at specified position (e.g., mouse cursor)
-              pasteX = position.x;
-              pasteY = position.y;
-            } else {
-              // Default offset paste (original behavior)
-              pasteX = centerX + 40;
-              pasteY = centerY + 40;
-            }
-
-            // Calculate offset from original center to paste position
-            const offsetX = pasteX - centerX;
-            const offsetY = pasteY - centerY;
-
-            // Create mapping from old IDs to new IDs
-            const nodeIdMap = new Map<string, string>();
-
-            // Generate new nodes with unique IDs and calculated positions
-            copiedNodes.forEach((node) => {
-              const newId = generateNodeId();
-              nodeIdMap.set(node.id, newId);
-
-              const newNode: AgenNode = {
-                ...node,
-                id: newId,
-                position: {
-                  x: node.position.x + offsetX,
-                  y: node.position.y + offsetY,
-                },
-                selected: false, // Don't select pasted nodes initially
+            // Only create edge if both nodes were copied
+            if (newSourceId && newTargetId) {
+              const newEdge: AgenEdge = {
+                ...edge,
+                id: generateEdgeId(),
+                source: newSourceId,
+                target: newTargetId,
+                selected: false, // Don't select pasted edges initially
               };
 
-              state.nodes.push(newNode);
-            });
-
-            // Create new edges with updated node references
-            copiedEdges.forEach((edge) => {
-              const newSourceId = nodeIdMap.get(edge.source);
-              const newTargetId = nodeIdMap.get(edge.target);
-
-              // Only create edge if both nodes were copied
-              if (newSourceId && newTargetId) {
-                const newEdge: AgenEdge = {
-                  ...edge,
-                  id: generateEdgeId(),
-                  source: newSourceId,
-                  target: newTargetId,
-                  selected: false, // Don't select pasted edges initially
-                };
-
-                state.edges.push(newEdge);
-              }
-            });
+              state.edges.push(newEdge);
+            }
           });
-        },
+        });
+      },
 
-        // ============================================================================
-        // BULK OPERATIONS
-        // ============================================================================
+      // ============================================================================
+      // BULK OPERATIONS
+      // ============================================================================
 
-        setNodes: (nodes: AgenNode[]) => {
-          set((state) => {
-            // Skip update when nodes are referentially equal to prevent unnecessary re-renders (infinite loop guard)
-            if (state.nodes === nodes) return;
+      setNodes: (nodes: AgenNode[]) => {
+        set((state) => {
+          // Skip update when nodes are referentially equal to prevent unnecessary re-renders (infinite loop guard)
+          if (state.nodes === nodes) return;
 
-            // QUICK DEEP CHECK – bail early if lengths & ids match and every shallow field is equal
-            const sameLength = state.nodes.length === nodes.length;
-            const shallowEqual =
-              sameLength &&
-              state.nodes.every((n, idx) => {
-                const other = nodes[idx];
-                return (
-                  n.id === other.id &&
-                  n.position.x === other.position.x &&
-                  n.position.y === other.position.y &&
-                  n.type === other.type &&
-                  n.selected === other.selected
-                );
-              });
-            if (shallowEqual) return;
+          // QUICK DEEP CHECK – bail early if lengths & ids match and every shallow field is equal
+          const sameLength = state.nodes.length === nodes.length;
+          const shallowEqual =
+            sameLength &&
+            state.nodes.every((n, idx) => {
+              const other = nodes[idx];
+              return (
+                n.id === other.id &&
+                n.position.x === other.position.x &&
+                n.position.y === other.position.y &&
+                n.type === other.type &&
+                n.selected === other.selected
+              );
+            });
+          if (shallowEqual) return;
 
-            // [Debug setNodes] , basically log when node count shrinks or clears
-            try {
-              const debugEnabled =
-                typeof window !== "undefined" &&
-                window.localStorage.getItem("DEBUG_FLOW_CLEAR") === "1";
-              if (debugEnabled) {
-                const prevLen = state.nodes.length;
-                const nextLen = nodes.length;
-                if (nextLen < prevLen || nextLen === 0) {
-                  // Minimal trace to source the caller
+          // [Debug setNodes] , basically log when node count shrinks or clears
+          try {
+            const debugEnabled =
+              typeof window !== "undefined" &&
+              window.localStorage.getItem("DEBUG_FLOW_CLEAR") === "1";
+            if (debugEnabled) {
+              const prevLen = state.nodes.length;
+              const nextLen = nodes.length;
+              if (nextLen < prevLen || nextLen === 0) {
+                // Minimal trace to source the caller
+                // eslint-disable-next-line no-console
+                console.log("[FlowDebug] setNodes: %o -> %o", prevLen, nextLen);
+                if (nextLen === 0) {
                   // eslint-disable-next-line no-console
-                  console.log(
-                    "[FlowDebug] setNodes: %o -> %o",
-                    prevLen,
-                    nextLen
-                  );
-                  if (nextLen === 0) {
-                    // eslint-disable-next-line no-console
-                    console.trace("[FlowDebug] nodes cleared stack");
-                  }
+                  console.trace("[FlowDebug] nodes cleared stack");
                 }
               }
-            } catch {}
+            }
+          } catch {}
 
-            state.nodes = nodes;
-          });
-        },
+          state.nodes = nodes;
+        });
+      },
 
-        setEdges: (edges: AgenEdge[]) => {
-          set((state) => {
-            if (state.edges === edges) return;
-            const sameLength = state.edges.length === edges.length;
-            const shallowEqual =
-              sameLength &&
-              state.edges.every((e, idx) => {
-                const other = edges[idx];
-                return (
-                  e.id === other.id &&
-                  e.source === other.source &&
-                  e.target === other.target &&
-                  e.selected === other.selected
-                );
-              });
-            if (shallowEqual) return;
+      setEdges: (edges: AgenEdge[]) => {
+        set((state) => {
+          if (state.edges === edges) return;
+          const sameLength = state.edges.length === edges.length;
+          const shallowEqual =
+            sameLength &&
+            state.edges.every((e, idx) => {
+              const other = edges[idx];
+              return (
+                e.id === other.id &&
+                e.source === other.source &&
+                e.target === other.target &&
+                e.selected === other.selected
+              );
+            });
+          if (shallowEqual) return;
 
-            state.edges = edges;
-          });
-        },
+          state.edges = edges;
+        });
+      },
 
-        // ============================================================================
-        // RESET
-        // ============================================================================
+      // ============================================================================
+      // RESET
+      // ============================================================================
 
-        resetFlow: () => {
-          set((state) => {
-            // [Debug resetFlow] , basically record store reset
-            try {
-              const debugEnabled =
-                typeof window !== "undefined" &&
-                window.localStorage.getItem("DEBUG_FLOW_CLEAR") === "1";
-              if (debugEnabled) {
-                // eslint-disable-next-line no-console
-                console.log("[FlowDebug] resetFlow called");
-                // eslint-disable-next-line no-console
-                console.trace("[FlowDebug] resetFlow stack");
-              }
-            } catch {}
-            Object.assign(state, initialState);
-          });
-        },
-
-        // Force reset to initial state (clears localStorage)
-        forceReset: () => {
-          console.warn(
-            "🧹 Force reset initiated - performing comprehensive memory cleanup"
-          );
-
-          // MEMORY LEAK FIX: Comprehensive cleanup of ALL accumulated data
+      resetFlow: () => {
+        set((state) => {
+          // [Debug resetFlow] , basically record store reset
           try {
-            const _memoryStats = performCompleteMemoryCleanup();
-          } catch (error) {
-            console.error("Memory cleanup failed:", error);
-            // Fallback to timer cleanup only
-            emergencyCleanupAllTimers();
-          }
+            const debugEnabled =
+              typeof window !== "undefined" &&
+              window.localStorage.getItem("DEBUG_FLOW_CLEAR") === "1";
+            if (debugEnabled) {
+              // eslint-disable-next-line no-console
+              console.log("[FlowDebug] resetFlow called");
+              // eslint-disable-next-line no-console
+              console.trace("[FlowDebug] resetFlow stack");
+            }
+          } catch {}
+          Object.assign(state, initialState);
+        });
+      },
 
-          set(() => {
-            // [Debug forceReset] , basically record force reset
-            try {
-              const debugEnabled =
-                typeof window !== "undefined" &&
-                window.localStorage.getItem("DEBUG_FLOW_CLEAR") === "1";
-              if (debugEnabled) {
-                // eslint-disable-next-line no-console
-                console.log("[FlowDebug] forceReset called");
-                // eslint-disable-next-line no-console
-                console.trace("[FlowDebug] forceReset stack");
-              }
-            } catch {}
-            return {
-              ...initialState,
-              _hasHydrated: true,
-            };
-          });
-        },
+      // Force reset to initial state (clears localStorage)
+      forceReset: () => {
+        console.warn(
+          "🧹 Force reset initiated - performing comprehensive memory cleanup"
+        );
 
-        // Hydration
-        setHasHydrated: (hasHydrated: boolean) => {
-          set((state) => {
-            state._hasHydrated = hasHydrated;
-          });
-        },
-      })),
-      {
-        name: "flow-editor-storage",
-        // Custom storage that skips writes while dragging to prevent INP regressions
-        storage: createJSONStorage(() => flowPersistStorage),
-        partialize: (state) => ({
-          // Only persist essential data, not UI state
-          nodes: state.nodes,
-          edges: state.edges,
-        }),
+        // MEMORY LEAK FIX: Comprehensive cleanup of ALL accumulated data
+        try {
+          const _memoryStats = performCompleteMemoryCleanup();
+        } catch (error) {
+          console.error("Memory cleanup failed:", error);
+          // Fallback to timer cleanup only
+          emergencyCleanupAllTimers();
+        }
 
-        onRehydrateStorage: () => (state) => {
-          if (state) {
-            state.setHasHydrated(true);
-            // Mark storage as rehydrated so we can allow persistence writes again
-            try {
-              // eslint-disable-next-line @typescript-eslint/no-use-before-define
-              setStorageRehydrated(true);
-            } catch {}
-          }
-        },
-      }
-    ),
+        set(() => {
+          // [Debug forceReset] , basically record force reset
+          try {
+            const debugEnabled =
+              typeof window !== "undefined" &&
+              window.localStorage.getItem("DEBUG_FLOW_CLEAR") === "1";
+            if (debugEnabled) {
+              // eslint-disable-next-line no-console
+              console.log("[FlowDebug] forceReset called");
+              // eslint-disable-next-line no-console
+              console.trace("[FlowDebug] forceReset stack");
+            }
+          } catch {}
+          return {
+            ...initialState,
+            _hasHydrated: true,
+          };
+        });
+      },
+
+      // Hydration
+      setHasHydrated: (hasHydrated: boolean) => {
+        set((state) => {
+          state._hasHydrated = hasHydrated;
+        });
+      },
+    })),
+    // TEMPORARILY DISABLE PERSISTENCE CONFIGURATION
+    // {
+    //   name: "flow-editor-storage",
+    //   // Custom storage that skips writes while dragging to prevent INP regressions
+    //   storage: createJSONStorage(() => flowPersistStorage),
+    //   partialize: (state) => ({
+    //     // Only persist essential data, not UI state
+    //     nodes: state.nodes,
+    //     edges: state.edges,
+    //   }),
+
+    //   onRehydrateStorage: () => (state) => {
+    //     if (state) {
+    //       state.setHasHydrated(true);
+    //       // Mark storage as rehydrated so we can allow persistence writes again
+    //       try {
+    //         // eslint-disable-next-line @typescript-eslint/no-use-before-define
+    //         setStorageRehydrated(true);
+    //       } catch {}
+    //     }
+    //   },
+    // }
+    // ),
     {
       name: "flow-editor",
     }

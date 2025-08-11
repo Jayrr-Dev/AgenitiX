@@ -1,5 +1,5 @@
 /**
- * HISTORY PERSISTENCE HOOK - React hooks for server-side history storage
+ * HISTORY PERSISTENCE HOOK - React hooks for client-side history storage
  *
  * • Convex integration for saving/loading history graphs
  * • Optimistic updates and error handling
@@ -10,7 +10,7 @@
  */
 
 import { useMutation, useQuery } from "convex/react";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "../../../../../convex/_generated/api";
 import type { Id } from "../../../../../convex/_generated/dataModel";
 import type { HistoryGraph } from "./historyGraph";
@@ -65,19 +65,77 @@ export function useHistoryPersistence(
   const ringBufferRef = useRef<ReturnType<
     typeof createIndexedDbRingBuffer
   > | null>(null);
+  const hasFetchedRef = useRef(false); // [Explanation], basically prevent reactive re-fetches
+
+  // Local snapshot cache via IndexedDB to avoid network on reopen
+  const [cachedSnapshot, setCachedSnapshot] = useState<HistoryGraph | null>(
+    null
+  );
+  const [cacheReady, setCacheReady] = useState(false);
 
   // Convex hooks
   const saveHistoryMutation = useMutation(api.flowHistory.saveHistoryGraph);
   const clearHistoryMutation = useMutation(api.flowHistory.clearHistoryGraph);
 
+  // One-shot load: subscribe only once, then switch to skip
   const historyQuery = useQuery(
     api.flowHistory.loadHistoryGraph,
-    enabled && flowId && userId ? { flowId, userId } : "skip"
+    enabled && flowId && userId && !hasFetchedRef.current
+      ? { flowId, userId }
+      : "skip"
   );
 
-  // Process loaded history
-  const loadedHistory = historyQuery?.historyGraph || null;
-  const isLoading = historyQuery === undefined;
+  // Prefetch from IndexedDB cache immediately (non-reactive)
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        if (!enabled || !flowId || !userId) {
+          setCacheReady(true);
+          return;
+        }
+        const store = createIndexedDbKVStore({
+          dbName: "agenitix_history_cache",
+          storeName: "history_snapshots",
+        });
+        const key = `flow_${flowId}_user_${userId}`;
+        const snap = await store.read<HistoryGraph>(key);
+        if (!cancelled && snap) {
+          setCachedSnapshot(snap);
+        }
+      } catch {}
+      if (!cancelled) setCacheReady(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [enabled, flowId, userId]);
+
+  // Process loaded history: prefer one-shot query result; else fall back to cached snapshot
+  const loadedHistory =
+    (historyQuery?.historyGraph as HistoryGraph | null | undefined) ??
+    cachedSnapshot ??
+    null;
+  const isLoading = historyQuery === undefined && !cacheReady;
+
+  // After first query result, mark fetched and cache to IndexedDB to avoid future network
+  useEffect(() => {
+    if (historyQuery !== undefined) {
+      hasFetchedRef.current = true;
+      const graph = historyQuery?.historyGraph as HistoryGraph | undefined;
+      if (graph && flowId && userId) {
+        setCachedSnapshot(graph);
+        try {
+          const store = createIndexedDbKVStore({
+            dbName: "agenitix_history_cache",
+            storeName: "history_snapshots",
+          });
+          const key = `flow_${flowId}_user_${userId}`;
+          void store.write(key, graph);
+        } catch {}
+      }
+    }
+  }, [historyQuery, flowId, userId]);
   // Initialize client-side ring buffer (IndexedDB)
   useEffect(() => {
     if (!enabled || !flowId || !userId) return;
@@ -185,6 +243,16 @@ export function useHistoryPersistence(
           try {
             await ringBufferRef.current?.clear();
           } catch {}
+
+          // Also refresh the local snapshot cache to avoid stale reopen
+          try {
+            const store = createIndexedDbKVStore({
+              dbName: "agenitix_history_cache",
+              storeName: "history_snapshots",
+            });
+            const key = `flow_${flowId}_user_${userId}`;
+            await store.write(key, optimizedGraph);
+          } catch {}
         } catch (error) {
           console.error("❌ Failed to save history:", error);
         }
@@ -211,6 +279,15 @@ export function useHistoryPersistence(
     try {
       await clearHistoryMutation({ flowId, userId });
       lastSaveRef.current = null;
+      // Clear cached snapshot so reopen doesn't revive old state
+      try {
+        const store = createIndexedDbKVStore({
+          dbName: "agenitix_history_cache",
+          storeName: "history_snapshots",
+        });
+        const key = `flow_${flowId}_user_${userId}`;
+        await store.remove(key);
+      } catch {}
     } catch (error) {
       console.error("❌ Failed to clear history:", error);
       throw error;
@@ -258,7 +335,8 @@ function createIndexedDbRingBuffer(options: RingBufferOptions) {
   const { dbName, storeName, capacity } = options;
   const openDb = (): Promise<IDBDatabase> =>
     new Promise((resolve, reject) => {
-      const req = indexedDB.open(dbName, 1);
+      // Open with latest version first
+      const req = indexedDB.open(dbName);
       req.onupgradeneeded = () => {
         const db = req.result;
         if (!db.objectStoreNames.contains(storeName)) {
@@ -269,7 +347,29 @@ function createIndexedDbRingBuffer(options: RingBufferOptions) {
           store.createIndex("by_createdAt", "createdAt");
         }
       };
-      req.onsuccess = () => resolve(req.result);
+      req.onsuccess = () => {
+        const db = req.result;
+        if (db.objectStoreNames.contains(storeName)) {
+          resolve(db);
+          return;
+        }
+        // Upgrade path: reopen with bumped version to create missing store
+        const newVersion = db.version + 1;
+        db.close();
+        const upgradeReq = indexedDB.open(dbName, newVersion);
+        upgradeReq.onupgradeneeded = () => {
+          const udb = upgradeReq.result;
+          if (!udb.objectStoreNames.contains(storeName)) {
+            const store = udb.createObjectStore(storeName, {
+              keyPath: "key",
+              autoIncrement: false,
+            });
+            store.createIndex("by_createdAt", "createdAt");
+          }
+        };
+        upgradeReq.onsuccess = () => resolve(upgradeReq.result);
+        upgradeReq.onerror = () => reject(upgradeReq.error);
+      };
       req.onerror = () => reject(req.error);
     });
 
@@ -333,6 +433,88 @@ function createIndexedDbRingBuffer(options: RingBufferOptions) {
   };
 
   return { write, readAll, clear, close };
+}
+
+// --------------------------------------
+// Local IndexedDB KV Store (snapshot cache)
+// --------------------------------------
+function createIndexedDbKVStore({
+  dbName,
+  storeName,
+}: {
+  dbName: string;
+  storeName: string;
+}) {
+  const openDb = (): Promise<IDBDatabase> =>
+    new Promise((resolve, reject) => {
+      const req = indexedDB.open(dbName);
+      req.onupgradeneeded = () => {
+        const db = req.result;
+        if (!db.objectStoreNames.contains(storeName)) {
+          db.createObjectStore(storeName);
+        }
+      };
+      req.onsuccess = () => {
+        const db = req.result;
+        if (db.objectStoreNames.contains(storeName)) {
+          resolve(db);
+          return;
+        }
+        const newVersion = db.version + 1;
+        db.close();
+        const upgradeReq = indexedDB.open(dbName, newVersion);
+        upgradeReq.onupgradeneeded = () => {
+          const udb = upgradeReq.result;
+          if (!udb.objectStoreNames.contains(storeName)) {
+            udb.createObjectStore(storeName);
+          }
+        };
+        upgradeReq.onsuccess = () => resolve(upgradeReq.result);
+        upgradeReq.onerror = () => reject(upgradeReq.error);
+      };
+      req.onerror = () => reject(req.error);
+    });
+
+  const read = async <T = unknown>(key: string): Promise<T | null> => {
+    const db = await openDb();
+    const tx = db.transaction(storeName, "readonly");
+    const store = tx.objectStore(storeName);
+    const value: T | null = await new Promise((resolve, reject) => {
+      const getReq = store.get(key);
+      getReq.onsuccess = () => resolve((getReq.result as T) ?? null);
+      getReq.onerror = () => reject(getReq.error);
+    });
+    db.close();
+    return value;
+  };
+
+  const write = async (key: string, value: unknown): Promise<void> => {
+    const db = await openDb();
+    const tx = db.transaction(storeName, "readwrite");
+    const store = tx.objectStore(storeName);
+    await new Promise((resolve, reject) => {
+      const putReq = store.put(value, key);
+      putReq.onsuccess = resolve;
+      putReq.onerror = () => reject(putReq.error);
+    });
+    await new Promise<void>((resolve) => (tx.oncomplete = () => resolve()));
+    db.close();
+  };
+
+  const remove = async (key: string): Promise<void> => {
+    const db = await openDb();
+    const tx = db.transaction(storeName, "readwrite");
+    const store = tx.objectStore(storeName);
+    await new Promise((resolve, reject) => {
+      const delReq = store.delete(key);
+      delReq.onsuccess = resolve;
+      delReq.onerror = () => reject(delReq.error);
+    });
+    await new Promise<void>((resolve) => (tx.oncomplete = () => resolve()));
+    db.close();
+  };
+
+  return { read, write, remove };
 }
 
 // Minimal diff applier: append nodes from diffs if newer than cursor

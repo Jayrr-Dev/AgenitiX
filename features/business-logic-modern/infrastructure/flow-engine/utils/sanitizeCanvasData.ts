@@ -58,6 +58,12 @@ export const PRESERVE_NODE_KEYS = new Set<string>([
   "collapsedSize",
   "viewPath",
   "summaryLimit",
+  // Document reference fields for large external content
+  "document_id",
+  "document_size",
+  "document_checksum",
+  "document_content_type",
+  "document_preview",
 ]);
 
 // -----------------------------------------------------------------------------
@@ -128,7 +134,9 @@ function sanitizeValue(value: unknown, depth: number): Json {
 /**
  * Sanitize a single node's `data` payload
  */
-export function sanitizeNodeData(data: Record<string, unknown> | undefined): Record<string, Json> | undefined {
+export function sanitizeNodeData(
+  data: Record<string, unknown> | undefined
+): Record<string, Json> | undefined {
   if (!data || typeof data !== "object") return undefined;
   // [Explanation], basically single-pass sanitize that preserves required keys
   const out: Record<string, Json> = {};
@@ -149,7 +157,9 @@ export function sanitizeNodeData(data: Record<string, unknown> | undefined): Rec
 /**
  * Sanitize nodes array before sending to Convex
  */
-export function sanitizeNodesForSave(nodes: MinimalNodeLike[]): MinimalNodeLike[] {
+export function sanitizeNodesForSave(
+  nodes: MinimalNodeLike[]
+): MinimalNodeLike[] {
   // [Explanation], basically fast path with for-loop to avoid intermediate arrays
   const result: MinimalNodeLike[] = new Array(nodes.length);
   for (let i = 0; i < nodes.length; i++) {
@@ -161,5 +171,3 @@ export function sanitizeNodesForSave(nodes: MinimalNodeLike[]): MinimalNodeLike[
   }
   return result;
 }
-
-

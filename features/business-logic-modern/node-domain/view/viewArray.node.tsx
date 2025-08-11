@@ -53,6 +53,7 @@ import {
   trackStateUpdate,
 } from "@/lib/performance-profiler";
 import { useStore } from "@xyflow/react";
+import { VirtualizedArrayViewer } from "./components/VirtualizedArrayViewer";
 
 // -----------------------------------------------------------------------------
 // 1️⃣  Data schema & validation
@@ -346,6 +347,11 @@ const ViewArrayNode = memo(
      */
     const resolveAtPath = useCallback(
       (root: unknown, path: Array<string | number>): unknown => {
+        // [Explanation], basically ensure root and path are valid before processing
+        if (root === null || root === undefined || !Array.isArray(path)) {
+          return undefined;
+        }
+
         let current: unknown = root;
         for (const segment of path) {
           if (current && typeof current === "object") {
@@ -552,6 +558,15 @@ const ViewArrayNode = memo(
                   ? root
                   : resolveAtPath(root, path);
 
+                // [Explanation], basically ensure currentView exists before rendering
+                if (currentView === null || currentView === undefined) {
+                  return (
+                    <div className="text-muted-foreground">
+                      (path not found)
+                    </div>
+                  );
+                }
+
                 // Header: Back + breadcrumb (compact)
                 const breadcrumb = (
                   <div className="mb-1 flex items-center gap-1 text-[9px] text-foreground/70">
@@ -606,9 +621,15 @@ const ViewArrayNode = memo(
                   // Support arrays and plain objects; otherwise show a brief notice
                   if (
                     value === null ||
+                    value === undefined ||
                     (typeof value !== "object" && !Array.isArray(value))
                   ) {
-                    const typeText = value === null ? "null" : typeof value;
+                    const typeText =
+                      value === null
+                        ? "null"
+                        : value === undefined
+                          ? "undefined"
+                          : typeof value;
                     return (
                       <div className="text-muted-foreground">
                         (not a collection){" "}
@@ -616,12 +637,35 @@ const ViewArrayNode = memo(
                       </div>
                     );
                   }
+
+                  // [Explanation], basically ensure value is actually an object/array before processing
+                  if (!value || typeof value !== "object") {
+                    return (
+                      <div className="text-muted-foreground">
+                        (invalid value){" "}
+                        <span className="text-foreground/60">
+                          {typeof value}
+                        </span>
+                      </div>
+                    );
+                  }
+
                   const isArray = Array.isArray(value);
                   const entries = isArray
                     ? (value as Array<unknown>).map(
                         (v, i) => [i, v] as [number, unknown]
                       )
                     : Object.entries(value as Record<string, unknown>);
+
+                  // [Explanation], basically ensure entries is valid before using
+                  if (!entries || !Array.isArray(entries)) {
+                    return (
+                      <div className="text-muted-foreground">
+                        (failed to process entries)
+                      </div>
+                    );
+                  }
+
                   const limit =
                     (validation.data as ViewArrayData).summaryLimit ??
                     SUMMARY_MAX_ITEMS;
@@ -669,7 +713,7 @@ const ViewArrayNode = memo(
                           </div>
                         );
                       })}
-                      {entries.length > shown.length && (
+                      {entries && entries.length > shown.length && (
                         <button
                           type="button"
                           onClick={(e) => {
@@ -703,11 +747,11 @@ const ViewArrayNode = memo(
             </div>
           </div>
         ) : (
-          // Expanded: show the same nested view as collapsed using viewPath
+          // Expanded: virtualized view for better performance with large arrays
           <div
             className={`nowheel ${CONTENT.expanded} ${!isEnabled ? CONTENT.disabled : ""}`}
           >
-            <div className="flex items-center gap-2  text-[10px] text-foreground/70 mb-2">
+            <div className="flex items-center gap-2 text-[10px] text-foreground/70 mb-2">
               <span className="text-foreground/50">Path:</span>
               <code className="px-1 py-0.5 rounded bg-muted/40">
                 {((validation.data as ViewArrayData).viewPath ?? []).length ===
@@ -720,19 +764,61 @@ const ViewArrayNode = memo(
                       .join(".")}
               </code>
             </div>
-            <div className="flex-1  overflow-auto rounded-md bg-muted/10">
-              <JsonHighlighter
-                data={(() => {
-                  const root = (validation.data as ViewArrayData).inputs;
-                  const path =
-                    (validation.data as ViewArrayData).viewPath ?? [];
-                  const value =
-                    path.length === 0 ? root : resolveAtPath(root, path);
-                  return Array.isArray(value) ? value : value; // [Explanation], basically show current view even if not array after drill
-                })()}
-                maxDepth={3}
-                className="text-[10px] select-text cursor-text nodrag nowheel "
-              />
+            <div className="flex-1 rounded-md bg-muted/10 overflow-hidden">
+              {(() => {
+                const root = (validation.data as ViewArrayData).inputs;
+                const path = (validation.data as ViewArrayData).viewPath ?? [];
+
+                // [Explanation], basically ensure root exists before resolving path
+                if (root === null || root === undefined) {
+                  return (
+                    <div className="flex items-center justify-center text-muted-foreground text-[10px] h-full">
+                      No data to display
+                    </div>
+                  );
+                }
+
+                const value =
+                  path.length === 0 ? root : resolveAtPath(root, path);
+
+                // [Explanation], basically ensure value exists before processing
+                if (value === null || value === undefined) {
+                  return (
+                    <div className="flex items-center justify-center text-muted-foreground text-[10px] h-full">
+                      Path not found
+                    </div>
+                  );
+                }
+
+                // For arrays, use virtualized viewer for better performance
+                if (Array.isArray(value)) {
+                  // Calculate container height based on expanded size
+                  const expandedSpec = spec.size.expanded;
+                  const baseHeight = expandedSpec.height || 400;
+                  const containerHeight = Math.max(200, baseHeight - 80); // [Explanation], basically subtract header and padding
+
+                  return (
+                    <VirtualizedArrayViewer
+                      data={value}
+                      containerHeight={containerHeight}
+                      itemHeight={120}
+                      overscan={3}
+                      className="w-full h-full"
+                    />
+                  );
+                }
+
+                // For non-arrays, use the original JsonHighlighter
+                return (
+                  <div className="overflow-auto h-full p-3">
+                    <JsonHighlighter
+                      data={value}
+                      maxDepth={3}
+                      className="text-[10px] select-text cursor-text nodrag nowheel"
+                    />
+                  </div>
+                );
+              })()}
             </div>
           </div>
         )}

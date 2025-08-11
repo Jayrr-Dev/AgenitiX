@@ -165,11 +165,97 @@ const cancelIdle = (): void => {
 };
 
 /**
- * Optimize graph for storage by stripping heavy/transient fields inside before/after snapshots.
+ * Optimize graph for storage by keeping only essential structural data.
  *
- * [Explanation], basically remove large nested data we don't need for history persistence
+ * [Explanation], basically store only position, basic properties, and connections - not heavy data content
  */
 function optimizeGraphForStorage(graph: HistoryGraph) {
+  // Keep only essential structural data - no heavy content
+  const stripToEssentials = (state: { nodes: any[]; edges: any[] }) => ({
+    ...state,
+    nodes: state.nodes.map((n) => {
+      if (!n || typeof n !== "object") return n;
+
+      // Keep only essential structural properties
+      const essentialData: Record<string, any> = {};
+
+      if (n.data && typeof n.data === "object") {
+        const data = n.data as Record<string, any>;
+
+        // Keep only UI/structural properties - no content/outputs
+        const keepFields = [
+          "kind",
+          "type",
+          "label",
+          "isExpanded",
+          "isEnabled",
+          "isActive",
+          "expandedSize",
+          "collapsedSize",
+          "accountId",
+          "provider",
+          "connectionStatus",
+          "isConnected",
+          "lastSync",
+          "processedCount",
+          "messageCount",
+          "batchSize",
+          "maxMessages",
+          "includeAttachments",
+          "markAsRead",
+          "enableRealTime",
+          "checkInterval",
+          "outputFormat",
+          "viewPath",
+          "summaryLimit",
+          // Document reference fields for large external content
+          "document_id",
+          "document_size",
+          "document_checksum",
+          "document_content_type",
+          "document_preview",
+        ];
+
+        // For view and convert nodes, also preserve inputs since they're needed for display
+        const kind = data.kind || data.type;
+        if (
+          typeof kind === "string" &&
+          (/^view/i.test(kind) || /^to/i.test(kind) || /convert/i.test(kind))
+        ) {
+          keepFields.push("inputs");
+        }
+
+        for (const field of keepFields) {
+          if (field in data) {
+            essentialData[field] = data[field];
+          }
+        }
+      }
+
+      return {
+        id: n.id,
+        type: n.type,
+        position: n.position ? { ...n.position } : { x: 0, y: 0 },
+        data: essentialData,
+        measured: n.measured,
+        selected: n.selected,
+        dragging: n.dragging,
+      };
+    }),
+    edges: Array.isArray(state.edges)
+      ? state.edges.map((e) => ({
+          id: e.id,
+          source: e.source,
+          target: e.target,
+          sourceHandle: e.sourceHandle,
+          targetHandle: e.targetHandle,
+          type: e.type,
+          animated: e.animated,
+          selected: e.selected,
+        }))
+      : [],
+  });
+
   return {
     ...graph,
     nodes: Object.fromEntries(
@@ -177,45 +263,8 @@ function optimizeGraphForStorage(graph: HistoryGraph) {
         node.id,
         {
           ...node,
-          // Remove unnecessary data for storage
-          before: {
-            ...node.before,
-            // Remove large objects that don't need persistence
-            nodes: node.before.nodes.map((n) => ({
-              ...n,
-              data: n.data
-                ? {
-                    ...n.data,
-                    // Remove large objects that don't need persistence
-                    inputs: undefined,
-                    output: undefined,
-                    // Keep only essential data
-                    label: (n as any).data?.label,
-                    type: (n as any).data?.type,
-                    isExpanded: (n as any).data?.isExpanded,
-                  }
-                : (n as any).data,
-            })),
-          },
-          after: {
-            ...node.after,
-            // Remove large objects that don't need persistence
-            nodes: node.after.nodes.map((n) => ({
-              ...n,
-              data: n.data
-                ? {
-                    ...n.data,
-                    // Remove large objects that don't need persistence
-                    inputs: undefined,
-                    output: undefined,
-                    // Keep only essential data
-                    label: (n as any).data?.label,
-                    type: (n as any).data?.type,
-                    isExpanded: (n as any).data?.isExpanded,
-                  }
-                : (n as any).data,
-            })),
-          },
+          before: stripToEssentials(node.before),
+          after: stripToEssentials(node.after),
         },
       ])
     ),
@@ -435,7 +484,7 @@ export const pruneGraphToLimit = (
       }
     }
 
-    // Remove the old root
+    // Remove the old root, but if the new root had no explicit 'before', carry it forward
     delete graph.nodes[graph.root];
 
     // Re-assign graph.root
