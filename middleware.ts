@@ -35,10 +35,90 @@ export default async function middleware(
   ) {
     // Add CORS headers for OAuth routes, basically handle OAuth and auth API with Convex middleware
     try {
+      // DEBUG: Log incoming auth request details, basically comprehensive request info
+      console.log(`🔍 AUTH_DEBUG: Processing auth request`, {
+        method: request.method,
+        pathname,
+        search: request.nextUrl.search,
+        timestamp: new Date().toISOString(),
+        userAgent: request.headers.get("user-agent")?.substring(0, 100),
+        contentType: request.headers.get("content-type"),
+        authorization: request.headers.get("authorization")
+          ? "Present"
+          : "Missing",
+        convexUrl: process.env.NEXT_PUBLIC_CONVEX_URL ? "Set" : "Missing",
+        nodeEnv: process.env.NODE_ENV,
+      });
+
+      // DEBUG: Check environment variables that Convex Auth needs, basically validate config
+      const authEnvCheck = {
+        AUTH_SECRET: process.env.AUTH_SECRET ? "Set" : "❌ MISSING",
+        AUTH_RESEND_KEY: process.env.AUTH_RESEND_KEY ? "Set" : "❌ MISSING",
+        AUTH_GITHUB_ID: process.env.AUTH_GITHUB_ID
+          ? "Set"
+          : "Missing (optional)",
+        AUTH_GITHUB_SECRET: process.env.AUTH_GITHUB_SECRET
+          ? "Set"
+          : "Missing (optional)",
+        AUTH_GOOGLE_ID: process.env.AUTH_GOOGLE_ID
+          ? "Set"
+          : "Missing (optional)",
+        AUTH_GOOGLE_SECRET: process.env.AUTH_GOOGLE_SECRET
+          ? "Set"
+          : "Missing (optional)",
+        CONVEX_DEPLOYMENT: process.env.CONVEX_DEPLOYMENT ? "Set" : "❌ MISSING",
+        NEXT_PUBLIC_CONVEX_URL: process.env.NEXT_PUBLIC_CONVEX_URL
+          ? "Set"
+          : "❌ MISSING",
+      };
+
+      console.log(`🔍 AUTH_DEBUG: Environment variables status`, authEnvCheck);
+
+      // Check for critical missing variables, basically validate required config
+      const criticalMissing = Object.entries(authEnvCheck)
+        .filter(([key, value]) => value.includes("❌"))
+        .map(([key]) => key);
+
+      if (criticalMissing.length > 0) {
+        console.error(
+          `🚨 AUTH_DEBUG: Critical environment variables missing:`,
+          criticalMissing
+        );
+      }
+
       const response = await convexMiddleware(request, event);
+
+      // DEBUG: Log response details, basically comprehensive response info
+      console.log(`🔍 AUTH_DEBUG: Convex middleware response`, {
+        status: response?.status,
+        statusText: response?.statusText,
+        headers: response
+          ? Object.fromEntries(response.headers.entries())
+          : null,
+        timestamp: new Date().toISOString(),
+      });
 
       // Mirror production errors for investigation without exposing internals
       if (response && response.status >= 400) {
+        // Enhanced error logging with more context, basically detailed failure info
+        const responseText = await response
+          .clone()
+          .text()
+          .catch(() => "Unable to read response body");
+
+        console.error(`🚨 AUTH_DEBUG: Auth middleware error details`, {
+          status: response.status,
+          statusText: response.statusText,
+          method: request.method,
+          pathname,
+          search: request.nextUrl.search,
+          responseHeaders: Object.fromEntries(response.headers.entries()),
+          responseBody: responseText.substring(0, 500), // Truncate for safety
+          userAgent: request.headers.get("user-agent"),
+          timestamp: new Date().toISOString(),
+          envCheck: authEnvCheck,
+        });
+
         logAuthFailure({
           error: new Error(`Auth route returned status ${response.status}`),
           request,
@@ -47,6 +127,8 @@ export default async function middleware(
             status: response.status,
             method: request.method,
             path: pathname,
+            responseBody: responseText.substring(0, 200),
+            envVariables: authEnvCheck,
           },
         });
       }
@@ -77,12 +159,42 @@ export default async function middleware(
 
       return response;
     } catch (error) {
+      // DEBUG: Log detailed error information, basically comprehensive error context
+      console.error(`🚨 AUTH_DEBUG: Middleware exception caught`, {
+        error: {
+          name: error instanceof Error ? error.name : "Unknown",
+          message: error instanceof Error ? error.message : String(error),
+          stack:
+            error instanceof Error
+              ? error.stack?.substring(0, 1000)
+              : undefined,
+        },
+        request: {
+          method: request.method,
+          pathname,
+          search: request.nextUrl.search,
+          userAgent: request.headers.get("user-agent"),
+          contentType: request.headers.get("content-type"),
+        },
+        environment: {
+          nodeEnv: process.env.NODE_ENV,
+          convexUrl: process.env.NEXT_PUBLIC_CONVEX_URL ? "Set" : "Missing",
+          authSecret: process.env.AUTH_SECRET ? "Set" : "Missing",
+        },
+        timestamp: new Date().toISOString(),
+      });
+
       // Capture and return a safe response
       logAuthFailure({
         error,
         request,
         phase: "middleware",
-        extras: { method: request.method, path: pathname },
+        extras: {
+          method: request.method,
+          path: pathname,
+          errorType: error instanceof Error ? error.name : "Unknown",
+          errorMessage: error instanceof Error ? error.message : String(error),
+        },
       });
       return NextResponse.json(
         { error: "Authentication middleware error" },

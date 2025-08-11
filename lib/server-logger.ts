@@ -124,7 +124,7 @@ export function logServerError(options: {
 }
 
 /**
- * Convenience helper for auth failures, basically pre-filled operation
+ * Convenience helper for auth failures, basically pre-filled operation with enhanced context
  */
 export function logAuthFailure(params: {
   error: unknown;
@@ -134,12 +134,34 @@ export function logAuthFailure(params: {
   extras?: Record<string, unknown>;
 }) {
   const { error, request, phase, provider, extras } = params;
+
+  // Enhanced auth-specific context, basically detailed auth diagnostics
+  const authContext = {
+    authSecret: process.env.AUTH_SECRET ? "present" : "missing",
+    resendKey: process.env.AUTH_RESEND_KEY ? "present" : "missing",
+    convexUrl: process.env.NEXT_PUBLIC_CONVEX_URL ? "present" : "missing",
+    convexDeployment: process.env.CONVEX_DEPLOYMENT ? "present" : "missing",
+    nodeEnv: process.env.NODE_ENV,
+    githubOAuth:
+      process.env.AUTH_GITHUB_ID && process.env.AUTH_GITHUB_SECRET
+        ? "configured"
+        : "not_configured",
+    googleOAuth:
+      process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET
+        ? "configured"
+        : "not_configured",
+    timestamp: new Date().toISOString(),
+  };
+
   logServerError({
     error,
     request,
     operation: provider ? `auth:${phase}:${provider}` : `auth:${phase}`,
     severity: "error",
-    extras,
+    extras: {
+      ...extras,
+      authEnvironment: authContext,
+    },
   });
 }
 

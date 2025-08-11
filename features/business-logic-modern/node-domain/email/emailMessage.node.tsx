@@ -368,7 +368,7 @@ const EmailMessageNode = memo(
     );
 
     // Keep last emitted output to avoid redundant writes
-    const _lastOutputRef = useRef<string | null>(null);
+    const _lastEmittedOutputRef = useRef<string | null>(null);
     const _prevIsConnectedRef = useRef<boolean>(
       (nodeData as EmailMessageData).isConnected
     );
@@ -451,7 +451,19 @@ const EmailMessageNode = memo(
         }
         return null;
       },
-      (a, b) => JSON.stringify(a) === JSON.stringify(b)
+      // Use a more stable comparison function
+      (a, b) => {
+        if (a === b) return true;
+        if (!a || !b) return a === b;
+        if (!Array.isArray(a) || !Array.isArray(b)) return false;
+        if (a.length !== b.length) return false;
+        // Only compare length and first/last items to avoid expensive deep comparison
+        return (
+          a.length === b.length &&
+          (a.length === 0 ||
+            (a[0] === b[0] && a[a.length - 1] === b[b.length - 1]))
+        );
+      }
     );
 
     // -------------------------------------------------------------------------
@@ -502,7 +514,11 @@ const EmailMessageNode = memo(
     /** Handle recipients change */
     const handleRecipientsChange = useCallback(
       (type: "to" | "cc" | "bcc", recipients: string[]) => {
-        const currentRecipients = (nodeData as EmailMessageData).recipients;
+        const currentRecipients = (nodeData as EmailMessageData).recipients || {
+          to: [],
+          cc: [],
+          bcc: [],
+        };
         updateNodeData({
           recipients: {
             ...currentRecipients,
@@ -565,7 +581,7 @@ const EmailMessageNode = memo(
       }
 
       // Basic validation
-      const hasRecipients = Object.values(recipients).some(
+      const hasRecipients = Object.values(recipients || {}).some(
         (arr) => arr.length > 0 && arr.some((email) => email.trim().length > 0)
       );
       if (!hasRecipients) {
@@ -586,15 +602,16 @@ const EmailMessageNode = memo(
         });
 
         // Create message object for JSON output
+        const safeRecipients = recipients || { to: [], cc: [], bcc: [] };
         const messageObject = {
           messageContent,
           messageType,
           subject,
           priority,
           recipients: {
-            to: recipients.to.filter((email) => email.trim().length > 0),
-            cc: recipients.cc.filter((email) => email.trim().length > 0),
-            bcc: recipients.bcc.filter((email) => email.trim().length > 0),
+            to: safeRecipients.to.filter((email) => email.trim().length > 0),
+            cc: safeRecipients.cc.filter((email) => email.trim().length > 0),
+            bcc: safeRecipients.bcc.filter((email) => email.trim().length > 0),
           },
           useTemplate,
           templateId: useTemplate ? templateId : undefined,
@@ -696,64 +713,57 @@ const EmailMessageNode = memo(
       const prevToken = _prevTokenRef.current;
       const tokenChanged = prevToken !== (token ?? null);
       const emailChanged = prevEmail !== userEmail;
+
       if (tokenChanged || emailChanged) {
-        // Only write if something actually differs
-        const diffs: Partial<EmailMessageData> = {};
-        const curr = nodeData as EmailMessageData;
-        (
-          Object.keys(RESET_ON_LOGOUT_DATA) as Array<keyof EmailMessageData>
-        ).forEach((k) => {
-          const nextVal = (RESET_ON_LOGOUT_DATA as any)[k];
-          if ((curr as any)[k] !== nextVal) (diffs as any)[k] = nextVal;
-        });
-        if (Object.keys(diffs).length) updateNodeData(diffs);
+        // Apply reset data directly without checking current state to avoid loops
+        updateNodeData(RESET_ON_LOGOUT_DATA);
         _prevUserEmailRef.current = userEmail;
         _prevTokenRef.current = token ?? null;
       }
-    }, [userEmail, token, updateNodeData, nodeData]);
+    }, [userEmail, token, updateNodeData]); // Remove nodeData from deps
 
     /** Sync email input with connected data */
     useEffect(() => {
       const curr = nodeData as EmailMessageData;
-      if (curr.emailInput !== connectedEmailData) {
+      // Use JSON comparison for deep equality to prevent infinite loops
+      const currentEmailInputStr = JSON.stringify(curr.emailInput);
+      const connectedEmailDataStr = JSON.stringify(connectedEmailData);
+      if (currentEmailInputStr !== connectedEmailDataStr) {
         updateNodeData({ emailInput: connectedEmailData });
       }
-    }, [connectedEmailData, nodeData, updateNodeData]);
+    }, [connectedEmailData, updateNodeData]); // Remove nodeData from deps
 
     /** Monitor message content and update active state */
+    const _prevActiveStateRef = useRef<boolean>(isActive);
     useEffect(() => {
       const hasContent = Boolean(
         messageContent?.trim() ||
           subject?.trim() ||
-          Object.values(recipients).some((arr) => arr.length > 0)
+          Object.values(recipients || {}).some((arr) => arr.length > 0)
       );
 
-      // If disabled, always set isActive to false
-      if (!isEnabled) {
-        if (isActive) updateNodeData({ isActive: false });
-      } else {
-        if (isActive !== hasContent) {
-          updateNodeData({ isActive: hasContent });
-        }
+      const shouldBeActive = isEnabled && hasContent;
+
+      // Only update if the state actually needs to change
+      if (_prevActiveStateRef.current !== shouldBeActive) {
+        _prevActiveStateRef.current = shouldBeActive;
+        updateNodeData({ isActive: shouldBeActive });
       }
-    }, [
-      messageContent,
-      subject,
-      recipients,
-      isEnabled,
-      isActive,
-      updateNodeData,
-    ]);
+    }, [messageContent, subject, recipients, isEnabled, updateNodeData]); // Remove isActive from deps to prevent loop
 
     /** Update output when connection state changes */
+    const _prevStatusOutputRef = useRef<boolean>(
+      (nodeData as EmailMessageData).statusOutput
+    );
     useEffect(() => {
-      const curr = nodeData as EmailMessageData;
-      const nextActive = Boolean(isEnabled && isConnected);
-      const nextStatus = nextActive;
-      if (curr.statusOutput !== nextStatus || curr.isActive !== nextActive) {
-        updateNodeData({ statusOutput: nextStatus, isActive: nextActive });
+      const nextStatus = Boolean(isEnabled && isConnected);
+
+      // Only update if status actually changed
+      if (_prevStatusOutputRef.current !== nextStatus) {
+        _prevStatusOutputRef.current = nextStatus;
+        updateNodeData({ statusOutput: nextStatus });
       }
-    }, [isEnabled, isConnected, updateNodeData, nodeData]);
+    }, [isEnabled, isConnected, updateNodeData]); // Remove nodeData from deps
 
     /**
      * Clear outputs when connection is lost
@@ -764,45 +774,41 @@ const EmailMessageNode = memo(
 
       // Only clear when transitioning from connected -> disconnected
       if (wasConnected && !isConnected) {
-        // Clear any local indicators
-        const curr = nodeData as EmailMessageData;
-        if (curr.jsonOutput !== "" || curr.output !== "") {
-          updateNodeData({
-            jsonOutput: "",
-            output: "",
-            ["json-output"]: null, // [Explanation], basically clear handle output
-          });
-        }
+        updateNodeData({
+          jsonOutput: "",
+          output: "",
+          ["json-output"]: null, // [Explanation], basically clear handle output
+        });
       }
 
       _prevIsConnectedRef.current = isConnected;
-    }, [isConnected, nodeData, updateNodeData]);
+    }, [isConnected, updateNodeData]); // Remove nodeData from deps
 
     // -------------------------------------------------------------------------
     // 4.8a  Generate unified handle-based output map
     // -------------------------------------------------------------------------
     const _lastHandleMapRef = useRef<Map<string, unknown> | null>(null);
+    const _lastOutputRef = useRef<string | null>(null);
     useEffect(() => {
       try {
         const map = generateoutputField(spec, nodeData as any);
         if (!(map instanceof Map)) return;
-        const prev = _lastHandleMapRef.current;
-        let changed = true;
-        if (prev && prev instanceof Map) {
-          changed =
-            prev.size !== map.size ||
-            !Array.from(map.entries()).every(([k, v]) => prev.get(k) === v);
-        }
-        if (changed) {
+
+        // Convert to string for comparison to avoid object reference issues
+        const mapStr = JSON.stringify(Array.from(map.entries()).sort());
+        const lastMapStr = _lastOutputRef.current;
+
+        if (mapStr !== lastMapStr) {
+          _lastOutputRef.current = mapStr;
           _lastHandleMapRef.current = map;
           updateNodeData({ output: Object.fromEntries(map.entries()) });
         }
       } catch {}
     }, [
-      spec.handles,
+      // Use specific values instead of nodeData references to prevent loops
       (nodeData as any)["json-output"],
-      (nodeData as EmailMessageData).isActive,
-      (nodeData as EmailMessageData).isEnabled,
+      isActive,
+      isEnabled,
       updateNodeData,
     ]);
 
@@ -845,7 +851,7 @@ const EmailMessageNode = memo(
               // Recompute lightweight boolean here to avoid passing many deps
               (isEnabled as boolean) &&
               Boolean(token && userEmail) &&
-              (Object.values(recipients).some((arr) => arr.length > 0) ||
+              (Object.values(recipients || {}).some((arr) => arr.length > 0) ||
                 Boolean(subject?.trim() || messageContent?.trim()))
             }
             onMessageContentChange={handleMessageContentChange}

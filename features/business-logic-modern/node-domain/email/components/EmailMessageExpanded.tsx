@@ -116,7 +116,7 @@ export const EmailMessageExpanded = React.memo(
     // Recipient management
     const addRecipient = React.useCallback(
       (type: "to" | "cc" | "bcc") => {
-        const current = recipients[type] || [];
+        const current = (recipients && recipients[type]) || [];
         onRecipientsChange(type, [...current, ""]);
       },
       [recipients, onRecipientsChange]
@@ -124,7 +124,7 @@ export const EmailMessageExpanded = React.memo(
 
     const removeRecipient = React.useCallback(
       (type: "to" | "cc" | "bcc", index: number) => {
-        const current = recipients[type] || [];
+        const current = (recipients && recipients[type]) || [];
         const updated = current.filter((_, i) => i !== index);
         onRecipientsChange(type, updated);
       },
@@ -133,7 +133,7 @@ export const EmailMessageExpanded = React.memo(
 
     const updateRecipient = React.useCallback(
       (type: "to" | "cc" | "bcc", index: number, value: string) => {
-        const current = recipients[type] || [];
+        const current = (recipients && recipients[type]) || [];
         const updated = [...current];
         updated[index] = value;
         onRecipientsChange(type, updated);
@@ -145,7 +145,7 @@ export const EmailMessageExpanded = React.memo(
       type: "to" | "cc" | "bcc",
       label: string
     ) => {
-      const recipientList = recipients[type] || [];
+      const recipientList = (recipients && recipients[type]) || [];
 
       return (
         <div key={type}>
@@ -165,7 +165,7 @@ export const EmailMessageExpanded = React.memo(
             <div key={index} className={FIELD_STYLES.recipientRow}>
               <input
                 type="email"
-                value={recipient}
+                value={recipient || ""}
                 onChange={(e) => updateRecipient(type, index, e.target.value)}
                 placeholder={`${label.toLowerCase()}@example.com`}
                 className={`${FIELD_STYLES.input} flex-1`}
@@ -218,7 +218,7 @@ export const EmailMessageExpanded = React.memo(
             <input
               id="subject-input"
               type="text"
-              value={subject}
+              value={subject || ""}
               onChange={onSubjectChange}
               placeholder="Email subject..."
               className={`${FIELD_STYLES.input} w-full`}
@@ -233,7 +233,7 @@ export const EmailMessageExpanded = React.memo(
                 Message Content:
               </label>
               <select
-                value={messageType}
+                value={messageType || "plain"}
                 onChange={onMessageTypeChange}
                 className={FIELD_STYLES.select}
                 disabled={!isEnabled}
@@ -245,7 +245,7 @@ export const EmailMessageExpanded = React.memo(
             </div>
             <textarea
               id="message-content"
-              value={messageContent}
+              value={messageContent || ""}
               onChange={onMessageContentChange}
               placeholder="Enter your email message..."
               className={`${FIELD_STYLES.textarea} w-full h-20`}
@@ -267,7 +267,7 @@ export const EmailMessageExpanded = React.memo(
             </label>
             <select
               id="priority-select"
-              value={priority}
+              value={priority || "normal"}
               onChange={onPriorityChange}
               className={`${FIELD_STYLES.select} w-full`}
               disabled={!isEnabled}
@@ -283,7 +283,7 @@ export const EmailMessageExpanded = React.memo(
             <label className={FIELD_STYLES.checkboxLabel}>
               <input
                 type="checkbox"
-                checked={useTemplate}
+                checked={useTemplate || false}
                 onChange={onUseTemplateChange}
                 className="mr-2"
                 disabled={!isEnabled}
@@ -293,7 +293,7 @@ export const EmailMessageExpanded = React.memo(
             {useTemplate && (
               <input
                 type="text"
-                value={templateId}
+                value={templateId || ""}
                 onChange={onTemplateIdChange}
                 placeholder="Template ID..."
                 className={`${FIELD_STYLES.input} w-full mt-1`}
@@ -309,7 +309,7 @@ export const EmailMessageExpanded = React.memo(
             </label>
             <select
               id="schedule-type"
-              value={scheduleType}
+              value={scheduleType || "immediate"}
               onChange={onScheduleTypeChange}
               className={`${FIELD_STYLES.select} w-full`}
               disabled={!isEnabled}
@@ -350,7 +350,7 @@ export const EmailMessageExpanded = React.memo(
                 </Tooltip>
                 <EnforceNumericInput
                   id="delay-input"
-                  value={delayMinutes}
+                  value={delayMinutes || 0}
                   onValueChange={onDelayMinutesChange}
                   className={`${FIELD_STYLES.input} w-full`}
                   disabled={!isEnabled}
@@ -385,14 +385,14 @@ export const EmailMessageExpanded = React.memo(
           <div className={FIELD_STYLES.statusBox}>
             <div>
               <span className="text-[--node-email-text]">Sent:</span>{" "}
-              {sentCount}
+              {sentCount || 0}
             </div>
             {formattedLastSent && <div>Last sent: {formattedLastSent}</div>}
             {lastError && (
               <div className="mt-1 text-red-600">Error: {lastError}</div>
             )}
-            {retryCount > 0 && (
-              <div className="text-yellow-600">Retries: {retryCount}</div>
+            {(retryCount || 0) > 0 && (
+              <div className="text-yellow-600">Retries: {retryCount || 0}</div>
             )}
           </div>
         </div>
