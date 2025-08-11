@@ -174,7 +174,7 @@ export const EmailSenderExpanded = React.memo(
 
     return (
       <div
-        className={`${EXPANDED_STYLES.container} ${isEnabled ? "" : EXPANDED_STYLES.disabled}`}
+        className={`nowheel ${EXPANDED_STYLES.container} ${isEnabled ? "" : EXPANDED_STYLES.disabled}`}
       >
         <div className={EXPANDED_STYLES.content}>
           {/* Account Selection */}
@@ -198,7 +198,7 @@ export const EmailSenderExpanded = React.memo(
             </label>
             <select
               id="email-account-select"
-              value={accountId}
+              value={accountId ?? ""}
               onChange={onAccountChange}
               className={`${FIELD_STYLES.select} w-full ${accountErrors.length > 0 ? "border-red-500" : ""}`}
               disabled={!isEnabled || sendingStatus === "sending"}
@@ -241,9 +241,9 @@ export const EmailSenderExpanded = React.memo(
             )}
 
             {/* Account Errors */}
-            {accountErrors.length > 0 && (
+            {(accountErrors?.length ?? 0) > 0 && (
               <div className="mt-1">
-                {accountErrors.map((error, index) => (
+                {(accountErrors || []).map((error, index) => (
                   <div key={index} className="text-[10px] text-red-600">
                     ⚠ {error}
                   </div>
@@ -265,6 +265,7 @@ export const EmailSenderExpanded = React.memo(
             <label htmlFor="recipients-to" className={FIELD_STYLES.label}>
               To (comma-separated):
             </label>
+            {/* dev test recipient buttons removed */}
             <textarea
               id="recipients-to"
               value={safeRecipients.to.join(", ")}
@@ -298,7 +299,7 @@ export const EmailSenderExpanded = React.memo(
             <input
               id="email-subject"
               type="text"
-              value={subject}
+              value={subject ?? ""}
               onChange={onSubjectChange}
               placeholder="Email subject..."
               className={`${FIELD_STYLES.input} w-full`}
@@ -395,7 +396,7 @@ export const EmailSenderExpanded = React.memo(
             </label>
             <select
               id="send-mode"
-              value={sendMode}
+              value={sendMode ?? "immediate"}
               onChange={onSendModeChange}
               className={`${FIELD_STYLES.select} w-full`}
               disabled={!isEnabled || sendingStatus === "sending"}
@@ -430,7 +431,7 @@ export const EmailSenderExpanded = React.memo(
                 <input
                   id="batch-size"
                   type="number"
-                  value={batchSize}
+                  value={batchSize ?? 10}
                   onChange={onNumberChange("batchSize", 1, 100)}
                   min="1"
                   max="100"
@@ -459,7 +460,7 @@ export const EmailSenderExpanded = React.memo(
                 <input
                   id="delay-between-sends"
                   type="number"
-                  value={delayBetweenSends}
+                  value={delayBetweenSends ?? 0}
                   onChange={onNumberChange("delayBetweenSends", 0, 60000)}
                   min="0"
                   max="60000"
@@ -475,7 +476,7 @@ export const EmailSenderExpanded = React.memo(
             <label className={FIELD_STYLES.checkboxLabel}>
               <input
                 type="checkbox"
-                checked={trackDelivery}
+                checked={!!trackDelivery}
                 onChange={onCheckboxChange("trackDelivery")}
                 className="mr-2"
                 disabled={!isEnabled || sendingStatus === "sending"}
@@ -485,7 +486,7 @@ export const EmailSenderExpanded = React.memo(
             <label className={FIELD_STYLES.checkboxLabel}>
               <input
                 type="checkbox"
-                checked={trackReads}
+                checked={!!trackReads}
                 onChange={onCheckboxChange("trackReads")}
                 className="mr-2"
                 disabled={!isEnabled || sendingStatus === "sending"}
@@ -495,7 +496,7 @@ export const EmailSenderExpanded = React.memo(
             <label className={FIELD_STYLES.checkboxLabel}>
               <input
                 type="checkbox"
-                checked={trackClicks}
+                checked={!!trackClicks}
                 onChange={onCheckboxChange("trackClicks")}
                 className="mr-2"
                 disabled={!isEnabled || sendingStatus === "sending"}
@@ -505,7 +506,7 @@ export const EmailSenderExpanded = React.memo(
             <label className={FIELD_STYLES.checkboxLabel}>
               <input
                 type="checkbox"
-                checked={continueOnError}
+                checked={!!continueOnError}
                 onChange={onCheckboxChange("continueOnError")}
                 className="mr-2"
                 disabled={!isEnabled || sendingStatus === "sending"}
@@ -536,7 +537,7 @@ export const EmailSenderExpanded = React.memo(
             <input
               id="retry-attempts"
               type="number"
-              value={retryAttempts}
+              value={retryAttempts ?? 3}
               onChange={onNumberChange("retryAttempts", 0, 5)}
               min="0"
               max="5"
@@ -614,7 +615,27 @@ export const EmailSenderExpanded = React.memo(
         return false;
       }
     }
-    // Compare nodeData fields that affect view
+    // Compare frequently edited fields (recipients + content) and core fields
+    const prevData: any = prev.nodeData as any;
+    const nextData: any = next.nodeData as any;
+    const recipientsChanged = ["to", "cc", "bcc"].some((field) => {
+      const p = Array.isArray(prevData?.recipients?.[field])
+        ? prevData.recipients[field].join(",")
+        : "";
+      const n = Array.isArray(nextData?.recipients?.[field])
+        ? nextData.recipients[field].join(",")
+        : "";
+      return p !== n;
+    });
+    if (recipientsChanged) return false;
+    if (
+      (prevData?.content?.text || "") !== (nextData?.content?.text || "") ||
+      (prevData?.content?.html || "") !== (nextData?.content?.html || "") ||
+      Boolean(prevData?.content?.useHtml) !==
+        Boolean(nextData?.content?.useHtml)
+    ) {
+      return false;
+    }
     const keys: (keyof EmailSenderData)[] = [
       "accountId",
       "subject",
@@ -631,7 +652,7 @@ export const EmailSenderExpanded = React.memo(
       "continueOnError",
     ];
     for (const k of keys) {
-      if ((prev.nodeData as any)[k] !== (next.nodeData as any)[k]) return false;
+      if (prevData[k] !== nextData[k]) return false;
     }
     return true;
   }

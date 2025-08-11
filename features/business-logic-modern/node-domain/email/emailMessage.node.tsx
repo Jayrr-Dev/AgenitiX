@@ -722,14 +722,110 @@ const EmailMessageNode = memo(
       }
     }, [userEmail, token, updateNodeData]); // Remove nodeData from deps
 
-    /** Sync email input with connected data */
+    /** Sync email input with connected data and auto-populate sender info */
     useEffect(() => {
       const curr = nodeData as EmailMessageData;
       // Use JSON comparison for deep equality to prevent infinite loops
       const currentEmailInputStr = JSON.stringify(curr.emailInput);
       const connectedEmailDataStr = JSON.stringify(connectedEmailData);
+
       if (currentEmailInputStr !== connectedEmailDataStr) {
-        updateNodeData({ emailInput: connectedEmailData });
+        const updates: Partial<EmailMessageData> = {
+          emailInput: connectedEmailData,
+        };
+
+        // Auto-populate sender information from connected email data
+        if (
+          connectedEmailData &&
+          Array.isArray(connectedEmailData) &&
+          connectedEmailData.length > 0
+        ) {
+          // [Explanation], basically extract sender info from first email to auto-populate reply-to fields
+          const firstEmail = connectedEmailData[0] as any;
+
+          // Look for sender information in various formats
+          let senderEmail = "";
+          let senderName = "";
+
+          if (firstEmail?.from) {
+            if (typeof firstEmail.from === "object") {
+              senderEmail =
+                firstEmail.from.email || firstEmail.from.address || "";
+              senderName = firstEmail.from.name || "";
+            } else if (typeof firstEmail.from === "string") {
+              senderEmail = firstEmail.from;
+            }
+          }
+
+          // Also check formatted email data structure
+          if (!senderEmail && firstEmail?.From) {
+            // Handle formatted display like "Name <email@domain.com>"
+            const fromMatch = String(firstEmail.From).match(/<([^>]+)>/);
+            if (fromMatch) {
+              senderEmail = fromMatch[1];
+              const nameMatch = String(firstEmail.From).match(/^([^<]+)</);
+              senderName = nameMatch ? nameMatch[1].trim() : "";
+            } else {
+              senderEmail = String(firstEmail.From);
+            }
+          }
+
+          // Auto-populate "To" field with sender's email (for replies)
+          if (senderEmail) {
+            const currentRecipients = curr.recipients || {
+              to: [],
+              cc: [],
+              bcc: [],
+            };
+            const toEmails = currentRecipients.to || [];
+
+            // Only add if not already in the list
+            if (!toEmails.includes(senderEmail)) {
+              updates.recipients = {
+                ...currentRecipients,
+                to: [...toEmails, senderEmail],
+              };
+            }
+          }
+
+          // Auto-populate subject with "Re: " prefix if original subject exists
+          if (firstEmail?.subject || firstEmail?.Subject) {
+            const originalSubject = String(
+              firstEmail.subject || firstEmail.Subject
+            );
+            if (originalSubject && !curr.subject) {
+              const replySubject = originalSubject.startsWith("Re: ")
+                ? originalSubject
+                : `Re: ${originalSubject}`;
+              updates.subject = replySubject;
+            }
+          }
+
+          // Auto-populate message content with reply context (only if no existing content)
+          if (!curr.messageContent) {
+            const originalContent =
+              firstEmail?.textContent || firstEmail?.Content || "";
+            const originalDate = firstEmail?.date || firstEmail?.Date || "";
+            const originalSender = senderName
+              ? `${senderName} <${senderEmail}>`
+              : senderEmail;
+
+            if (originalContent && originalSender) {
+              const formattedDate = originalDate
+                ? new Date(
+                    typeof originalDate === "number"
+                      ? originalDate
+                      : originalDate
+                  ).toLocaleString()
+                : "unknown date";
+
+              const replyContent = `\n\n--- Reply to message from ${originalSender} on ${formattedDate} ---\n${String(originalContent).substring(0, 300)}${String(originalContent).length > 300 ? "..." : ""}`;
+              updates.messageContent = replyContent;
+            }
+          }
+        }
+
+        updateNodeData(updates);
       }
     }, [connectedEmailData, updateNodeData]); // Remove nodeData from deps
 
@@ -793,6 +889,10 @@ const EmailMessageNode = memo(
       try {
         const map = generateoutputField(spec, nodeData as any);
         if (!(map instanceof Map)) return;
+        // Avoid feeding 'output' handle back into itself which can create loops
+        if (map.has("output")) {
+          map.delete("output");
+        }
 
         // Convert to string for comparison to avoid object reference issues
         const mapStr = JSON.stringify(Array.from(map.entries()).sort());

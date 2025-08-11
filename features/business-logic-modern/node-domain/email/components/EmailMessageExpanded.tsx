@@ -150,7 +150,18 @@ export const EmailMessageExpanded = React.memo(
       return (
         <div key={type}>
           <div className="flex items-center justify-between mb-1">
-            <label className={FIELD_STYLES.label}>{label}:</label>
+            <label className={FIELD_STYLES.label}>
+              <span className="inline-flex items-center gap-1">
+                {label}:
+                {type === "to" &&
+                  recipientList.length > 0 &&
+                  recipientList.some((email) => email?.includes("@")) && (
+                    <span className="text-[8px] text-blue-500 opacity-75">
+                      auto
+                    </span>
+                  )}
+              </span>
+            </label>
             <button
               type="button"
               onClick={() => addRecipient(type)}
@@ -201,7 +212,11 @@ export const EmailMessageExpanded = React.memo(
             <label htmlFor="subject-input" className={FIELD_STYLES.label}>
               <span className="inline-flex items-center gap-1">
                 Subject
-                {/* Live connection status, basically visual indicator */}
+                {subject && subject.startsWith("Re: ") && (
+                  <span className="text-[8px] text-blue-500 opacity-75">
+                    auto
+                  </span>
+                )}
               </span>
               <RenderStatusDot
                 eventActive={connectionStatus === "sent"}
@@ -230,7 +245,15 @@ export const EmailMessageExpanded = React.memo(
           <div>
             <div className="flex items-center justify-between mb-1">
               <label htmlFor="message-content" className={FIELD_STYLES.label}>
-                Message Content:
+                <span className="inline-flex items-center gap-1">
+                  Message Content:
+                  {messageContent &&
+                    messageContent.includes("--- Reply to message from") && (
+                      <span className="text-[8px] text-blue-500 opacity-75">
+                        auto
+                      </span>
+                    )}
+                </span>
               </label>
               <select
                 value={messageType || "plain"}

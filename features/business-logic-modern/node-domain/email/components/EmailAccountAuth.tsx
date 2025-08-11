@@ -55,6 +55,8 @@ const PROVIDER_MAP: Record<
   yahoo: { name: "Yahoo", mode: "oauth2" },
   imap: { name: "IMAP", mode: "manual" },
   smtp: { name: "SMTP", mode: "manual" },
+  // Dev-only provider to send via Resend component with onboarding@resend.dev
+  "resend-test": { name: "Resend (dev)", mode: "manual" },
 };
 
 /* -------------------------------------------------------------------- */
@@ -164,6 +166,16 @@ export const EmailAccountAuth = memo(
     /** Persist manual settings */
     const onSaveManual = useCallback(() => {
       if (!isManual) return;
+
+      if (provider === "resend-test") {
+        // In dev: persist a lightweight account pointing to Resend test sender
+        handleManualSave({
+          provider,
+          email: email || "onboarding@resend.dev",
+          displayName: displayName || "Resend Dev",
+        });
+        return;
+      }
 
       handleManualSave({
         provider,
@@ -314,41 +326,45 @@ export const EmailAccountAuth = memo(
             )}
 
             {/* ---------------- Credentials --------------------------- */}
-            <div className={AUTH_STYLES.inlineGroup}>
-              <Input
-                value={username ?? ""}
-                onChange={updateField("username")}
-                placeholder="Username"
-                className={AUTH_STYLES.input}
-                disabled={!isEnabled}
-                aria-label="Username"
-              />
+            {provider !== "resend-test" && (
+              <div className={AUTH_STYLES.inlineGroup}>
+                <Input
+                  value={username ?? ""}
+                  onChange={updateField("username")}
+                  placeholder="Username"
+                  className={AUTH_STYLES.input}
+                  disabled={!isEnabled}
+                  aria-label="Username"
+                />
 
-              <Input
-                type="password"
-                value={password ?? ""}
-                onChange={updateField("password")}
-                placeholder="Password"
-                className={AUTH_STYLES.input}
-                disabled={!isEnabled}
-                aria-label="Password"
-              />
-            </div>
+                <Input
+                  type="password"
+                  value={password ?? ""}
+                  onChange={updateField("password")}
+                  placeholder="Password"
+                  className={AUTH_STYLES.input}
+                  disabled={!isEnabled}
+                  aria-label="Password"
+                />
+              </div>
+            )}
 
             {/* ---------------- Security opts ------------------------- */}
-            <label className="flex items-center gap-2 pt-2 text-[11px] text-[--node-email-text]">
-              <input
-                type="checkbox"
-                checked={provider === "imap" ? useSSL : useTLS}
-                onChange={updateField(
-                  provider === "imap" ? "useSSL" : "useTLS"
-                )}
-                className="scale-75"
-                disabled={!isEnabled}
-                aria-label={`Use ${provider === "imap" ? "SSL" : "TLS"} encryption`}
-              />
-              Use {provider === "imap" ? "SSL" : "TLS"} encryption
-            </label>
+            {provider !== "resend-test" && (
+              <label className="flex items-center gap-2 pt-2 text-[11px] text-[--node-email-text]">
+                <input
+                  type="checkbox"
+                  checked={provider === "imap" ? useSSL : useTLS}
+                  onChange={updateField(
+                    provider === "imap" ? "useSSL" : "useTLS"
+                  )}
+                  className="scale-75"
+                  disabled={!isEnabled}
+                  aria-label={`Use ${provider === "imap" ? "SSL" : "TLS"} encryption`}
+                />
+                Use {provider === "imap" ? "SSL" : "TLS"} encryption
+              </label>
+            )}
 
             <Button
               type="button"
@@ -357,18 +373,22 @@ export const EmailAccountAuth = memo(
               className="w-full p-0 mt-0 text-xs"
               onClick={onSaveManual}
               disabled={
-                !(
-                  isEnabled &&
-                  email &&
-                  username &&
-                  password &&
-                  (provider === "imap"
-                    ? imapHost && imapPort
-                    : smtpHost && smtpPort)
-                )
+                provider === "resend-test"
+                  ? !isEnabled
+                  : !(
+                      isEnabled &&
+                      email &&
+                      username &&
+                      password &&
+                      (provider === "imap"
+                        ? imapHost && imapPort
+                        : smtpHost && smtpPort)
+                    )
               }
             >
-              Save Settings
+              {provider === "resend-test"
+                ? "Use Resend Dev Sender"
+                : "Save Settings"}
             </Button>
           </div>
         )}
