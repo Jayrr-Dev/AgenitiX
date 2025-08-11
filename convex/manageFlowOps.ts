@@ -45,7 +45,7 @@ export const saveNodeDocument = mutation({
     const bytes = new TextEncoder().encode(content);
     const uploadUrl = await ctx.storage.generateUploadUrl();
     const storage_size = bytes.byteLength;
-    
+
     // TODO: Actually upload the data to the URL
     // For now, we'll use a placeholder storage ID
     // This needs to be implemented with proper file upload logic
@@ -135,7 +135,9 @@ export const getNodeDocument = query({
         }
         const response = await fetch(url);
         const buf = await response.arrayBuffer();
-        const content = buf ? new TextDecoder().decode(new Uint8Array(buf)) : "";
+        const content = buf
+          ? new TextDecoder().decode(new Uint8Array(buf))
+          : "";
         return {
           _id: doc._id,
           flow_id: doc.flow_id,
