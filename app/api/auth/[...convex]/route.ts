@@ -12,13 +12,17 @@
 
 import { logAuthFailure } from "@/lib/server-logger";
 import { convexAuthNextjsMiddleware } from "@convex-dev/auth/nextjs/server";
+import type { NextRequest } from "next/server";
 
 // Wrap Convex Auth middleware to add production-grade error logs
 const handler = convexAuthNextjsMiddleware();
 
-export default async function authHandler(request: Request) {
+export default async function authHandler(
+  request: NextRequest,
+  context: { params: { convex: string[] } }
+) {
   try {
-    const response = await handler(request as any);
+    const response = await handler(request, context);
     if (response && response.status >= 400) {
       logAuthFailure({
         error: new Error(`Auth API returned status ${response.status}`),
