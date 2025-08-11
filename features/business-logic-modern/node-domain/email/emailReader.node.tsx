@@ -189,6 +189,18 @@ function createDynamicSpec(data: EmailReaderData): NodeSpec {
     COLLAPSED_SIZES[data.collapsedSize as keyof typeof COLLAPSED_SIZES] ??
     COLLAPSED_SIZES.C2;
 
+  /**
+   * HANDLE_TOOLTIPS – ultra‑concise custom tooltip labels for handles
+   * [Explanation], basically 1–3 word hints shown before dynamic value/type
+   */
+  const HANDLE_TOOLTIPS = {
+    TRIGGER_IN: "Trigger",
+    ACCOUNT_IN: "Account",
+    MESSAGES_OUT: "Messages",
+    COUNT_OUT: "Count",
+    STATUS_OUT: "Status",
+  } as const;
+
   return {
     kind: "emailReader",
     displayName: "Email Reader",
@@ -202,6 +214,7 @@ function createDynamicSpec(data: EmailReaderData): NodeSpec {
         position: "top",
         type: "target",
         dataType: "Boolean",
+        tooltip: HANDLE_TOOLTIPS.TRIGGER_IN,
       },
       {
         id: "account-input",
@@ -209,6 +222,7 @@ function createDynamicSpec(data: EmailReaderData): NodeSpec {
         position: "left",
         type: "target",
         dataType: "JSON",
+        tooltip: HANDLE_TOOLTIPS.ACCOUNT_IN,
       },
       {
         id: "messages-output",
@@ -216,6 +230,7 @@ function createDynamicSpec(data: EmailReaderData): NodeSpec {
         position: "right",
         type: "source",
         dataType: "Array",
+        tooltip: HANDLE_TOOLTIPS.MESSAGES_OUT,
       },
       {
         id: "count-output",
@@ -223,6 +238,7 @@ function createDynamicSpec(data: EmailReaderData): NodeSpec {
         position: "bottom",
         type: "source",
         dataType: "Number",
+        tooltip: HANDLE_TOOLTIPS.COUNT_OUT,
       },
       {
         id: "status-output",
@@ -230,6 +246,7 @@ function createDynamicSpec(data: EmailReaderData): NodeSpec {
         position: "bottom",
         type: "source",
         dataType: "Boolean",
+        tooltip: HANDLE_TOOLTIPS.STATUS_OUT,
       },
     ],
     inspector: { key: "EmailReaderInspector" },

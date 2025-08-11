@@ -90,19 +90,9 @@ function sanitizeHistoryGraphForPersistence(graph: HistoryGraph): HistoryGraph {
                 "document_size",
                 "document_checksum",
                 "document_content_type",
-                "document_preview",
               ];
 
-              // For view and convert nodes, also preserve inputs since they're needed for display
-              const kind = data.kind || data.type;
-              if (
-                typeof kind === "string" &&
-                (/^view/i.test(kind) ||
-                  /^to/i.test(kind) ||
-                  /convert/i.test(kind))
-              ) {
-                keepFields.push("inputs");
-              }
+              // Do NOT persist inputs or previews; they may contain user content
 
               for (const field of keepFields) {
                 if (field in data) {

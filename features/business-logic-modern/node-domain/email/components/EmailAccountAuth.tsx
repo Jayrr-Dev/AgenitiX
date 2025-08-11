@@ -116,7 +116,9 @@ export const EmailAccountAuth = memo(
       useTLS = true,
     } = nodeData;
 
-    const meta = PROVIDER_MAP[provider];
+    // Provide a safe default for provider to avoid undefined access, basically ensure meta is always defined
+    const providerKey = (provider ?? "gmail") as EmailProviderType;
+    const meta = PROVIDER_MAP[providerKey] ?? PROVIDER_MAP.gmail;
     const isOAuth = meta.mode === "oauth2";
     const isManual = meta.mode === "manual";
     const isLocked = !!nodeData.isConnected; // When connected, lock auth UI to enforce one email per node

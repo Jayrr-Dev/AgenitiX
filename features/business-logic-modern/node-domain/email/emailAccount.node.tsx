@@ -8,8 +8,8 @@
  * ------------------------------------------------------------------
  */
 
-import { memo, useCallback, useEffect, useMemo, useRef } from "react";
 import { type NodeProps } from "@xyflow/react";
+import { memo, useCallback, useEffect, useMemo, useRef } from "react";
 import { z } from "zod";
 
 import { ExpandCollapseButton } from "@/components/nodes/ExpandCollapseButton";
@@ -32,10 +32,10 @@ import {
 } from "@/features/business-logic-modern/infrastructure/theming/sizing";
 import { useNodeData } from "@/hooks/useNodeData";
 
+import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
 import { EmailAccountCollapsed } from "./components/EmailAccountCollapsed";
 import { EmailAccountExpanded } from "./components/EmailAccountExpanded";
 import { EmailAccountProvider } from "./components/EmailAccountProvider";
-import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
 
 /* ------------------------------------------------------------------ */
 /* 1️⃣  Schema & types                                                */
@@ -89,7 +89,7 @@ export type EmailAccountData = z.infer<typeof EmailAccountDataSchema>;
 
 const validateNodeData = createNodeValidator(
   EmailAccountDataSchema,
-  "EmailAccount",
+  "EmailAccount"
 );
 
 /* ------------------------------------------------------------------ */
@@ -121,7 +121,7 @@ const INITIAL_DATA: Omit<EmailAccountData, "provider"> = {
 };
 
 const createDynamicSpec = (
-  data: Pick<EmailAccountData, "expandedSize" | "collapsedSize">,
+  data: Pick<EmailAccountData, "expandedSize" | "collapsedSize">
 ): NodeSpec => {
   const expanded =
     EXPANDED_SIZES[data.expandedSize as keyof typeof EXPANDED_SIZES] ??
@@ -137,10 +137,31 @@ const createDynamicSpec = (
     category: CATEGORIES.EMAIL,
     size: { expanded, collapsed },
     handles: [
-      { id: "trigger-input", code: "b", position: "top", type: "target", dataType: "Boolean", tooltip: "IN<br/>Trigger" },
+      {
+        id: "trigger-input",
+        code: "b",
+        position: "top",
+        type: "target",
+        dataType: "Boolean",
+        tooltip: "IN<br/>Trigger",
+      },
       // Expose a strongly-typed account payload for downstream consumers, basically provide the connected account object
-      { id: "account-output", code: "j", position: "right", type: "source", dataType: "JSON", tooltip: "OUT<br/>Email Account" },
-      { id: "status-output", code: "b", position: "bottom", type: "source", dataType: "Boolean", tooltip: "OUT<br/>Connection Status" },
+      {
+        id: "account-output",
+        code: "j",
+        position: "right",
+        type: "source",
+        dataType: "JSON",
+        tooltip: "OUT<br/>Email Account",
+      },
+      {
+        id: "status-output",
+        code: "b",
+        position: "bottom",
+        type: "source",
+        dataType: "Boolean",
+        tooltip: "OUT<br/>Connection Status",
+      },
     ],
     inspector: { key: "EmailAccountInspector" },
     version: 1,
@@ -165,9 +186,9 @@ const createDynamicSpec = (
         "lastError",
         "isConfigured",
         "isConnected",
-          // Hide email and displayName to avoid manual typing; these come from OAuth for oauth2 providers
-          "email",
-          "displayName",
+        // Hide email and displayName to avoid manual typing; these come from OAuth for oauth2 providers
+        "email",
+        "displayName",
       ],
       customFields: [
         { key: "isEnabled", type: "boolean", label: "Enable" },
@@ -177,7 +198,8 @@ const createDynamicSpec = (
     },
     icon: "LuMail",
     author: "Agenitix Team",
-    description: "Configure and authenticate email accounts for workflow integration",
+    description:
+      "Configure and authenticate email accounts for workflow integration",
     feature: "email",
     tags: ["email", "authentication", "oauth2", "gmail", "outlook"],
     theming: {},
@@ -194,150 +216,173 @@ export const spec: NodeSpec = createDynamicSpec({
 /* 3️⃣  React node component                                          */
 /* ------------------------------------------------------------------ */
 
-const EmailAccountNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
-  /* ----- state & helpers ------------------------------------------- */
-  const { nodeData, updateNodeData } = useNodeData(id, {}) as {
-    nodeData: EmailAccountData;
-    updateNodeData: (d: Partial<EmailAccountData>) => void;
-  };
-
-  const categoryStyles = { primary: "text-[--node-email-text]" };
-  const { isExpanded, isEnabled, isConnected } = nodeData;
-
-  /* ----- output effect --------------------------------------------- */
-  const lastOutputRef = useRef<Map<string, unknown> | null>(null);
-  const lastPerHandleSnapshotRef = useRef<{
-    account?: unknown;
-    status?: boolean;
-  } | null>(null);
-
-  useEffect(() => {
-    // Guard: outputs only when node is enabled
-    if (!isEnabled) return;
-
-    // Build per-handle values derived from current state
-    const statusOutput: boolean = Boolean(isConnected);
-    const accountOutput: Record<string, unknown> | undefined = isConnected
-      ? {
-          accountId: nodeData.accountId,
-          provider: nodeData.provider,
-          email: nodeData.email,
-          displayName: nodeData.displayName,
-          isConnected: nodeData.isConnected,
-          lastValidated: nodeData.lastValidated,
-        }
-      : undefined;
-
-    // Snapshot for change detection on per-handle payloads
-    const prevSnapshot = lastPerHandleSnapshotRef.current;
-    const perHandleChanged =
-      !prevSnapshot ||
-      prevSnapshot.status !== statusOutput ||
-      JSON.stringify(prevSnapshot.account ?? null) !==
-        JSON.stringify(accountOutput ?? null);
-
-    // Generate Map-based output using a synthetic data view that includes per-handle fields
-    const syntheticData = {
-      ...(nodeData as Record<string, unknown>),
-      "status-output": statusOutput,
-      "account-output": accountOutput,
+const EmailAccountNode = memo(
+  ({ id, spec }: NodeProps & { spec: NodeSpec }) => {
+    /* ----- state & helpers ------------------------------------------- */
+    // Ensure validated defaults are present to avoid undefined provider, basically seed with safe initial data
+    const { nodeData, updateNodeData } = useNodeData(
+      id,
+      createSafeInitialData(EmailAccountDataSchema, {
+        provider: "gmail",
+        ...INITIAL_DATA,
+      })
+    ) as {
+      nodeData: EmailAccountData;
+      updateNodeData: (d: Partial<EmailAccountData>) => void;
     };
 
-    const outputMap = generateoutputField(spec, syntheticData) as Map<string, unknown>;
+    const categoryStyles = { primary: "text-[--node-email-text]" };
+    const { isExpanded, isEnabled, isConnected } = nodeData;
 
-    // Compare against last emitted Map to avoid redundant writes
-    const mapChanged =
-      !lastOutputRef.current ||
-      outputMap.size !== lastOutputRef.current.size ||
-      [...outputMap.entries()].some(
-        ([key, value]) => lastOutputRef.current?.get(key) !== value,
-      );
+    /* ----- output effect --------------------------------------------- */
+    const lastOutputRef = useRef<Map<string, unknown> | null>(null);
+    const lastPerHandleSnapshotRef = useRef<{
+      account?: unknown;
+      status?: boolean;
+    } | null>(null);
 
-    if (isConnected) {
-      if (perHandleChanged || mapChanged) {
-        lastPerHandleSnapshotRef.current = { account: accountOutput, status: statusOutput };
-        lastOutputRef.current = outputMap;
-        updateNodeData({
-          // Persist per-handle fields so downstream nodes can read them directly if needed
-          "status-output": statusOutput,
-          "account-output": accountOutput,
-          // Serialized Map for inspector/view nodes
-          output: Object.fromEntries(outputMap),
-          isActive: true,
-        });
+    useEffect(() => {
+      // Guard: outputs only when node is enabled
+      if (!isEnabled) return;
+
+      // Build per-handle values derived from current state
+      const statusOutput: boolean = Boolean(isConnected);
+      const accountOutput: Record<string, unknown> | undefined = isConnected
+        ? {
+            accountId: nodeData.accountId,
+            provider: nodeData.provider,
+            email: nodeData.email,
+            displayName: nodeData.displayName,
+            isConnected: nodeData.isConnected,
+            lastValidated: nodeData.lastValidated,
+          }
+        : undefined;
+
+      // Snapshot for change detection on per-handle payloads
+      const prevSnapshot = lastPerHandleSnapshotRef.current;
+      const perHandleChanged =
+        !prevSnapshot ||
+        prevSnapshot.status !== statusOutput ||
+        JSON.stringify(prevSnapshot.account ?? null) !==
+          JSON.stringify(accountOutput ?? null);
+
+      // Generate Map-based output using a synthetic data view that includes per-handle fields
+      const syntheticData = {
+        ...(nodeData as Record<string, unknown>),
+        "status-output": statusOutput,
+        "account-output": accountOutput,
+      };
+
+      const outputMap = generateoutputField(spec, syntheticData) as Map<
+        string,
+        unknown
+      >;
+
+      // Compare against last emitted Map to avoid redundant writes
+      const mapChanged =
+        !lastOutputRef.current ||
+        outputMap.size !== lastOutputRef.current.size ||
+        [...outputMap.entries()].some(
+          ([key, value]) => lastOutputRef.current?.get(key) !== value
+        );
+
+      if (isConnected) {
+        if (perHandleChanged || mapChanged) {
+          lastPerHandleSnapshotRef.current = {
+            account: accountOutput,
+            status: statusOutput,
+          };
+          lastOutputRef.current = outputMap;
+          updateNodeData({
+            // Persist per-handle fields so downstream nodes can read them directly if needed
+            "status-output": statusOutput,
+            "account-output": accountOutput,
+            // Serialized Map for inspector/view nodes
+            output: Object.fromEntries(outputMap),
+            isActive: true,
+          });
+        }
+      } else {
+        // When disconnected, clear outputs once if needed
+        if (
+          perHandleChanged ||
+          (lastOutputRef.current && lastOutputRef.current.size > 0)
+        ) {
+          lastPerHandleSnapshotRef.current = {
+            account: undefined,
+            status: false,
+          };
+          lastOutputRef.current = new Map();
+          updateNodeData({
+            "status-output": false,
+            "account-output": undefined,
+            output: {},
+            isActive: false,
+          });
+        }
       }
-    } else {
-      // When disconnected, clear outputs once if needed
-      if (
-        perHandleChanged ||
-        (lastOutputRef.current && lastOutputRef.current.size > 0)
-      ) {
-        lastPerHandleSnapshotRef.current = { account: undefined, status: false };
-        lastOutputRef.current = new Map();
-        updateNodeData({
-          "status-output": false,
-          "account-output": undefined,
-          output: {},
-          isActive: false,
-        });
-      }
+    }, [isEnabled, isConnected, nodeData, spec, updateNodeData]);
+
+    /* ----- validation ------------------------------------------------- */
+    const validation = validateNodeData(nodeData);
+    if (!validation.success) {
+      reportValidationError("EmailAccount", id, validation.errors, {
+        originalData: validation.originalData,
+        component: "EmailAccountNode",
+      });
     }
-  }, [isEnabled, isConnected, nodeData, spec, updateNodeData]);
+    useNodeDataValidation(
+      EmailAccountDataSchema,
+      "EmailAccount",
+      validation.data,
+      id
+    );
 
-  /* ----- validation ------------------------------------------------- */
-  const validation = validateNodeData(nodeData);
-  if (!validation.success) {
-    reportValidationError("EmailAccount", id, validation.errors, {
-      originalData: validation.originalData,
-      component: "EmailAccountNode",
-    });
+    /* ----- UI handlers ------------------------------------------------ */
+    const toggleExpand = useCallback(
+      () => updateNodeData({ isExpanded: !isExpanded }),
+      [isExpanded, updateNodeData]
+    );
+
+    /* ----- render ----------------------------------------------------- */
+    return (
+      <EmailAccountProvider
+        nodeId={id}
+        nodeData={nodeData}
+        updateNodeData={updateNodeData}
+      >
+        <>
+          {/* Handles are rendered by scaffold from spec */}
+
+          <LabelNode nodeId={id} label={nodeData.label ?? spec.displayName} />
+
+          {isExpanded ? (
+            <>
+              <EmailAccountExpanded
+                nodeData={nodeData}
+                updateNodeData={updateNodeData}
+                isEnabled={isEnabled}
+                isAuthenticating={nodeData.isAuthenticating}
+              />
+            </>
+          ) : (
+            <EmailAccountCollapsed
+              nodeData={nodeData}
+              categoryStyles={categoryStyles}
+              onToggleExpand={toggleExpand}
+            />
+          )}
+
+          <ExpandCollapseButton
+            showUI={isExpanded}
+            onToggle={toggleExpand}
+            size="sm"
+          />
+        </>
+      </EmailAccountProvider>
+    );
   }
-  useNodeDataValidation(
-    EmailAccountDataSchema,
-    "EmailAccount",
-    validation.data,
-    id,
-  );
-
-  /* ----- UI handlers ------------------------------------------------ */
-  const toggleExpand = useCallback(
-    () => updateNodeData({ isExpanded: !isExpanded }),
-    [isExpanded, updateNodeData],
-  );
-
-  /* ----- render ----------------------------------------------------- */
-  return (
-    <EmailAccountProvider nodeId={id} nodeData={nodeData} updateNodeData={updateNodeData}>
-      <>
-        {/* Handles are rendered by scaffold from spec */}
-
-        <LabelNode nodeId={id} label={nodeData.label ?? spec.displayName} />
-
-        {isExpanded ? (
-          <> 
-          <EmailAccountExpanded
-            nodeData={nodeData}
-            updateNodeData={updateNodeData}
-            isEnabled={isEnabled}
-            isAuthenticating={nodeData.isAuthenticating}
-          />
-          </>
-        ) : (
-
-   
-          <EmailAccountCollapsed
-            nodeData={nodeData}
-            categoryStyles={categoryStyles}
-            onToggleExpand={toggleExpand}
-          />
-
-        )}
-
-        <ExpandCollapseButton showUI={isExpanded} onToggle={toggleExpand} size="sm" />
-      </>
-    </EmailAccountProvider>
-  );
-});
+);
 
 /* ------------------------------------------------------------------ */
 /* 4️⃣  Wrapper – inject scaffold w/ dynamic spec                     */
@@ -355,7 +400,7 @@ const EmailAccountNodeWithDynamicSpec = (props: NodeProps) => {
     [
       (nodeData as EmailAccountData).expandedSize,
       (nodeData as EmailAccountData).collapsedSize,
-    ],
+    ]
   );
 
   const Scaffolded = useMemo(
@@ -363,7 +408,7 @@ const EmailAccountNodeWithDynamicSpec = (props: NodeProps) => {
       withNodeScaffold(dynamicSpec, (p) => (
         <EmailAccountNode {...p} spec={dynamicSpec} />
       )),
-    [dynamicSpec],
+    [dynamicSpec]
   );
 
   return <Scaffolded {...props} />;

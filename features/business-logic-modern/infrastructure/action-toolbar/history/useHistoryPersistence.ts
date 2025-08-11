@@ -15,19 +15,173 @@ import { api } from "../../../../../convex/_generated/api";
 import type { Id } from "../../../../../convex/_generated/dataModel";
 import type { HistoryGraph } from "./historyGraph";
 
-// Local lightweight optimizer to avoid import issues
+// Robust client-side sanitizer to ensure ZERO content/outputs reach Convex
 function optimizeGraphForStorage(graph: HistoryGraph): HistoryGraph {
-  return {
-    ...graph,
-    nodes: Object.fromEntries(
-      Object.entries(graph.nodes).map(([id, node]) => [
+  try {
+    const sanitizeState = (state: { nodes: any[]; edges: any[] }) => {
+      const safeNodes = Array.isArray(state.nodes)
+        ? state.nodes.map((n) => {
+            try {
+              if (!n || typeof n !== "object") return n;
+
+              const essentialData: Record<string, unknown> = {};
+
+              if (n.data && typeof n.data === "object") {
+                const data = n.data as Record<string, unknown>;
+
+                // Whitelist only safe structural/UI fields. No content, no outputs
+                const keepFields = [
+                  "kind",
+                  "type",
+                  "label",
+                  "isExpanded",
+                  "isEnabled",
+                  "isActive",
+                  "expandedSize",
+                  "collapsedSize",
+                  "accountId",
+                  "provider",
+                  "connectionStatus",
+                  "isConnected",
+                  "lastSync",
+                  "processedCount",
+                  "messageCount",
+                  "batchSize",
+                  "maxMessages",
+                  "includeAttachments",
+                  "markAsRead",
+                  "enableRealTime",
+                  "checkInterval",
+                  "outputFormat",
+                  "viewPath",
+                  "summaryLimit",
+                  "mode",
+                  "keyStrategy",
+                  "customKeys",
+                  "preserveOrder",
+                  "preserveType",
+                  // Large external doc references (metadata only)
+                  "document_id",
+                  "document_size",
+                  "document_checksum",
+                  "document_content_type",
+                  "document_preview",
+                ];
+
+                // For view/convert nodes, keep inputs for UI rendering
+                const kind = (data.kind || data.type) as string | undefined;
+                if (
+                  kind &&
+                  (/^view/i.test(kind) ||
+                    /^to/i.test(kind) ||
+                    /convert/i.test(kind))
+                ) {
+                  keepFields.push("inputs");
+                }
+
+                for (const field of keepFields) {
+                  if (field in data) {
+                    (essentialData as any)[field] = (data as any)[field];
+                  }
+                }
+              }
+
+              return {
+                id: n.id,
+                type: n.type,
+                position: n.position || { x: 0, y: 0 },
+                data: essentialData,
+                measured: n.measured,
+                selected: n.selected,
+                dragging: n.dragging,
+              };
+            } catch {
+              // If sanitization fails, fall back to minimal safe node
+              return {
+                id: n?.id,
+                type: n?.type,
+                position: n?.position || { x: 0, y: 0 },
+                data: {},
+              };
+            }
+          })
+        : [];
+
+      const safeEdges = Array.isArray(state.edges)
+        ? state.edges.map((e: any) => ({
+            id: e.id,
+            source: e.source,
+            target: e.target,
+            sourceHandle: e.sourceHandle,
+            targetHandle: e.targetHandle,
+            type: e.type,
+            animated: e.animated,
+            selected: e.selected,
+          }))
+        : [];
+
+      return { nodes: safeNodes, edges: safeEdges };
+    };
+
+    const sanitizedNodes: Record<string, any> = {};
+    for (const [id, node] of Object.entries(graph.nodes)) {
+      const before = sanitizeState(
+        (node as any).before ?? { nodes: [], edges: [] }
+      );
+      const after = sanitizeState(
+        (node as any).after ?? { nodes: [], edges: [] }
+      );
+      sanitizedNodes[id] = { ...(node as any), before, after };
+    }
+
+    return { ...graph, nodes: sanitizedNodes } as HistoryGraph;
+  } catch {
+    // On any unexpected shape, return a minimal safe graph rather than leaking content
+    return {
+      root: graph.root,
+      cursor: graph.cursor,
+      nodes: {},
+    } as HistoryGraph;
+  }
+}
+
+// Prune history graph to keep payload small for network argument limits
+function pruneGraphForArgumentLimits(
+  graph: HistoryGraph,
+  maxNodes: number = 400
+): HistoryGraph {
+  try {
+    const entries = Object.entries(graph.nodes) as Array<[string, any]>;
+    if (entries.length <= maxNodes) return graph;
+    // Sort by createdAt (fallback to 0)
+    entries.sort((a, b) => (a[1]?.createdAt ?? 0) - (b[1]?.createdAt ?? 0));
+    const kept = entries.slice(-maxNodes);
+    const keptIds = new Set(kept.map(([id]) => id));
+
+    // Rebuild nodes map with safe parent/child references
+    const nodes = Object.fromEntries(
+      kept.map(([id, node]) => [
         id,
         {
           ...node,
+          parentId: keptIds.has(node.parentId) ? node.parentId : null,
+          childrenIds: Array.isArray(node.childrenIds)
+            ? node.childrenIds.filter((cid: string) => keptIds.has(cid))
+            : [],
         },
       ])
-    ),
-  };
+    );
+
+    // Choose new root and cursor within kept set
+    const newRootId = kept[0]?.[0] ?? graph.root;
+    const cursor = keptIds.has(graph.cursor)
+      ? graph.cursor
+      : (kept.at(-1)?.[0] ?? newRootId);
+
+    return { root: newRootId, cursor, nodes } as HistoryGraph;
+  } catch {
+    return graph;
+  }
 }
 
 const SAVE_DEBOUNCE_MS = 750; // Debounce saves, basically wait 750ms before saving
@@ -218,8 +372,10 @@ export function useHistoryPersistence(
         return;
       }
 
-      // Optimize graph for storage for non-drag snapshots
-      const optimizedGraph = optimizeGraphForStorage(graph);
+      // Optimize graph for storage for non-drag snapshots (strip content/outputs)
+      let optimizedGraph = optimizeGraphForStorage(graph);
+      // Extra guard: prune node count to keep under Convex arg limits
+      optimizedGraph = pruneGraphForArgumentLimits(optimizedGraph, 350);
       const graphString = JSON.stringify(optimizedGraph);
 
       // Skip save if graph hasn't changed

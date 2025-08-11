@@ -671,12 +671,17 @@ const UltimateTypesafeHandle: React.FC<UltimateTypesafeHandleProps> = memo(
     const [dynamicTooltipSuffix, setDynamicTooltipSuffix] =
       React.useState<string>("");
 
-    const baseTooltip = useMemo(
-      () =>
-        customTooltip ||
-        getTooltipContent(props.type || "target", dataType, code, tsSymbol),
-      [customTooltip, props.type, dataType, code, tsSymbol]
-    );
+    const baseTooltip = useMemo(() => {
+      const defaultTip = getTooltipContent(
+        props.type || "target",
+        dataType,
+        code,
+        tsSymbol
+      );
+      // If a custom label is provided, prepend it but keep direction/type for clarity
+      // [Explanation], basically show label first, then IN/OUT + type, then dynamic value
+      return customTooltip ? `${customTooltip}<br/>${defaultTip}` : defaultTip;
+    }, [customTooltip, props.type, dataType, code, tsSymbol]);
 
     React.useEffect(() => {
       if (!isTooltipOpen) {
