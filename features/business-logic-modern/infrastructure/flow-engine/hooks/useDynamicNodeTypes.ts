@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 
+import emailMessage from '../../../node-domain/email/emailMessage.node';
 // Add new node imports here (Plop can auto-inject these)
 import triggerPulse from '../../../node-domain/trigger/triggerPulse.node';
 import timeScheduler from '../../../node-domain/trigger/timeScheduler.node';
@@ -55,6 +56,7 @@ import logicXnor from "../../../node-domain/logic/logicXnor.node";
 export function useDynamicNodeTypes() {
 	const nodeTypes = useMemo(
 		() => ({
+			emailMessage,
 			// Add new node types here
 			flowConditional,
 			viewBoolean,

@@ -21,6 +21,7 @@ import { spec as toTextSpec } from "../../node-domain/convert/toText.node";
 import { spec as toObjectSpec } from "../../node-domain/convert/toObject.node";
 import { spec as toArraySpec } from "../../node-domain/convert/toArray.node";
 import { spec as toAnySpec } from "../../node-domain/convert/toAny.node";
+import { spec as emailMessageSpec } from "../../node-domain/email/emailMessage.node";
 import { spec as createTextSpec } from "../../node-domain/create/createText.node";
 import { spec as storeInMemorySpec } from "../../node-domain/create/storeInMemory.node";
 import { spec as emailAccountSpec } from "../../node-domain/email/emailAccount.node";
@@ -67,6 +68,7 @@ const nodeSpecs: Record<string, NodeSpec> = {
 	toObject: toObjectSpec,
 	toArray: toArraySpec,
 	toAny: toAnySpec,
+	emailMessage: emailMessageSpec,
 	// Add new node specs here (auto-updated by Plop)
 	createText: createTextSpec,
 	aiAgent: aiAgentSpec,
