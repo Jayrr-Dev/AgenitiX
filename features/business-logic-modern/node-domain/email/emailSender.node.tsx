@@ -196,6 +196,20 @@ function createDynamicSpec(data: EmailSenderData): NodeSpec {
     COLLAPSED_SIZES[data.collapsedSize as keyof typeof COLLAPSED_SIZES] ??
     COLLAPSED_SIZES.C2;
 
+  /**
+   * HANDLE_TOOLTIPS – ultra‑concise labels for handles
+   * [Explanation], basically 1–3 word hints shown before dynamic value/type
+   */
+  const HANDLE_TOOLTIPS = {
+    TRIGGER_IN: "Trigger",
+    ACCOUNT_IN: "Account",
+    MESSAGE_IN: "Message",
+    SUCCESS_OUT: "Success",
+    MESSAGE_ID_OUT: "Message ID",
+    ERROR_OUT: "Error",
+    OUTPUT_OUT: "Output",
+  } as const;
+
   return {
     kind: "emailSender",
     displayName: "Email Sender",
@@ -209,6 +223,7 @@ function createDynamicSpec(data: EmailSenderData): NodeSpec {
         position: "top",
         type: "target",
         dataType: "Boolean",
+        tooltip: HANDLE_TOOLTIPS.TRIGGER_IN,
       },
       {
         id: "account-input",
@@ -216,6 +231,7 @@ function createDynamicSpec(data: EmailSenderData): NodeSpec {
         position: "left",
         type: "target",
         dataType: "JSON",
+        tooltip: HANDLE_TOOLTIPS.ACCOUNT_IN,
       },
       {
         id: "message-input",
@@ -223,6 +239,7 @@ function createDynamicSpec(data: EmailSenderData): NodeSpec {
         position: "left",
         type: "target",
         dataType: "JSON",
+        tooltip: HANDLE_TOOLTIPS.MESSAGE_IN,
       },
       {
         id: "success-output",
@@ -230,6 +247,7 @@ function createDynamicSpec(data: EmailSenderData): NodeSpec {
         position: "right",
         type: "source",
         dataType: "Boolean",
+        tooltip: HANDLE_TOOLTIPS.SUCCESS_OUT,
       },
       {
         id: "message-id-output",
@@ -237,6 +255,7 @@ function createDynamicSpec(data: EmailSenderData): NodeSpec {
         position: "right",
         type: "source",
         dataType: "String",
+        tooltip: HANDLE_TOOLTIPS.MESSAGE_ID_OUT,
       },
       {
         id: "error-output",
@@ -244,6 +263,7 @@ function createDynamicSpec(data: EmailSenderData): NodeSpec {
         position: "bottom",
         type: "source",
         dataType: "String",
+        tooltip: HANDLE_TOOLTIPS.ERROR_OUT,
       },
       {
         id: "output",
@@ -251,6 +271,7 @@ function createDynamicSpec(data: EmailSenderData): NodeSpec {
         position: "right",
         type: "source",
         dataType: "String",
+        tooltip: HANDLE_TOOLTIPS.OUTPUT_OUT,
       },
     ],
     inspector: { key: "EmailSenderInspector" },

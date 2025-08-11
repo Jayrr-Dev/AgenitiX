@@ -189,6 +189,18 @@ function createDynamicSpec(data: EmailReplierData): NodeSpec {
     COLLAPSED_SIZES[data.collapsedSize as keyof typeof COLLAPSED_SIZES] ??
     COLLAPSED_SIZES.C2;
 
+  /**
+   * HANDLE_TOOLTIPS – ultra‑concise labels for handles
+   * [Explanation], basically 1–3 word hints shown before dynamic value/type
+   */
+  const HANDLE_TOOLTIPS = {
+    MESSAGES_IN: "Messages",
+    TEMPLATE_IN: "Template",
+    MESSAGE_OUT: "Message",
+    STATUS_OUT: "Status",
+    OUTPUTS_OUT: "Outputs",
+  } as const;
+
   return {
     kind: "emailReplier",
     displayName: "Email Replier",
@@ -202,6 +214,7 @@ function createDynamicSpec(data: EmailReplierData): NodeSpec {
         position: "top",
         type: "target",
         dataType: "Array",
+        tooltip: HANDLE_TOOLTIPS.MESSAGES_IN,
       },
       {
         id: "template-input",
@@ -209,6 +222,7 @@ function createDynamicSpec(data: EmailReplierData): NodeSpec {
         position: "left",
         type: "target",
         dataType: "String",
+        tooltip: HANDLE_TOOLTIPS.TEMPLATE_IN,
       },
       {
         id: "message-output",
@@ -216,6 +230,7 @@ function createDynamicSpec(data: EmailReplierData): NodeSpec {
         position: "right",
         type: "source",
         dataType: "JSON",
+        tooltip: HANDLE_TOOLTIPS.MESSAGE_OUT,
       },
       {
         id: "status-output",
@@ -223,6 +238,7 @@ function createDynamicSpec(data: EmailReplierData): NodeSpec {
         position: "bottom",
         type: "source",
         dataType: "Boolean",
+        tooltip: HANDLE_TOOLTIPS.STATUS_OUT,
       },
       {
         id: "outputs",
@@ -230,6 +246,7 @@ function createDynamicSpec(data: EmailReplierData): NodeSpec {
         position: "right",
         type: "source",
         dataType: "String",
+        tooltip: HANDLE_TOOLTIPS.OUTPUTS_OUT,
       },
     ],
     inspector: { key: "EmailReplierInspector" },

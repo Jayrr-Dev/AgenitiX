@@ -59,6 +59,8 @@ export interface EmailReaderExpandedProps {
   isEnabled: boolean;
   connectionStatus: EmailReaderData["connectionStatus"];
   availableAccounts: AvailableAccount[];
+  /** Whether the current selection is allowed to activate */
+  canActivate?: boolean;
   onAccountChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
   onBatchSizeChange: (numericText: string) => void;
   onMaxMessagesChange: (numericText: string) => void;
@@ -76,6 +78,7 @@ export const EmailReaderExpanded = React.memo(
       isEnabled,
       connectionStatus,
       availableAccounts,
+      canActivate,
       onAccountChange,
       onBatchSizeChange,
       onMaxMessagesChange,
@@ -256,7 +259,9 @@ export const EmailReaderExpanded = React.memo(
             <button
               onClick={onReadMessages}
               disabled={
-                !(isEnabled && accountId) || connectionStatus === "reading"
+                !(isEnabled && accountId) ||
+                connectionStatus === "reading" ||
+                canActivate === false
               }
               className={FIELD_STYLES.button}
               type="button"

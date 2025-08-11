@@ -189,6 +189,11 @@ const createDynamicSpec = (data: EmailDataType): NodeSpec => {
       collapsed: collapsedSize,
     },
 
+    /**
+     * HANDLE_TOOLTIPS – ultra‑concise labels for handles
+     * [Explanation], basically 1–3 word hints shown before dynamic value/type
+     */
+
     handles: [
       {
         id: "messages-input",
@@ -196,6 +201,7 @@ const createDynamicSpec = (data: EmailDataType): NodeSpec => {
         position: "left",
         type: "target",
         dataType: "Array",
+        tooltip: "Messages",
       },
       {
         id: "structured-output",
@@ -203,6 +209,7 @@ const createDynamicSpec = (data: EmailDataType): NodeSpec => {
         position: "right",
         type: "source",
         dataType: "JSON",
+        tooltip: "Structured",
       },
       {
         id: "formatted-output",
@@ -210,6 +217,7 @@ const createDynamicSpec = (data: EmailDataType): NodeSpec => {
         position: "bottom",
         type: "source",
         dataType: "String",
+        tooltip: "Formatted",
       },
       {
         id: "outputs",
@@ -217,6 +225,7 @@ const createDynamicSpec = (data: EmailDataType): NodeSpec => {
         position: "right",
         type: "source",
         dataType: "String",
+        tooltip: "Outputs",
       },
     ],
 
@@ -794,32 +803,40 @@ const extractEmailFromArray = (inputEmails: any[]): Partial<EmailDataType> => {
   // Helper function to extract email strings from various formats
   const extractEmailStrings = (emailField: any): string[] => {
     if (!emailField) return [];
-    
-    if (typeof emailField === 'string') {
+
+    if (typeof emailField === "string") {
       return [emailField];
     }
-    
+
     if (Array.isArray(emailField)) {
-      return emailField.map(item => {
-        if (typeof item === 'string') return item;
-        if (typeof item === 'object' && item.email) return item.email;
-        if (typeof item === 'object' && item.address) return item.address;
-        return String(item);
-      }).filter(Boolean);
+      return emailField
+        .map((item) => {
+          if (typeof item === "string") return item;
+          if (typeof item === "object" && item.email) return item.email;
+          if (typeof item === "object" && item.address) return item.address;
+          return String(item);
+        })
+        .filter(Boolean);
     }
-    
-    if (typeof emailField === 'object') {
+
+    if (typeof emailField === "object") {
       if (emailField.email) return [emailField.email];
       if (emailField.address) return [emailField.address];
     }
-    
+
     return [String(emailField)];
   };
 
   return {
-    emailContent: firstEmail?.body || firstEmail?.content || firstEmail?.text || "",
+    emailContent:
+      firstEmail?.body || firstEmail?.content || firstEmail?.text || "",
     emailSubject: firstEmail?.subject || "",
-    emailFrom: typeof firstEmail?.from === 'object' ? (firstEmail.from.email || firstEmail.from.address || String(firstEmail.from)) : (firstEmail?.from || firstEmail?.sender || ""),
+    emailFrom:
+      typeof firstEmail?.from === "object"
+        ? firstEmail.from.email ||
+          firstEmail.from.address ||
+          String(firstEmail.from)
+        : firstEmail?.from || firstEmail?.sender || "",
     emailTo: extractEmailStrings(firstEmail?.to),
     emailCc: extractEmailStrings(firstEmail?.cc),
     emailBcc: extractEmailStrings(firstEmail?.bcc),
@@ -831,7 +848,7 @@ const extractEmailFromArray = (inputEmails: any[]): Partial<EmailDataType> => {
 /** Process email data and extract information */
 const processEmailData = (data: EmailDataType): EmailDataType => {
   const updatedData = { ...data };
-  
+
   // If we have inputEmails array, extract data from it first
   if (data.inputEmails && data.inputEmails.length > 0) {
     const extractedData = extractEmailFromArray(data.inputEmails);
@@ -1068,7 +1085,7 @@ const EmailDataNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
     if (connectedEdges.length > 0) {
       const sourceEdge = connectedEdges[0];
       const sourceNode = _nodes.find((node) => node.id === sourceEdge.source);
-      
+
       if (sourceNode && sourceNode.data?.messages) {
         // Update inputEmails with data from connected emailReader
         updateNodeData({ inputEmails: sourceNode.data.messages as any[] });
@@ -1079,7 +1096,8 @@ const EmailDataNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
   // Process data when email content or extraction options change
   useEffect(() => {
     // Check if we have either manual email content or input emails from emailReader
-    const hasEmailData = emailContent || (nodeData as EmailDataType).inputEmails?.length > 0;
+    const hasEmailData =
+      emailContent || (nodeData as EmailDataType).inputEmails?.length > 0;
     if (!hasEmailData) return;
 
     updateNodeData({ isProcessing: true });
@@ -1089,13 +1107,13 @@ const EmailDataNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
       // Simular un pequeño retraso para mostrar el procesamiento
       const timer = setTimeout(() => {
         const processedData = processEmailData(nodeData as EmailDataType);
-        
+
         // Generate structured output
         const outputData = {
           "📧 Email Data Analysis": {
-            "Subject": processedData.emailSubject || "No subject",
-            "From": processedData.emailFrom || "Unknown sender",
-            "To": processedData.emailTo?.join(", ") || "No recipients",
+            Subject: processedData.emailSubject || "No subject",
+            From: processedData.emailFrom || "Unknown sender",
+            To: processedData.emailTo?.join(", ") || "No recipients",
             "📊 Extracted Data": {
               "🏷️ Entities": processedData.entities?.length || 0,
               "🔗 Links": processedData.links?.length || 0,
@@ -1107,9 +1125,9 @@ const EmailDataNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
             "😊 Sentiment": processedData.sentiment?.label || "Not analyzed",
             "📄 Output Format": processedData.outputFormat || "json",
             "⏰ Processed At": new Date().toLocaleString(),
-          }
+          },
         };
-        
+
         updateNodeData({
           ...processedData,
           isProcessing: false,

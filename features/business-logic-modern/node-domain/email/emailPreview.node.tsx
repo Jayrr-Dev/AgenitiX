@@ -232,6 +232,15 @@ function createDynamicSpec(data: EmailPreviewData): NodeSpec {
     COLLAPSED_SIZES[data.collapsedSize as keyof typeof COLLAPSED_SIZES] ??
     COLLAPSED_SIZES.C2;
 
+  /**
+   * HANDLE_TOOLTIPS – ultra‑concise labels for handles
+   * [Explanation], basically 1–3 word hints shown before dynamic value/type
+   */
+  const HANDLE_TOOLTIPS = {
+    EMAILS_IN: "Emails",
+    OUTPUT_OUT: "Output",
+  } as const;
+
   return {
     kind: "emailPreview",
     displayName: "EmailPreview",
@@ -245,6 +254,7 @@ function createDynamicSpec(data: EmailPreviewData): NodeSpec {
         position: "left",
         type: "target",
         dataType: "Array",
+        tooltip: HANDLE_TOOLTIPS.EMAILS_IN,
       },
       {
         id: "output",
@@ -252,6 +262,7 @@ function createDynamicSpec(data: EmailPreviewData): NodeSpec {
         position: "right",
         type: "source",
         dataType: "String",
+        tooltip: HANDLE_TOOLTIPS.OUTPUT_OUT,
       },
     ],
     inspector: { key: "EmailPreviewInspector" },

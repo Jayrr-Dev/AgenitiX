@@ -195,10 +195,10 @@ function createDynamicSpec(data: EmailReaderData): NodeSpec {
    */
   const HANDLE_TOOLTIPS = {
     TRIGGER_IN: "Trigger",
-    ACCOUNT_IN: "Account",
-    MESSAGES_OUT: "Messages",
-    COUNT_OUT: "Count",
-    STATUS_OUT: "Status",
+    ACCOUNT_IN: "Email Account",
+    MESSAGES_OUT: "Emails",
+    COUNT_OUT: "# of Emails",
+    STATUS_OUT: "Read Status",
   } as const;
 
   return {
@@ -416,6 +416,49 @@ const EmailReaderNode = memo(
     );
 
     // -------------------------------------------------------------------------
+    // 4.2  Trigger input (Boolean) – starts retrieval on rising edge
+    // -------------------------------------------------------------------------
+    // Compute a stable string signature for trigger value to minimize renders
+    const triggerSignal = useStore((s) => {
+      const edge = s.edges.find(
+        (e) => e.target === id && e.targetHandle?.startsWith("trigger-input")
+      );
+      if (!edge) return "none" as const;
+      const src = (s.nodes as RFNode[]).find((n) => n.id === edge.source);
+      if (!src) return "none" as const;
+
+      const sourceData = src.data as Record<string, unknown> | undefined;
+      let value: unknown = undefined;
+
+      // 1) Unified handle-based output reading
+      if (
+        sourceData &&
+        typeof sourceData.output === "object" &&
+        sourceData.output !== null
+      ) {
+        const outputObj = sourceData.output as Record<string, unknown>;
+        const cleanId = edge.sourceHandle
+          ? normalizeHandleId(edge.sourceHandle)
+          : "output";
+        value =
+          outputObj[cleanId] ?? outputObj.output ?? Object.values(outputObj)[0];
+      }
+
+      // 2) Legacy fallbacks for compatibility
+      if (value === undefined || value === null) {
+        value =
+          (sourceData as any)?.output ??
+          (sourceData as any)?.store ??
+          (sourceData as any)?.isActive ??
+          false;
+      }
+
+      const truthy =
+        value === true || value === "true" || value === 1 || value === "1";
+      return truthy ? "true" : "false";
+    }, Object.is);
+
+    // -------------------------------------------------------------------------
     // 4.3  Convex integration
     // -------------------------------------------------------------------------
     const { user, authToken: token } = useAuth();
@@ -507,24 +550,10 @@ const EmailReaderNode = memo(
         }));
       }
 
-      // Fallback: if wires exist but upstream hasn't emitted yet, surface user's connected accounts
-      // [Explanation], basically use DB state to populate options immediately after login
+      // Fallback removed by design: when a wire exists but upstream hasn't emitted,
+      // we treat it as "account is off" and expose no options
       if (hasAccountInputEdges) {
-        const connectedOnly = emailAccounts.filter(
-          (account) =>
-            account.is_active && account.connection_status === "connected"
-        );
-        const source = connectedOnly.length > 0 ? connectedOnly : emailAccounts;
-        return source.map((account) => ({
-          value: account._id,
-          label: `${account.display_name} (${account.email})`,
-          provider: account.provider,
-          email: account.email,
-          isActive: account.is_active,
-          isConnected:
-            account.is_active && account.connection_status === "connected",
-          lastValidated: account.last_validated,
-        }));
+        return [];
       }
 
       // No wires, no outputs
@@ -604,6 +633,25 @@ const EmailReaderNode = memo(
     const handleReadMessages = useCallback(async () => {
       if (!(accountId && token)) {
         showError("Please select an email account first");
+        return;
+      }
+
+      // Guard against inactive accounts
+      // [Explanation], basically prevent activation when the chosen email account is off
+      const selectedAccount = availableAccounts.find(
+        (acc) => acc.value === accountId
+      );
+      if (!selectedAccount || selectedAccount.isActive === false) {
+        showError("Selected email account is inactive");
+        return;
+      }
+
+      // Enforce upstream wiring: if an Email Account node is wired, require it to be emitting
+      if (
+        hasAccountInputEdges &&
+        !connectedAccountIds.includes(String(accountId))
+      ) {
+        showError("Email Account node is off or not connected");
         return;
       }
 
@@ -713,8 +761,19 @@ const EmailReaderNode = memo(
       processedCount,
       retryCount,
       updateNodeData,
-      emailAccounts,
+      availableAccounts,
+      hasAccountInputEdges,
+      connectedAccountIds,
     ]);
+
+    /** Auto-run retrieval when trigger-input turns true */
+    useEffect(() => {
+      if (triggerSignal !== "true") return; // [Explanation], basically only act on rising edge
+      const busy =
+        connectionStatus === "reading" || connectionStatus === "processing";
+      if (busy) return;
+      void handleReadMessages();
+    }, [triggerSignal, connectionStatus, handleReadMessages]);
 
     // -------------------------------------------------------------------------
     // 4.6  Effects
@@ -896,6 +955,16 @@ const EmailReaderNode = memo(
               connectionStatus as EmailReaderData["connectionStatus"]
             }
             availableAccounts={availableAccounts}
+            canActivate={
+              // Recompute lightweight boolean here to avoid passing many deps
+              (isEnabled as boolean) &&
+              Boolean((nodeData as EmailReaderData).accountId) &&
+              !availableAccounts.some(
+                (a) =>
+                  a.value === (nodeData as EmailReaderData).accountId &&
+                  a.isActive === false
+              )
+            }
             onAccountChange={handleAccountChange}
             onBatchSizeChange={handleBatchSizeChangeNumeric}
             onMaxMessagesChange={handleMaxMessagesChangeNumeric}

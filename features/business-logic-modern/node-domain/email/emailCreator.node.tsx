@@ -57,8 +57,8 @@ import { RichTextEditor } from "./components/RichTextEditor";
 // Types and Utilities
 import type { EmailValidationResult } from "./types";
 
-import { api } from "@/convex/_generated/api";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { api } from "@/convex/_generated/api";
 // Convex
 import { useQuery } from "convex/react";
 
@@ -198,6 +198,19 @@ function createDynamicSpec(data: EmailCreatorData): NodeSpec {
     COLLAPSED_SIZES[data.collapsedSize as keyof typeof COLLAPSED_SIZES] ??
     COLLAPSED_SIZES.C2;
 
+  /**
+   * HANDLE_TOOLTIPS – ultra‑concise labels for handles
+   * [Explanation], basically 1–3 word hints shown before dynamic value/type
+   */
+  const HANDLE_TOOLTIPS = {
+    ACCOUNT_IN: "Account",
+    TEMPLATE_IN: "Template",
+    VARIABLES_IN: "Variables",
+    EMAIL_OUT: "Email",
+    VALID_OUT: "Valid",
+    OUTPUTS_OUT: "Outputs",
+  } as const;
+
   return {
     kind: "emailCreator",
     displayName: "Email Creator",
@@ -214,6 +227,7 @@ function createDynamicSpec(data: EmailCreatorData): NodeSpec {
         dataType: "JSON",
         code: "j",
         position: "left",
+        tooltip: HANDLE_TOOLTIPS.ACCOUNT_IN,
       },
       {
         id: "templateInput",
@@ -221,6 +235,7 @@ function createDynamicSpec(data: EmailCreatorData): NodeSpec {
         dataType: "JSON",
         code: "j",
         position: "left",
+        tooltip: HANDLE_TOOLTIPS.TEMPLATE_IN,
       },
       {
         id: "variableInput",
@@ -228,6 +243,7 @@ function createDynamicSpec(data: EmailCreatorData): NodeSpec {
         dataType: "any",
         code: "x",
         position: "left",
+        tooltip: HANDLE_TOOLTIPS.VARIABLES_IN,
       },
       {
         id: "emailOutput",
@@ -235,6 +251,7 @@ function createDynamicSpec(data: EmailCreatorData): NodeSpec {
         dataType: "JSON",
         code: "m",
         position: "right",
+        tooltip: HANDLE_TOOLTIPS.EMAIL_OUT,
       },
       {
         id: "validationOutput",
@@ -242,6 +259,7 @@ function createDynamicSpec(data: EmailCreatorData): NodeSpec {
         dataType: "Boolean",
         code: "b",
         position: "right",
+        tooltip: HANDLE_TOOLTIPS.VALID_OUT,
       },
       {
         id: "outputs",
@@ -249,6 +267,7 @@ function createDynamicSpec(data: EmailCreatorData): NodeSpec {
         dataType: "String",
         code: "o",
         position: "right",
+        tooltip: HANDLE_TOOLTIPS.OUTPUTS_OUT,
       },
     ],
     inspector: { key: "EmailCreatorInspector" },
@@ -421,7 +440,7 @@ const EmailCreatorNode = memo(
     const { user } = useAuth();
     const availableTemplates = useQuery(
       api.emailAccounts.getEmailReplyTemplates,
-      user ? {} : "skip",
+      user ? {} : "skip"
     );
 
     // -------------------------------------------------------------------------

@@ -130,6 +130,16 @@ const createDynamicSpec = (
     COLLAPSED_SIZES[data.collapsedSize as keyof typeof COLLAPSED_SIZES] ??
     COLLAPSED_SIZES.C2;
 
+  /**
+   * HANDLE_TOOLTIPS – ultra‑concise labels for handles
+   * [Explanation], basically 1–3 word hints shown before dynamic value/type
+   */
+  const HANDLE_TOOLTIPS = {
+    TRIGGER_IN: "Trigger",
+    ACCOUNT_OUT: "Email Account",
+    STATUS_OUT: "Status",
+  } as const;
+
   return {
     kind: "emailAccount",
     displayName: "Email Account",
@@ -143,7 +153,7 @@ const createDynamicSpec = (
         position: "top",
         type: "target",
         dataType: "Boolean",
-        tooltip: "IN<br/>Trigger",
+        tooltip: HANDLE_TOOLTIPS.TRIGGER_IN,
       },
       // Expose a strongly-typed account payload for downstream consumers, basically provide the connected account object
       {
@@ -152,7 +162,7 @@ const createDynamicSpec = (
         position: "right",
         type: "source",
         dataType: "JSON",
-        tooltip: "OUT<br/>Email Account",
+        tooltip: HANDLE_TOOLTIPS.ACCOUNT_OUT,
       },
       {
         id: "status-output",
@@ -160,7 +170,7 @@ const createDynamicSpec = (
         position: "bottom",
         type: "source",
         dataType: "Boolean",
-        tooltip: "OUT<br/>Connection Status",
+        tooltip: HANDLE_TOOLTIPS.STATUS_OUT,
       },
     ],
     inspector: { key: "EmailAccountInspector" },
@@ -233,6 +243,12 @@ const EmailAccountNode = memo(
 
     const categoryStyles = { primary: "text-[--node-email-text]" };
     const { isExpanded, isEnabled, isConnected } = nodeData;
+    // Enforce provider default at runtime for older saved nodes, basically auto-set to gmail if missing
+    useEffect(() => {
+      if (!nodeData.provider) {
+        updateNodeData({ provider: "gmail" });
+      }
+    }, [nodeData.provider, updateNodeData]);
 
     /* ----- output effect --------------------------------------------- */
     const lastOutputRef = useRef<Map<string, unknown> | null>(null);
