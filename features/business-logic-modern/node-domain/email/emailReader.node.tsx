@@ -270,6 +270,7 @@ function createDynamicSpec(data: EmailReaderData): NodeSpec {
       autoGenerate: true,
       excludeFields: [
         "isActive",
+        "batchSize",
         "messages",
         "messageCount",
         "emailsOutput",
@@ -292,17 +293,13 @@ function createDynamicSpec(data: EmailReaderData): NodeSpec {
           label: "Email Account",
           placeholder: "Select email account...",
         },
-        {
-          key: "batchSize",
-          type: "number",
-          label: "Batch Size",
-          placeholder: "1",
-        },
+        // Hide granular knobs and expose a single user-friendly control
+        // [Explanation], basically we’ll drive both values from one field in the node UI
         {
           key: "maxMessages",
           type: "number",
-          label: "Max Messages",
-          placeholder: "5",
+          label: "# of Emails",
+          placeholder: "10",
         },
         {
           key: "includeAttachments",
@@ -545,7 +542,7 @@ const EmailReaderNode = memo(
       [availableAccounts, updateNodeData]
     );
 
-    /** Handle batch size change */
+    /** Handle total emails change (drives both batchSize and maxMessages) */
     const handleBatchSizeChangeNumeric = useCallback(
       (numericText: string) => {
         const parsed = Number.parseInt(numericText || "1", 10);
@@ -554,13 +551,16 @@ const EmailReaderNode = memo(
       },
       [updateNodeData]
     );
-
-    /** Handle max messages change */
     const handleMaxMessagesChangeNumeric = useCallback(
       (numericText: string) => {
         const parsed = Number.parseInt(numericText || "1", 10);
-        const clamped = Math.max(1, Math.min(1000, isNaN(parsed) ? 1 : parsed));
-        updateNodeData({ maxMessages: clamped });
+        // Clamp total to larger bound but keep batch within its own max (100)
+        const clampedTotal = Math.max(
+          1,
+          Math.min(1000, isNaN(parsed) ? 1 : parsed)
+        );
+        const clampedBatch = Math.max(1, Math.min(100, clampedTotal));
+        updateNodeData({ maxMessages: clampedTotal, batchSize: clampedBatch });
       },
       [updateNodeData]
     );

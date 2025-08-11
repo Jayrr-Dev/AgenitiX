@@ -6,7 +6,7 @@
  * • Dynamic sizing (expandedSize / collapsedSize) drives the spec.
  * • Output propagation is gated by `isActive` *and* `isEnabled` to prevent runaway loops.
  * • Uses findEdgeByHandle utility for robust React Flow edge handling.
- * • Auto-disables when all input connections are removed (handled by flow store).
+ * • Auto-enables when inputs connect; never auto-disables automatically.
  * • Code is fully commented and follows current React + TypeScript best practices.
  *
  * Keywords: view-array, schema-driven, type‑safe, clean‑architecture

@@ -6,7 +6,7 @@
  * • Dynamic sizing (expandedSize / collapsedSize) drives the spec.
  * • Output propagation is gated by `isActive` *and* `isEnabled` to prevent runaway loops.
  * • Uses findEdgeByHandle utility for robust React Flow edge handling.
- * • Auto-disables when all input connections are removed (handled by flow store).
+ * • Auto-enables when inputs connect; never auto-disables automatically.
  * • Code is fully commented and follows current React + TypeScript best practices.
  *
  * Keywords: flow-conditional, schema-driven, type‑safe, clean‑architecture
@@ -749,16 +749,13 @@ export const FlowConditionalNode = memo(
       updateNodeData,
     ]);
 
-    /* 🔄 Auto-enable when input is present */
+    /* 🔄 Auto-enable when input is present; never auto-disable when input is removed */
     useEffect(() => {
       const hasInput = (nodeData as FlowConditionalData).booleanInput !== null;
       if (hasInput && !isEnabled) {
         updateNodeData({ isEnabled: true });
       }
-      // Also ensure disabled nodes clear their output
-      if (!hasInput && isEnabled) {
-        updateNodeData({ isEnabled: false });
-      }
+      // Do not auto-disable when input is removed; keep manual control
     }, [
       (nodeData as FlowConditionalData).booleanInput,
       isEnabled,

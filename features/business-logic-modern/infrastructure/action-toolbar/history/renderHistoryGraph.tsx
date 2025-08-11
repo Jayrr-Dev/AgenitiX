@@ -299,9 +299,11 @@ const RenderHistoryGraph: React.FC<RenderHistoryGraphProps> = ({
     const rfEdges: Edge[] = [];
     const processedNodes = new Set<string>();
 
-    // Windowing around the cursor (±4 depths) and cap siblings per parent
-    const MAX_DEPTH_FROM_CURSOR = 4;
-    const MAX_SIBLINGS = 12;
+    // Windowing around the cursor and sibling cap
+    // [Explanation], basically show all nodes for small graphs; window for large ones
+    const totalNodes = Object.keys(graph.nodes || {}).length;
+    const WINDOW_DEPTH: number | null = totalNodes <= 100 ? null : 4;
+    const MAX_SIBLINGS: number | null = totalNodes <= 100 ? null : 12;
 
     // Precompute depths from root and from cursor for window filter
     const depthFromRoot = new Map<string, number>();
@@ -352,20 +354,31 @@ const RenderHistoryGraph: React.FC<RenderHistoryGraphProps> = ({
       );
     }
 
-    // Filter nodes within depth window
+    // Filter nodes within depth window (or allow all if WINDOW_DEPTH is null)
     const allowedIds = new Set(
-      Object.keys(graph.nodes).filter(
-        (id) =>
-          Math.abs(depthFromCursor.get(id) ?? 9999) <= MAX_DEPTH_FROM_CURSOR
-      )
+      WINDOW_DEPTH == null
+        ? Object.keys(graph.nodes)
+        : Object.keys(graph.nodes).filter(
+            (id) => Math.abs(depthFromCursor.get(id) ?? 9999) <= WINDOW_DEPTH
+          )
     );
 
     // Find top-of-window ancestor to avoid starting at a filtered-out root
     let windowTop = cursor;
-    for (let i = 0; i < MAX_DEPTH_FROM_CURSOR; i++) {
-      const parentId = graph.nodes[windowTop]?.parentId ?? null;
-      if (!parentId) break;
-      windowTop = parentId;
+    if (WINDOW_DEPTH == null) {
+      // Unbounded: walk to the real root
+      // [Explanation], basically climb until no parent to render full history
+      while (graph.nodes[windowTop]?.parentId) {
+        const p = graph.nodes[windowTop]?.parentId as string | null;
+        if (!p) break;
+        windowTop = p;
+      }
+    } else {
+      for (let i = 0; i < WINDOW_DEPTH; i++) {
+        const parentId = graph.nodes[windowTop]?.parentId ?? null;
+        if (!parentId) break;
+        windowTop = parentId;
+      }
     }
 
     // BFS traversal but skip disallowed and cap siblings
@@ -415,7 +428,11 @@ const RenderHistoryGraph: React.FC<RenderHistoryGraphProps> = ({
       rfEdges.push(...nodeEdges);
 
       // Add children to queue with proper sibling indexing
-      const children = (node.childrenIds || []).slice(0, MAX_SIBLINGS);
+      const childrenBase = node.childrenIds || [];
+      const children =
+        MAX_SIBLINGS == null
+          ? childrenBase
+          : childrenBase.slice(0, MAX_SIBLINGS);
       children.forEach((childId, index) => {
         if (!processedNodes.has(childId)) {
           queue.push({

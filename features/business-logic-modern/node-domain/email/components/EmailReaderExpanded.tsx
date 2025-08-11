@@ -4,18 +4,22 @@
  * EMAIL READER – Expanded view UI for configuration and actions
  *
  * • Presents account selector filtered by connected nodes
- * • Numeric-only controls for batch size and max messages
+ * • Single numeric-only control for total number of emails (user-friendly)
  * • Toggle options and action button to read messages
  * • Status panel with counts, last sync, errors
  *
  * Keywords: email-reader, expanded, configuration, numeric-input
  */
 
-import * as React from "react";
 import EnforceNumericInput from "@/components/EnforceNumericInput";
-import type { EmailReaderData } from "../emailReader.node";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import RenderStatusDot from "@/components/RenderStatusDot";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import * as React from "react";
+import type { EmailReaderData } from "../emailReader.node";
 
 // Align styling tokens with EmailAccountExpanded and EmailAccountForm
 const EXPANDED_STYLES = {
@@ -26,7 +30,8 @@ const EXPANDED_STYLES = {
 } as const;
 
 const FIELD_STYLES = {
-  label: "text-[--node-email-text] text-[10px] font-medium mb-1 block w-full flex items-center justify-between",
+  label:
+    "text-[--node-email-text] text-[10px] font-medium mb-1 block w-full flex items-center justify-between",
   input:
     "h-6 text-[10px] border border-[--node-email-border] bg-[--node-email-bg] text-[--node-email-text] rounded-md px-2 focus:ring-1 focus:ring-[--node-email-border-hover] focus:border-[--node-email-border-hover] disabled:opacity-50 disabled:cursor-not-allowed placeholder:text-[--node-email-text-secondary] placeholder:text-[10px] transition-all duration-200",
   select:
@@ -64,244 +69,259 @@ export interface EmailReaderExpandedProps {
   onReadMessages: () => void;
 }
 
-export const EmailReaderExpanded = React.memo(function EmailReaderExpanded(
-  props: EmailReaderExpandedProps
-) {
-  const {
-    nodeData,
-    isEnabled,
-    connectionStatus,
-    availableAccounts,
-    onAccountChange,
-    onBatchSizeChange,
-    onMaxMessagesChange,
-    onIncludeAttachmentsChange,
-    onMarkAsReadChange,
-    onEnableRealTimeChange,
-    onCheckIntervalChange,
-    onReadMessages,
-  } = props;
+export const EmailReaderExpanded = React.memo(
+  function EmailReaderExpanded(props: EmailReaderExpandedProps) {
+    const {
+      nodeData,
+      isEnabled,
+      connectionStatus,
+      availableAccounts,
+      onAccountChange,
+      onBatchSizeChange,
+      onMaxMessagesChange,
+      onIncludeAttachmentsChange,
+      onMarkAsReadChange,
+      onEnableRealTimeChange,
+      onCheckIntervalChange,
+      onReadMessages,
+    } = props;
 
-  const {
-    accountId,
-    batchSize,
-    maxMessages,
-    includeAttachments,
-    markAsRead,
-    enableRealTime,
-    checkInterval,
-    processedCount,
-    messageCount,
-    lastSync,
-    lastError,
-    retryCount,
-  } = nodeData;
+    const {
+      accountId,
+      batchSize,
+      maxMessages,
+      includeAttachments,
+      markAsRead,
+      enableRealTime,
+      checkInterval,
+      processedCount,
+      messageCount,
+      lastSync,
+      lastError,
+      retryCount,
+    } = nodeData;
 
-  // Memoize heavy/derived UI values to avoid recalculation during drags
-  const accountOptions = React.useMemo(() => {
-    return availableAccounts.map((account) => (
-      <option key={account.value} value={account.value} disabled={!account.isActive}>
-        {account.label} {account.isActive ? "" : "(inactive)"}
-      </option>
-    ));
-  }, [availableAccounts]);
+    // Memoize heavy/derived UI values to avoid recalculation during drags
+    const accountOptions = React.useMemo(() => {
+      return availableAccounts.map((account) => (
+        <option
+          key={account.value}
+          value={account.value}
+          disabled={!account.isActive}
+        >
+          {account.label} {account.isActive ? "" : "(inactive)"}
+        </option>
+      ));
+    }, [availableAccounts]);
 
-  const formattedLastSync = React.useMemo(() => {
-    return lastSync ? new Date(lastSync).toLocaleString() : null;
-  }, [lastSync]);
+    const formattedLastSync = React.useMemo(() => {
+      return lastSync ? new Date(lastSync).toLocaleString() : null;
+    }, [lastSync]);
 
-  return (
-    <div className={`${EXPANDED_STYLES.container} ${isEnabled ? "" : EXPANDED_STYLES.disabled}`}>
-      <div className={EXPANDED_STYLES.content}>
-        {/* Account Selection */}
-        <div>
-          <label htmlFor="email-account-select" className={FIELD_STYLES.label}>
-            <span className="inline-flex items-center gap-1">
-              Email Account
-              {/* Live connection status, basically visual indicator */}
-            </span>
+    // Aggregate handler to keep both batchSize and maxMessages in sync
+    const handleTotalEmailsChange = React.useCallback(
+      (numericText: string) => {
+        // [Explanation], basically update both underlying values from a single control
+        onBatchSizeChange(numericText);
+        onMaxMessagesChange(numericText);
+      },
+      [onBatchSizeChange, onMaxMessagesChange]
+    );
+
+    return (
+      <div
+        className={`${EXPANDED_STYLES.container} ${isEnabled ? "" : EXPANDED_STYLES.disabled}`}
+      >
+        <div className={EXPANDED_STYLES.content}>
+          {/* Account Selection */}
+          <div>
+            <label
+              htmlFor="email-account-select"
+              className={FIELD_STYLES.label}
+            >
+              <span className="inline-flex items-center gap-1">
+                Email Account
+                {/* Live connection status, basically visual indicator */}
+              </span>
               <RenderStatusDot
                 eventActive={connectionStatus === "connected"}
-                isProcessing={connectionStatus === "connecting" || connectionStatus === "reading"}
+                isProcessing={
+                  connectionStatus === "connecting" ||
+                  connectionStatus === "reading"
+                }
                 hasError={connectionStatus === "error"}
                 enableGlow
                 size="sm"
                 titleText={connectionStatus}
               />
-          </label>
-          <select
-            id="email-account-select"
-            value={accountId}
-            onChange={onAccountChange}
-            className={`${FIELD_STYLES.select} w-full`}
-            disabled={!isEnabled || connectionStatus === "reading"}
-          >
-            <option value="">Select email account...</option>
-            {accountOptions}
-          </select>
-        </div>
+            </label>
+            <select
+              id="email-account-select"
+              value={accountId}
+              onChange={onAccountChange}
+              className={`${FIELD_STYLES.select} w-full`}
+              disabled={!isEnabled || connectionStatus === "reading"}
+            >
+              <option value="">Select email account...</option>
+              {accountOptions}
+            </select>
+          </div>
 
-        {/* Processing Options */}
-
+          {/* Processing Options */}
           <div>
             <Tooltip>
               <TooltipTrigger asChild>
-                <label htmlFor="batch-size-input" className={`${FIELD_STYLES.label} cursor-help`}>
-                  Batch Size:
+                <label
+                  htmlFor="total-emails-input"
+                  className={`${FIELD_STYLES.label} cursor-help`}
+                >
+                  # of Emails:
                 </label>
               </TooltipTrigger>
-              <TooltipContent sideOffset={6} className={FIELD_STYLES.helperText}>
-                Number of emails to get at once, basically the chunk size.
+              <TooltipContent
+                sideOffset={6}
+                className={FIELD_STYLES.helperText}
+              >
+                How many emails to fetch in total, basically the total count.
               </TooltipContent>
             </Tooltip>
             <EnforceNumericInput
-              id="batch-size-input"
-              value={batchSize}
-              onValueChange={onBatchSizeChange}
+              id="total-emails-input"
+              value={maxMessages}
+              onValueChange={handleTotalEmailsChange}
               className={`${FIELD_STYLES.input} w-full`}
               disabled={!isEnabled || connectionStatus === "reading"}
               placeholder="10"
-              aria-label="Batch Size"
+              aria-label="# of Emails"
             />
           </div>
-          <div>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <label htmlFor="max-messages-input" className={`${FIELD_STYLES.label} cursor-help`}>
-                  Max Messages:
-                </label>
-              </TooltipTrigger>
-              <TooltipContent sideOffset={6} className={FIELD_STYLES.helperText}>
-                The total message cap for this run to stop at, basically the stop limit.
-              </TooltipContent>
-            </Tooltip>
-            <EnforceNumericInput
-              id="max-messages-input"
-              value={maxMessages}
-              onValueChange={onMaxMessagesChange}
-              className={`${FIELD_STYLES.input} w-full`}
-              disabled={!isEnabled || connectionStatus === "reading"}
-              placeholder="50"
-              aria-label="Max Messages"
-            />
-          </div>
-  
 
-        {/* Options */}
-        <div className="flex flex-col gap-1">
-          <label className={FIELD_STYLES.checkboxLabel}>
-            <input
-              type="checkbox"
-              checked={includeAttachments}
-              onChange={onIncludeAttachmentsChange}
-              className="mr-2"
-              disabled={!isEnabled}
-            />
-            Include Attachments
-          </label>
-          <label className={FIELD_STYLES.checkboxLabel}>
-            <input
-              type="checkbox"
-              checked={markAsRead}
-              onChange={onMarkAsReadChange}
-              className="mr-2"
-              disabled={!isEnabled}
-            />
-            Mark as Read
-          </label>
-          <label className={FIELD_STYLES.checkboxLabel}>
-            <input
-              type="checkbox"
-              checked={enableRealTime}
-              onChange={onEnableRealTimeChange}
-              className="mr-2"
-              disabled={!isEnabled}
-            />
-            Real-time Monitoring
-          </label>
-        </div>
-
-        {/* Real-time Interval */}
-        {enableRealTime && (
-          <div>
-            <label htmlFor="check-interval-input" className={FIELD_STYLES.label}>
-              Check Interval (minutes):
+          {/* Options */}
+          <div className="flex flex-col gap-1">
+            <label className={FIELD_STYLES.checkboxLabel}>
+              <input
+                type="checkbox"
+                checked={includeAttachments}
+                onChange={onIncludeAttachmentsChange}
+                className="mr-2"
+                disabled={!isEnabled}
+              />
+              Include Attachments
             </label>
-            <EnforceNumericInput
-              id="check-interval-input"
-              value={checkInterval}
-              onValueChange={onCheckIntervalChange}
-              className={`${FIELD_STYLES.input} w-full`}
-              disabled={!isEnabled}
-              placeholder="5"
-              aria-label="Check Interval"
-            />
+            <label className={FIELD_STYLES.checkboxLabel}>
+              <input
+                type="checkbox"
+                checked={markAsRead}
+                onChange={onMarkAsReadChange}
+                className="mr-2"
+                disabled={!isEnabled}
+              />
+              Mark as Read
+            </label>
+            <label className={FIELD_STYLES.checkboxLabel}>
+              <input
+                type="checkbox"
+                checked={enableRealTime}
+                onChange={onEnableRealTimeChange}
+                className="mr-2"
+                disabled={!isEnabled}
+              />
+              Real-time Monitoring
+            </label>
           </div>
-        )}
 
-        {/* Actions */}
-        <div>
-          <button
-            onClick={onReadMessages}
-            disabled={!(isEnabled && accountId) || connectionStatus === "reading"}
-            className={FIELD_STYLES.button}
-            type="button"
-          >
-            {connectionStatus === "reading" ? "Reading..." : "Read Messages"}
-          </button>
-        </div>
+          {/* Real-time Interval */}
+          {enableRealTime && (
+            <div>
+              <label
+                htmlFor="check-interval-input"
+                className={FIELD_STYLES.label}
+              >
+                Check Interval (minutes):
+              </label>
+              <EnforceNumericInput
+                id="check-interval-input"
+                value={checkInterval}
+                onValueChange={onCheckIntervalChange}
+                className={`${FIELD_STYLES.input} w-full`}
+                disabled={!isEnabled}
+                placeholder="5"
+                aria-label="Check Interval"
+              />
+            </div>
+          )}
 
-        {/* Status Information */}
-        <div className={FIELD_STYLES.statusBox}>
+          {/* Actions */}
           <div>
-            <span className="text-[--node-email-text]">Messages:</span> {messageCount} {" "}
-            <span className="text-[--node-email-text]">| Processed:</span> {processedCount}
+            <button
+              onClick={onReadMessages}
+              disabled={
+                !(isEnabled && accountId) || connectionStatus === "reading"
+              }
+              className={FIELD_STYLES.button}
+              type="button"
+            >
+              {connectionStatus === "reading" ? "Reading..." : "Read Messages"}
+            </button>
           </div>
-          {formattedLastSync && <div>Last sync: {formattedLastSync}</div>}
-          {lastError && <div className="mt-1 text-red-600">Error: {lastError}</div>}
-          {retryCount > 0 && <div className="text-yellow-600">Retries: {retryCount}</div>}
+
+          {/* Status Information */}
+          <div className={FIELD_STYLES.statusBox}>
+            <div>
+              <span className="text-[--node-email-text]">Messages:</span>{" "}
+              {messageCount}{" "}
+              <span className="text-[--node-email-text]">| Processed:</span>{" "}
+              {processedCount}
+            </div>
+            {formattedLastSync && <div>Last sync: {formattedLastSync}</div>}
+            {lastError && (
+              <div className="mt-1 text-red-600">Error: {lastError}</div>
+            )}
+            {retryCount > 0 && (
+              <div className="text-yellow-600">Retries: {retryCount}</div>
+            )}
+          </div>
         </div>
       </div>
-    </div>
-  );
-}, (prev, next) => {
-  // Compare primitive props
-  if (
-    prev.isEnabled !== next.isEnabled ||
-    prev.connectionStatus !== next.connectionStatus
-  ) {
-    return false;
-  }
-  // Shallow compare available accounts by id + length
-  const a = prev.availableAccounts;
-  const b = next.availableAccounts;
-  if (a.length !== b.length) return false;
-  for (let i = 0; i < a.length; i++) {
-    if (a[i].value !== b[i].value || a[i].isConnected !== b[i].isConnected) {
+    );
+  },
+  (prev, next) => {
+    // Compare primitive props
+    if (
+      prev.isEnabled !== next.isEnabled ||
+      prev.connectionStatus !== next.connectionStatus
+    ) {
       return false;
     }
+    // Shallow compare available accounts by id + length
+    const a = prev.availableAccounts;
+    const b = next.availableAccounts;
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) {
+      if (a[i].value !== b[i].value || a[i].isConnected !== b[i].isConnected) {
+        return false;
+      }
+    }
+    // Compare nodeData fields that affect view
+    const keys: (keyof EmailReaderData)[] = [
+      "accountId",
+      "batchSize",
+      "maxMessages",
+      "includeAttachments",
+      "markAsRead",
+      "enableRealTime",
+      "checkInterval",
+      "processedCount",
+      "messageCount",
+      "lastSync",
+      "lastError",
+      "retryCount",
+    ];
+    for (const k of keys) {
+      if ((prev.nodeData as any)[k] !== (next.nodeData as any)[k]) return false;
+    }
+    return true;
   }
-  // Compare nodeData fields that affect view
-  const keys: (keyof EmailReaderData)[] = [
-    "accountId",
-    "batchSize",
-    "maxMessages",
-    "includeAttachments",
-    "markAsRead",
-    "enableRealTime",
-    "checkInterval",
-    "processedCount",
-    "messageCount",
-    "lastSync",
-    "lastError",
-    "retryCount",
-  ];
-  for (const k of keys) {
-    if ((prev.nodeData as any)[k] !== (next.nodeData as any)[k]) return false;
-  }
-  return true;
-});
+);
 
 export default EmailReaderExpanded;
-
-

@@ -293,16 +293,11 @@ const TriggerPulseNode = memo(
       }
     }, [store, isEnabled, isActive, updateNodeData]);
 
-    /* 🔄 Make isEnabled dependent on input value only when there are connections. */
+    /* 🔄 Auto-enable when boolean input is true. Never auto-disable. */
     useEffect(() => {
-      const hasInput = (nodeData as TriggerPulseData).inputs;
-      // Only auto-control isEnabled when there are connections (inputs !== null)
-      // When inputs is null (no connections), let user manually control isEnabled
-      if (hasInput !== null) {
-        const nextEnabled = toBool(hasInput);
-        if (nextEnabled !== isEnabled) {
-          updateNodeData({ isEnabled: nextEnabled });
-        }
+      const inputVal = (nodeData as TriggerPulseData).inputs;
+      if (inputVal === true && !isEnabled) {
+        updateNodeData({ isEnabled: true });
       }
     }, [nodeData, isEnabled, updateNodeData]);
 
