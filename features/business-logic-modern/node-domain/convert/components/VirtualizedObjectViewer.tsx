@@ -120,9 +120,9 @@ const VirtualizedObjectViewer = memo<VirtualizedObjectViewerProps>(
                         </span>
                       ) : (
                         <JsonHighlighter
-                          value={value}
+                          data={value}
                           className="text-[8px] leading-relaxed"
-                          maxLines={4}
+                          maxDepth={4}
                         />
                       )}
                     </div>

@@ -117,9 +117,9 @@ const VirtualizedArrayViewer = memo<VirtualizedArrayViewerProps>(
                         </span>
                       ) : (
                         <JsonHighlighter
-                          value={item}
+                          data={item}
                           className="text-[8px] leading-relaxed"
-                          maxLines={4}
+                          maxDepth={4}
                         />
                       )}
                     </div>

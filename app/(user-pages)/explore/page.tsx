@@ -74,15 +74,15 @@ const SORT_OPTIONS = {
 type SortOption = keyof typeof SORT_OPTIONS;
 
 /**
- * Flow interface for typing
+ * Flow interface for typing - matches the actual data structure from getPublicFlowsWithUpvotes
  */
 interface FlowType {
   _id: Id<"flows">;
-  _creationTime: number;
   name: string;
-  description?: string;
+  description: string | undefined;
   created_at: string;
   updated_at: string;
+  canvas_updated_at: string | undefined;
   upvoteCount: number;
   hasUpvoted: boolean;
   creator: {
@@ -92,7 +92,7 @@ interface FlowType {
   } | null;
   user_id: Id<"users">;
   is_private: boolean;
-  icon?: string;
+  icon: string | undefined;
   [key: string]: unknown; // Allow additional properties
 }
 

@@ -794,7 +794,7 @@ const ViewArrayNode = memo(
                 if (Array.isArray(value)) {
                   // Calculate container height based on expanded size
                   const expandedSpec = spec.size.expanded;
-                  const baseHeight = expandedSpec.height || 400;
+                  const baseHeight = 'height' in expandedSpec ? expandedSpec.height : (expandedSpec.minHeight || 400);
                   const containerHeight = Math.max(200, baseHeight - 80); // [Explanation], basically subtract header and padding
 
                   return (

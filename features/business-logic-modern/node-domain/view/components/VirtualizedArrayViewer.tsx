@@ -114,13 +114,13 @@ const VirtualizedArrayViewer = memo<VirtualizedArrayViewerProps>(
               <span className="text-[10px] text-muted-foreground font-mono bg-muted/40 px-2 py-0.5 rounded">
                 [{index}]
               </span>
-              {isObject && (
+              {isObject ? (
                 <span className="text-[9px] text-muted-foreground">
                   {Array.isArray(item)
                     ? `Array(${(item as unknown[]).length})`
                     : "Object"}
                 </span>
-              )}
+              ) : null}
             </div>
 
             {/* Content with proper overflow handling */}
