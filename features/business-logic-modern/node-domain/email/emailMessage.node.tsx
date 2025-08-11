@@ -125,7 +125,7 @@ export const EmailMessageDataSchema = z
     isEnabled: SafeSchemas.boolean(true),
     isActive: SafeSchemas.boolean(false),
     isExpanded: SafeSchemas.boolean(false),
-    expandedSize: SafeSchemas.text("VE2"),
+    expandedSize: SafeSchemas.text("FE3W"),
     collapsedSize: SafeSchemas.text("C2"),
 
     // Input/Output
@@ -942,6 +942,7 @@ const EmailMessageNode = memo(
 
         {isExpanded ? (
           <EmailMessageExpanded
+            nodeId={id}
             nodeData={nodeData as EmailMessageData}
             isEnabled={isEnabled as boolean}
             connectionStatus={
@@ -955,15 +956,9 @@ const EmailMessageNode = memo(
                 Boolean(subject?.trim() || messageContent?.trim()))
             }
             onMessageContentChange={handleMessageContentChange}
-            onMessageTypeChange={handleMessageTypeChange}
             onSubjectChange={handleSubjectChange}
             onPriorityChange={handlePriorityChange}
             onRecipientsChange={handleRecipientsChange}
-            onUseTemplateChange={handleCheckboxChange("useTemplate")}
-            onTemplateIdChange={handleTemplateIdChange}
-            onScheduleTypeChange={handleScheduleTypeChange}
-            onScheduledTimeChange={handleScheduledTimeChange}
-            onDelayMinutesChange={handleDelayMinutesChangeNumeric}
             onComposeMessage={handleComposeMessage}
           />
         ) : (

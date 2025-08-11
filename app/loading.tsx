@@ -1,13 +1,11 @@
-import { Loading } from "@/components/Loading";
+import { Loading } from "@components/Loading";
 
 // UNIFIED APP-LEVEL LOADING COMPONENT
 export default function AppLoading() {
 	return (
 		<Loading 
-			className="min-h-screen"
-			size="w-12 h-12"
+			className="flex flex-col gap-2 items-center justify-center w-full h-full p-4"
 			text="Loading..."
-			textSize="text-base"
 		/>
-	);
+	)
 }

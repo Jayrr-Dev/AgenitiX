@@ -286,6 +286,30 @@
 | node.store.classes.content |  |
 | node.store.classes.icon |  |
 | node.store.classes.text |  |
+| node.time.bg | hsla(180, 72%, 85%, 1) |
+| node.time.bg-gradient | linear-gradient(135deg, hsla(180, 75%, 88%, 1) 0%, hsla(180, 70%, 78%, 1) 100%) |
+| node.time.bg-gradient-dark | linear-gradient(135deg, hsla(180, 80%, 65%, 1) 0%, hsla(180, 90%, 45%, 1) 30%, hsla(180, 100%, 25%, 1) 70%, hsla(180, 100%, 8%, 1) 100%) |
+| node.time.border | hsla(180, 72%, 40%, 1) |
+| node.time.border-hover | hsla(180, 72%, 30%, 1) |
+| node.time.border-width | 2px |
+| node.time.text | hsla(0, 0%, 15%, 1) |
+| node.time.text-secondary | hsla(0, 0%, 25%, 1) |
+| node.time.bg-hover | hsla(180, 72%, 80%, 1) |
+| node.time.bg-dark | hsla(180, 72%, 25%, 1) |
+| node.time.border-dark | hsla(180, 100%, 70%, 1) |
+| node.time.border-hover-dark | hsla(180, 100%, 80%, 1) |
+| node.time.text-dark | hsla(0, 0%, 95%, 1) |
+| node.time.text-secondary-dark | hsla(0, 0%, 85%, 1) |
+| node.time.bg-hover-dark | hsla(180, 72%, 35%, 1) |
+| node.time.modern-shadow | 0 8px 32px rgba(6, 182, 212, 0.12) |
+| node.time.modern-shadow-hover | 0 12px 40px rgba(6, 182, 212, 0.25) |
+| node.time.modern-shadow-dark | 0 12px 24px rgba(6, 182, 212, 0.3), 0 4px 12px rgba(0, 0, 0, 0.9), inset 0 2px 0 rgba(255, 255, 255, 0.2) |
+| node.time.modern-shadow-hover-dark | 0 16px 32px rgba(6, 182, 212, 0.4), 0 6px 16px rgba(0, 0, 0, 0.95), inset 0 3px 0 rgba(255, 255, 255, 0.3) |
+| node.time.classes.container |  |
+| node.time.classes.header |  |
+| node.time.classes.content |  |
+| node.time.classes.icon |  |
+| node.time.classes.text |  |
 | coreNode.border | hsla(0, 0%, 85%, 1) |
 | coreNode.border-hover | hsla(0, 0%, 75%, 1) |
 | coreNode.border-width |  |
