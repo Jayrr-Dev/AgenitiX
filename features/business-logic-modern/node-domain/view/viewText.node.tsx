@@ -52,7 +52,7 @@ export const ViewTextDataSchema = z
     output: z.record(z.string(), z.string()).optional(), // handle-based output object for Convex compatibility
     expandedSize: SafeSchemas.text("VE2"),
     collapsedSize: SafeSchemas.text("C2"),
-    label: z.string().optional(), // User-editable node label
+    label: z.string().nullable().optional().default(""), // User-editable node label, can be null
   })
   .passthrough();
 
@@ -280,169 +280,264 @@ const ViewTextNode = memo(
     // Handle-based output field generation for multi-handle compatibility -------
     useEffect(() => {
       try {
-        // Generate Map-based output with error handling
-        const outputValue = generateoutputField(spec, nodeData as any);
+        // Validate inputs before processing
+        if (!spec || !nodeData || typeof nodeData !== 'object') {
+          console.warn(`ViewText ${id}: Invalid spec or nodeData`, { spec: !!spec, nodeData: typeof nodeData });
+          return;
+        }
 
-        // Validate the result
-        if (!(outputValue instanceof Map)) {
+        // Safe type casting with validation
+        const validatedNodeData = ViewTextDataSchema.safeParse(nodeData);
+        if (!validatedNodeData.success) {
+          console.warn(`ViewText ${id}: NodeData validation failed`, validatedNodeData.error);
+          return;
+        }
+
+        // Generate Map-based output with enhanced error handling
+        const outputValue = generateoutputField(spec, validatedNodeData.data);
+
+        // Validate the result with enhanced checks
+        if (!outputValue || !(outputValue instanceof Map)) {
           console.error(
-            `ViewText ${id}: generateoutputField did not return a Map`,
-            outputValue
+            `ViewText ${id}: generateoutputField did not return a valid Map`,
+            { outputValue, type: typeof outputValue }
           );
           return;
         }
 
-        // Convert Map to plain object for Convex compatibility, basically serialize for storage
-        const outputObject = Object.fromEntries(outputValue.entries());
+        // Convert Map to plain object for Convex compatibility with safety checks
+        let outputObject: Record<string, any> = {};
+        try {
+          outputObject = Object.fromEntries(outputValue.entries());
+        } catch (conversionError) {
+          console.error(`ViewText ${id}: Error converting Map to object`, conversionError);
+          outputObject = {};
+        }
 
         // Only update if changed - compare with ref to avoid circular dependencies
         const currentOutput = lastGeneralOutputRef.current;
         let hasChanged = true;
 
         if (currentOutput instanceof Map && outputValue instanceof Map) {
-          // Compare Map contents
-          hasChanged =
-            currentOutput.size !== outputValue.size ||
-            !Array.from(outputValue.entries()).every(
-              ([key, value]) => currentOutput.get(key) === value
-            );
+          try {
+            // Compare Map contents with error handling
+            hasChanged =
+              currentOutput.size !== outputValue.size ||
+              !Array.from(outputValue.entries()).every(
+                ([key, value]) => {
+                  try {
+                    return currentOutput.get(key) === value;
+                  } catch {
+                    return false;
+                  }
+                }
+              );
+          } catch (comparisonError) {
+            console.warn(`ViewText ${id}: Error comparing Maps, forcing update`, comparisonError);
+            hasChanged = true;
+          }
         } else if (currentOutput === null && outputValue.size === 0) {
           hasChanged = false;
         }
 
         if (hasChanged) {
           lastGeneralOutputRef.current = outputValue;
-          updateNodeData({ output: outputObject });
+          try {
+            updateNodeData({ output: outputObject });
+          } catch (updateError) {
+            console.error(`ViewText ${id}: Error updating node data`, updateError);
+          }
         }
       } catch (error) {
-        console.error(`ViewText ${id}: Error generating output`, error, {
+        console.error(`ViewText ${id}: Critical error in output generation`, error, {
           spec: spec?.kind,
-          nodeDataKeys: Object.keys(nodeData || {}),
+          nodeDataKeys: nodeData ? Object.keys(nodeData) : [],
+          errorType: error instanceof Error ? error.name : typeof error,
+          errorMessage: error instanceof Error ? error.message : String(error)
         });
 
-        // Fallback: set empty object to prevent crashes, basically empty state for storage
-        if (lastGeneralOutputRef.current !== null) {
-          lastGeneralOutputRef.current = new Map();
-          updateNodeData({ output: {} });
+        // Enhanced fallback: set empty object to prevent crashes
+        try {
+          if (lastGeneralOutputRef.current !== null) {
+            lastGeneralOutputRef.current = new Map();
+            updateNodeData({ output: {} });
+          }
+        } catch (fallbackError) {
+          console.error(`ViewText ${id}: Even fallback failed`, fallbackError);
         }
       }
     }, [spec.handles, nodeData.inputs, nodeData.isActive, updateNodeData, id]);
 
     // Main effect – watch upstream nodes & compute text -------------------------
     useEffect(() => {
-      const nodes = getNodes();
-      const edges = getEdges().filter((e) => e.target === id);
+      try {
+        const nodes = getNodes();
+        const edges = getEdges().filter((e) => e.target === id);
 
-      const connected = edges
-        .map((e) => nodes.find((n) => n.id === e.source))
-        .filter(Boolean) as typeof nodes;
+        const connected = edges
+          .map((e) => {
+            try {
+              return nodes.find((n) => n && n.id === e.source);
+            } catch (findError) {
+              console.warn(`ViewText ${id}: Error finding source node ${e.source}`, findError);
+              return null;
+            }
+          })
+          .filter((node): node is NonNullable<typeof node> => {
+            return node !== null && node !== undefined && typeof node === 'object' && 'id' in node;
+          });
 
-      // Enhanced input processing with new unified handle-based system
-      const texts = connected
-        .filter((n) => {
-          // Only accept content from active source nodes
-          const sourceIsActive = n.data?.isActive === true;
-          if (!sourceIsActive) {
-            return false;
-          }
 
-          // New unified handle-based input reading system
-          const sourceData = n.data;
-          let inputValue: any;
 
-          // 1. Handle-based output (primary system)
-          if (sourceData?.output && typeof sourceData.output === "object") {
-            // For viewText, we accept any output from connected handles
-            const output = sourceData.output as Record<string, any>;
-            // Get first available output value
-            const firstOutputValue = Object.values(output)[0];
-            if (firstOutputValue !== undefined) {
-              inputValue = firstOutputValue;
+        // Enhanced input processing with new unified handle-based system
+        const texts = connected
+          .filter((n) => {
+            try {
+              // Validate node structure
+              if (!n || typeof n !== 'object' || !n.data) {
+                return false;
+              }
+
+              // Only accept content from active source nodes
+              const sourceIsActive = n.data?.isActive === true;
+              if (!sourceIsActive) {
+                return false;
+              }
+
+              // New unified handle-based input reading system with safety checks
+              const sourceData = n.data;
+              let inputValue: any;
+
+              // 1. Handle-based output (primary system)
+              if (sourceData?.output && typeof sourceData.output === "object") {
+                try {
+                  // For viewText, we accept any output from connected handles
+                  const output = sourceData.output as Record<string, any>;
+                  // Get first available output value safely
+                  const outputValues = Object.values(output);
+                  if (outputValues.length > 0) {
+                    const firstOutputValue = outputValues[0];
+                    if (firstOutputValue !== undefined) {
+                      inputValue = firstOutputValue;
+                    }
+                  }
+                } catch (outputError) {
+                  console.warn(`ViewText ${id}: Error processing output from node ${n.id}`, outputError);
+                }
+              }
+
+              // 2. Legacy fallbacks for compatibility
+              if (inputValue === undefined) {
+                if (sourceData?.output !== undefined) {
+                  inputValue = sourceData.output;
+                }
+              }
+
+              // 3. Final fallback to whole data object
+              if (inputValue === undefined) {
+                inputValue = sourceData;
+              }
+
+              const nodeText = formatValue(inputValue);
+
+              // Check if content is meaningful (not default values)
+              const isDefaultText =
+                nodeText === "Default text" ||
+                nodeText === "No connected inputs" ||
+                nodeText === "Empty input";
+              const hasMeaningfulContent =
+                nodeText && nodeText.trim().length > 0 && !isDefaultText;
+
+              return hasMeaningfulContent;
+            } catch (filterError) {
+              console.warn(`ViewText ${id}: Error filtering node ${n?.id}`, filterError);
+              return false;
+            }
+          })
+          .map((n) => {
+            try {
+              // New unified handle-based input reading system with safety
+              const sourceData = n.data;
+              let inputValue: any;
+
+              // 1. Handle-based output (primary system)
+              if (sourceData?.output && typeof sourceData.output === "object") {
+                try {
+                  // For viewText, we accept any output from connected handles
+                  const output = sourceData.output as Record<string, any>;
+                  // Get first available output value safely
+                  const outputValues = Object.values(output);
+                  if (outputValues.length > 0) {
+                    const firstOutputValue = outputValues[0];
+                    if (firstOutputValue !== undefined) {
+                      inputValue = firstOutputValue;
+                    }
+                  }
+                } catch (outputError) {
+                  console.warn(`ViewText ${id}: Error processing output in map from node ${n.id}`, outputError);
+                }
+              }
+
+              // 2. Legacy fallbacks for compatibility
+              if (inputValue === undefined) {
+                if (sourceData?.output !== undefined) {
+                  inputValue = sourceData.output;
+                }
+              }
+
+              // 3. Final fallback to whole data object
+              if (inputValue === undefined) {
+                inputValue = sourceData;
+              }
+
+              return formatValue(inputValue) || "";
+            } catch (mapError) {
+              console.warn(`ViewText ${id}: Error mapping node ${n?.id}`, mapError);
+              return "";
+            }
+          })
+          .filter((t) => {
+            try {
+              return typeof t === 'string' && t.trim().length > 0;
+            } catch (filterError) {
+              console.warn(`ViewText ${id}: Error filtering text`, filterError);
+              return false;
+            }
+          });
+
+        const joined = texts.join("");
+
+        if (joined !== lastInputRef.current) {
+          lastInputRef.current = joined;
+
+          const hasContent = joined.trim().length > 0;
+          const hasConnectedInputs = connected.length > 0;
+          const active = hasConnectedInputs && hasContent;
+
+          const newInputData = {
+            inputs: hasConnectedInputs ? joined || "No inputs" : "No inputs",
+            isActive: active,
+          };
+
+          // Only update if the input data actually changed, basically avoid unnecessary updates
+          const lastInputData = lastInputDataRef.current;
+          const hasInputDataChanged =
+            !lastInputData ||
+            lastInputData.inputs !== newInputData.inputs ||
+            lastInputData.isActive !== newInputData.isActive;
+
+          if (hasInputDataChanged) {
+            try {
+              lastInputDataRef.current = newInputData;
+              updateNodeData(newInputData);
+              blockJsonWhenInactive();
+            } catch (updateError) {
+              console.error(`ViewText ${id}: Error updating input data`, updateError);
             }
           }
-
-          // 2. Legacy fallbacks for compatibility
-          if (inputValue === undefined) {
-            if (sourceData?.output !== undefined) {
-              inputValue = sourceData.output;
-            }
-          }
-
-          // 3. Final fallback to whole data object
-          if (inputValue === undefined) {
-            inputValue = sourceData;
-          }
-
-          const nodeText = formatValue(inputValue);
-
-          // Check if content is meaningful (not default values)
-          const isDefaultText =
-            nodeText === "Default text" ||
-            nodeText === "No connected inputs" ||
-            nodeText === "Empty input";
-          const hasMeaningfulContent =
-            nodeText && nodeText.trim().length > 0 && !isDefaultText;
-
-          return hasMeaningfulContent;
-        })
-        .map((n) => {
-          // New unified handle-based input reading system
-          const sourceData = n.data;
-          let inputValue: any;
-
-          // 1. Handle-based output (primary system)
-          if (sourceData?.output && typeof sourceData.output === "object") {
-            // For viewText, we accept any output from connected handles
-            const output = sourceData.output as Record<string, any>;
-            // Get first available output value
-            const firstOutputValue = Object.values(output)[0];
-            if (firstOutputValue !== undefined) {
-              inputValue = firstOutputValue;
-            }
-          }
-
-          // 2. Legacy fallbacks for compatibility
-          if (inputValue === undefined) {
-            if (sourceData?.output !== undefined) {
-              inputValue = sourceData.output;
-            }
-          }
-
-          // 3. Final fallback to whole data object
-          if (inputValue === undefined) {
-            inputValue = sourceData;
-          }
-
-          return formatValue(inputValue) || "";
-        })
-        .filter((t) => t.trim().length > 0);
-
-      const joined = texts.join("");
-
-      if (joined !== lastInputRef.current) {
-        lastInputRef.current = joined;
-
-        const hasContent = joined.trim().length > 0;
-        const hasConnectedInputs = connected.length > 0;
-        const active = hasConnectedInputs && hasContent;
-
-        const newInputData = {
-          inputs: hasConnectedInputs ? joined || "No inputs" : "No inputs",
-          isActive: active,
-        };
-
-        // Only update if the input data actually changed, basically avoid unnecessary updates
-        const lastInputData = lastInputDataRef.current;
-        const hasInputDataChanged =
-          !lastInputData ||
-          lastInputData.inputs !== newInputData.inputs ||
-          lastInputData.isActive !== newInputData.isActive;
-
-        if (hasInputDataChanged) {
-          lastInputDataRef.current = newInputData;
-          updateNodeData(newInputData);
-          blockJsonWhenInactive();
         }
+      } catch (mainEffectError) {
+        console.error(`ViewText ${id}: Critical error in main effect`, mainEffectError);
       }
     }, [getEdges, getNodes, id, blockJsonWhenInactive, updateNodeData]);
 
@@ -488,8 +583,7 @@ const ViewTextNode = memo(
           </div>
         ) : (
           <div className={CONTENT.collapsed}>
-            {spec.receivedData?.showInCollapsed &&
-            (typeof validation.data.inputs === "string"
+            {(typeof validation.data.inputs === "string"
               ? validation.data.inputs !== "No inputs"
               : validation.data.inputs !== undefined) ? (
               <div

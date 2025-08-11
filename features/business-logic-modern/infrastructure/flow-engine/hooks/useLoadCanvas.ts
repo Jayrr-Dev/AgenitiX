@@ -67,7 +67,6 @@ export function useLoadCanvas(): UseLoadCanvasResult {
     if (canvasData === undefined) return;
     // Avoid re-applying after a successful load (reset on flow id change)
     if (hasLoaded) return;
-
     try {
       // Always trust server response for current flow, basically avoid leaking previous flow state
       const serverNodes = Array.isArray((canvasData as any).nodes)
@@ -161,6 +160,16 @@ export function useLoadCanvas(): UseLoadCanvasResult {
     } catch {}
   }, [flow?.id, hasHydrated, setNodes, setEdges]);
 
+  // Log final state
+  const nodes = useFlowStore((s) => s.nodes);
+  const edges = useFlowStore((s) => s.edges);
+
+  // Add debug function to window for manual testing
+  if (typeof window !== "undefined") {
+    (window as any).debugFlowLoading = () => {
+      return { user, flow, canvasData, nodes, edges };
+    };
+  }
   return {
     isLoading: canvasData === undefined && !hasLoaded && !error,
     error,
