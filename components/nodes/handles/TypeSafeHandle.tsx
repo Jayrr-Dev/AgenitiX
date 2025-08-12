@@ -1235,7 +1235,7 @@ const UltimateTypesafeHandle: React.FC<UltimateTypesafeHandleProps> = memo(
 
     return (
       <Tooltip
-        delayDuration={700}
+        delayDuration={100}
         open={isTooltipOpen}
         onOpenChange={setIsTooltipOpen}
       >

@@ -904,7 +904,7 @@ export const EmailSenderExpanded = React.memo(
                 </Tooltip>
                 <Input
                   variant="node"
-                  type="number"
+                  type="text"
                   inputMode="numeric"
                   pattern="[0-9]*"
                   value={retryAttemptsInput}

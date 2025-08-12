@@ -143,6 +143,7 @@ function sanitizeHistoryGraphForPersistence(graph: HistoryGraph): HistoryGraph {
 // STORAGE STRATEGY CONSTANTS
 const INLINE_BYTE_LIMIT = 900_000; // [Explanation], basically keep docs well under 1 MiB limit
 const CHUNK_BYTE_SIZE = 200_000; // [Explanation], basically safe chunk size per document
+const BLOB_BYTE_LIMIT = 300_000; // [Explanation], basically prefer blobs once payloads get moderately large
 
 function splitIntoChunks(input: string, chunkSize: number): string[] {
   const chunks: string[] = [];
@@ -228,57 +229,85 @@ export const saveHistoryGraph = mutation({
 
       const now = Date.now();
 
-      const useExternal = byteSize > INLINE_BYTE_LIMIT;
+      const useExternalBlob = byteSize > BLOB_BYTE_LIMIT; // Sooner cutoff to move traffic off DB
 
       if (existingHistory) {
         const nextVersion = (existingHistory.version ?? 0) + 1;
         const checksum = simpleChecksum(serialized);
-
-        if (useExternal) {
-          // Two-phase write: write new versioned chunks first, then flip head and finally clean old version
-          const chunks = splitIntoChunks(serialized, CHUNK_BYTE_SIZE);
-          for (let i = 0; i < chunks.length; i += 1) {
-            const part = chunks[i]!;
-            await ctx.db.insert("flow_history_chunks", {
-              history_id: existingHistory._id,
-              chunk_index: i,
-              chunk_data: part,
-              chunk_size: part.length,
-              chunk_version: nextVersion,
-              chunk_checksum: checksum,
-              created_at: now,
-            });
-          }
-
-          // Promote new version on head
+        // Idempotence: if content unchanged, skip heavy writes
+        if (existingHistory.checksum && existingHistory.checksum === checksum) {
+          // Still update flags/timestamps lightly if needed without touching large fields
           await ctx.db.patch(existingHistory._id, {
-            history_graph: undefined,
-            storage_id: undefined,
-            storage_size: byteSize,
-            is_external_storage: false,
-            storage_method: "chunked",
-            compressed_size: byteSize,
             is_dragging: isDragging,
-            total_chunks: chunks.length,
-            checksum,
-            version: nextVersion,
             updated_at: now,
           });
-
-          // Cleanup: delete older chunk versions
-          const oldChunks = await ctx.db
-            .query("flow_history_chunks")
-            .withIndex("by_history_id", (q) =>
-              q.eq("history_id", existingHistory._id)
-            )
-            .collect();
-          await Promise.all(
-            oldChunks
-              .filter((c) => (c.chunk_version ?? 0) < nextVersion)
-              .map((c) => ctx.db.delete(c._id))
-          );
-
           return existingHistory._id;
+        }
+
+        if (useExternalBlob || existingHistory.is_external_storage) {
+          // Prefer Convex storage for large snapshots to reduce DB bandwidth
+          try {
+            const encoded = new TextEncoder().encode(serialized);
+            const newStorageId = await (ctx as any).storage.store(encoded);
+
+            // Delete previous blob if present
+            if (existingHistory.is_external_storage && existingHistory.storage_id) {
+              try {
+                await ctx.storage.delete(existingHistory.storage_id);
+              } catch {}
+            }
+
+            // Clean up any legacy chunks
+            const oldChunks = await ctx.db
+              .query("flow_history_chunks")
+              .withIndex("by_history_id", (q) => q.eq("history_id", existingHistory._id))
+              .collect();
+            await Promise.all(oldChunks.map((c) => ctx.db.delete(c._id)));
+
+            await ctx.db.patch(existingHistory._id, {
+              history_graph: undefined,
+              storage_id: newStorageId,
+              storage_size: byteSize,
+              is_external_storage: true,
+              storage_method: "blob",
+              compressed_size: byteSize,
+              is_dragging: isDragging,
+              total_chunks: undefined,
+              checksum,
+              version: nextVersion,
+              updated_at: now,
+            });
+            return existingHistory._id;
+          } catch {
+            // Fallback to chunked if blob fails
+            const chunks = splitIntoChunks(serialized, CHUNK_BYTE_SIZE);
+            for (let i = 0; i < chunks.length; i += 1) {
+              const part = chunks[i]!;
+              await ctx.db.insert("flow_history_chunks", {
+                history_id: existingHistory._id,
+                chunk_index: i,
+                chunk_data: part,
+                chunk_size: part.length,
+                chunk_version: nextVersion,
+                chunk_checksum: checksum,
+                created_at: now,
+              });
+            }
+            await ctx.db.patch(existingHistory._id, {
+              history_graph: undefined,
+              storage_id: undefined,
+              storage_size: byteSize,
+              is_external_storage: false,
+              storage_method: "chunked",
+              compressed_size: byteSize,
+              is_dragging: isDragging,
+              total_chunks: chunks.length,
+              checksum,
+              version: nextVersion,
+              updated_at: now,
+            });
+            return existingHistory._id;
+          }
         }
 
         await ctx.db.patch(existingHistory._id, {
@@ -297,39 +326,61 @@ export const saveHistoryGraph = mutation({
         return existingHistory._id;
       }
 
-      if (useExternal) {
+      if (useExternalBlob) {
         const checksum = simpleChecksum(serialized);
-        const chunks = splitIntoChunks(serialized, CHUNK_BYTE_SIZE);
-        const historyId = await ctx.db.insert("flow_histories", {
-          flow_id: flowId,
-          user_id: userId,
-          history_graph: undefined,
-          storage_id: undefined,
-          storage_size: byteSize,
-          is_external_storage: false,
-          storage_method: "chunked",
-          compressed_size: byteSize,
-          is_dragging: isDragging,
-          version: 1,
-          total_chunks: chunks.length,
-          checksum,
-          created_at: now,
-          updated_at: now,
-        });
-        // Write chunks for version 1
-        for (let i = 0; i < chunks.length; i += 1) {
-          const part = chunks[i]!;
-          await ctx.db.insert("flow_history_chunks", {
-            history_id: historyId,
-            chunk_index: i,
-            chunk_data: part,
-            chunk_size: part.length,
-            chunk_version: 1,
-            chunk_checksum: checksum,
+        try {
+          const encoded = new TextEncoder().encode(serialized);
+          const storageId = await (ctx as any).storage.store(encoded);
+          const historyId = await ctx.db.insert("flow_histories", {
+            flow_id: flowId,
+            user_id: userId,
+            history_graph: undefined,
+            storage_id: storageId,
+            storage_size: byteSize,
+            is_external_storage: true,
+            storage_method: "blob",
+            compressed_size: byteSize,
+            is_dragging: isDragging,
+            version: 1,
+            total_chunks: undefined,
+            checksum,
             created_at: now,
+            updated_at: now,
           });
+          return historyId;
+        } catch {
+          // Fallback: chunked rows
+          const chunks = splitIntoChunks(serialized, CHUNK_BYTE_SIZE);
+          const historyId = await ctx.db.insert("flow_histories", {
+            flow_id: flowId,
+            user_id: userId,
+            history_graph: undefined,
+            storage_id: undefined,
+            storage_size: byteSize,
+            is_external_storage: false,
+            storage_method: "chunked",
+            compressed_size: byteSize,
+            is_dragging: isDragging,
+            version: 1,
+            total_chunks: chunks.length,
+            checksum,
+            created_at: now,
+            updated_at: now,
+          });
+          for (let i = 0; i < chunks.length; i += 1) {
+            const part = chunks[i]!;
+            await ctx.db.insert("flow_history_chunks", {
+              history_id: historyId,
+              chunk_index: i,
+              chunk_data: part,
+              chunk_size: part.length,
+              chunk_version: 1,
+              chunk_checksum: checksum,
+              created_at: now,
+            });
+          }
+          return historyId;
         }
-        return historyId;
       }
 
       // Create new history record (inline)
@@ -410,6 +461,24 @@ export const loadHistoryGraph = query({
           lastUpdated: history.updated_at,
           compressedSize: estimatedBytes,
         };
+      }
+
+      // If stored as external blob, prefer storage fetch to avoid DB bandwidth
+      if ((history as any).is_external_storage && (history as any).storage_id) {
+        try {
+          const buf = await (ctx as any).storage.get((history as any).storage_id);
+          if (buf) {
+            const text = new TextDecoder().decode(buf);
+            const parsed = JSON.parse(text) as HistoryGraph;
+            return {
+              historyGraph: parsed,
+              lastUpdated: history.updated_at,
+              compressedSize: history.storage_size ?? history.compressed_size,
+            };
+          }
+        } catch (e) {
+          console.warn("Failed to read history blob; falling back to chunked/inline", e);
+        }
       }
 
       // If stored in chunked form, stitch it together (latest version only)
@@ -882,58 +951,81 @@ export const pruneHistoryGraph = mutation({
       const sanitized = sanitizeHistoryGraphForPersistence(prunedGraph);
       const serialized = JSON.stringify(sanitized);
 
-      // Check if we can store inline or need chunks
+      // Decide storage strategy: inline for small, blob for large
       if (serialized.length < 1000000) {
-        // 1MB limit for inline
-        // Store inline
         await ctx.db.patch(history._id, {
           history_graph: sanitized,
           storage_method: "inline",
           storage_size: serialized.length,
+          is_external_storage: false,
+          storage_id: undefined,
+          total_chunks: undefined,
+          version: (history.version ?? 0) + 1,
           updated_at: Date.now(),
+          checksum: simpleChecksum(serialized),
         });
-
-        // Clean up chunks if they exist
-        const chunks = await ctx.db
-          .query("flow_history_chunks")
-          .withIndex("by_history_id", (q) => q.eq("history_id", history._id))
-          .collect();
-
-        await Promise.all(chunks.map((c) => ctx.db.delete(c._id)));
-      } else {
-        // Store in chunks
-        const chunks = splitIntoChunks(serialized, 500000); // 500KB chunks
-
-        // Delete old chunks
+        // Clean up any legacy chunks
         const oldChunks = await ctx.db
           .query("flow_history_chunks")
           .withIndex("by_history_id", (q) => q.eq("history_id", history._id))
           .collect();
-
         await Promise.all(oldChunks.map((c) => ctx.db.delete(c._id)));
-
-        // Insert new chunks
-        const newVersion = (history.version ?? 0) + 1;
-        for (let i = 0; i < chunks.length; i++) {
-          await ctx.db.insert("flow_history_chunks", {
-            history_id: history._id,
-            chunk_index: i,
-            chunk_data: chunks[i],
-            chunk_size: chunks[i].length,
-            chunk_version: newVersion,
-            created_at: Date.now(),
+        // Delete previous blob if present
+        if (history.is_external_storage && history.storage_id) {
+          try {
+            await ctx.storage.delete(history.storage_id);
+          } catch {}
+        }
+      } else {
+        // Prefer external blob over chunked rows to minimize DB bandwidth
+        try {
+          const encoded = new TextEncoder().encode(serialized);
+          const storageId = await (ctx as any).storage.store(encoded);
+          await ctx.db.patch(history._id, {
+            history_graph: undefined,
+            storage_method: "blob",
+            is_external_storage: true,
+            storage_id: storageId,
+            storage_size: serialized.length,
+            version: (history.version ?? 0) + 1,
+            checksum: simpleChecksum(serialized),
+            total_chunks: undefined,
+            updated_at: Date.now(),
+          });
+          // Clean up any legacy chunks
+          const oldChunks = await ctx.db
+            .query("flow_history_chunks")
+            .withIndex("by_history_id", (q) => q.eq("history_id", history._id))
+            .collect();
+          await Promise.all(oldChunks.map((c) => ctx.db.delete(c._id)));
+        } catch {
+          // Fallback to chunked
+          const chunks = splitIntoChunks(serialized, 500000);
+          const newVersion = (history.version ?? 0) + 1;
+          const oldChunks = await ctx.db
+            .query("flow_history_chunks")
+            .withIndex("by_history_id", (q) => q.eq("history_id", history._id))
+            .collect();
+          await Promise.all(oldChunks.map((c) => ctx.db.delete(c._id)));
+          for (let i = 0; i < chunks.length; i++) {
+            await ctx.db.insert("flow_history_chunks", {
+              history_id: history._id,
+              chunk_index: i,
+              chunk_data: chunks[i],
+              chunk_size: chunks[i].length,
+              chunk_version: newVersion,
+              created_at: Date.now(),
+            });
+          }
+          await ctx.db.patch(history._id, {
+            storage_method: "chunked",
+            storage_size: serialized.length,
+            version: newVersion,
+            checksum: simpleChecksum(serialized),
+            total_chunks: chunks.length,
+            updated_at: Date.now(),
           });
         }
-
-        // Update history record
-        await ctx.db.patch(history._id, {
-          storage_method: "chunked",
-          storage_size: serialized.length,
-          version: newVersion,
-          checksum: simpleChecksum(serialized),
-          total_chunks: chunks.length,
-          updated_at: Date.now(),
-        });
       }
 
       return true;

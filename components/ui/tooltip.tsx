@@ -18,7 +18,7 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 
 // Top-level constants
-const TOOLTIP_DEFAULT_DELAY_MS = 500; // Reduce accidental opens during drag
+const TOOLTIP_DEFAULT_DELAY_MS = 100; // Reduce accidental opens during drag
 
 /** Provider: keep default delay reasonably high for canvas interactions */
 function TooltipProvider({
