@@ -104,6 +104,7 @@
 		"@radix-ui/react-tabs": "^1.1.11",
 		"@radix-ui/react-tooltip": "^1.2.7",
 		"@react-email/components": "0.5.0",
+		"@react-email/render": "^1.2.0",
 		"@react-three/fiber": "9.0.0-alpha.8",
 		"@sentry/cli": "^2.50.2",
 		"@sentry/nextjs": "^9.42.1",

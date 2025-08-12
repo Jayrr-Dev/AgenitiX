@@ -1,10 +1,11 @@
 /**
  * Email Service for Magic Links
  *
- * For development: Logs to console
- * For production: Replace with real email service (Resend, SendGrid, etc.)
+ * For development: Uses React Email + Convex Resend component
+ * For production: Uses React Email + Convex Resend component with proper tracking
  */
 
+import { ConvexHttpClient } from "convex/browser";
 import {
   PRODUCTION_EMAIL_CONFIG,
   shouldEnableTestMode,
@@ -25,22 +26,79 @@ export interface EmailResult {
 }
 
 /**
- * Send magic link email
- * TODO: Replace with real email service in production
+ * Send magic link email using React Email + Convex Resend component
  */
 export async function sendMagicLinkEmail(
   data: MagicLinkEmailData
 ): Promise<EmailResult> {
   const { to, name, magicToken, type } = data;
 
-  // Generate magic link URL - always use localhost in development
+  // Generate magic link URL, basically construct verification endpoint
   const baseUrl =
     process.env.NODE_ENV === "development"
       ? "http://localhost:3000"
       : process.env.NEXT_PUBLIC_APP_URL || "https://agenitix.com";
   const magicLinkUrl = `${baseUrl}/auth/verify?token=${magicToken}`;
 
-  // Email content based on type
+  // For development without test mode, basically skip actual sending
+  if (process.env.NODE_ENV === "development" && !shouldEnableTestMode()) {
+    return {
+      success: true,
+      messageId: `dev_${Date.now()}`,
+      magicLinkUrl,
+    };
+  }
+
+  try {
+    // Use Convex client to call email action, basically integrate with Convex Resend component
+    const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
+    if (!convexUrl) {
+      throw new Error("NEXT_PUBLIC_CONVEX_URL not configured");
+    }
+
+    const client = new ConvexHttpClient(convexUrl);
+
+    // Extract IP and location from request if available, basically security context
+    // Note: In a real implementation, you'd pass these from the calling context
+    const requestFromIp = "Unknown IP";
+    const requestFromLocation = "Unknown Location";
+
+    // Call the Convex email action, basically use the emails module we created
+    const result = await client.action("emails:sendMagicLinkEmail" as any, {
+      to,
+      name,
+      magicLinkUrl,
+      type,
+      requestFromIp,
+      requestFromLocation,
+    });
+
+    return {
+      success: result.success,
+      messageId: result.emailId || "sent",
+    };
+  } catch (error) {
+    console.error("❌ Convex email sending failed:", error);
+
+    // Fallback to legacy implementation if Convex fails, basically graceful degradation
+    return await sendLegacyMagicLinkEmail(data);
+  }
+}
+
+/**
+ * Legacy email sending fallback, basically original inline HTML implementation
+ */
+async function sendLegacyMagicLinkEmail(
+  data: MagicLinkEmailData
+): Promise<EmailResult> {
+  const { to, name, magicToken, type } = data;
+
+  const baseUrl =
+    process.env.NODE_ENV === "development"
+      ? "http://localhost:3000"
+      : process.env.NEXT_PUBLIC_APP_URL || "https://agenitix.com";
+  const magicLinkUrl = `${baseUrl}/auth/verify?token=${magicToken}`;
+
   const emailContent =
     type === "verification"
       ? {
@@ -121,21 +179,8 @@ export async function sendMagicLinkEmail(
 			`,
         };
 
-  // For development: Return success without logging
-  if (process.env.NODE_ENV === "development" && !shouldEnableTestMode()) {
-    // Return the magic link URL for the API response
-    return {
-      success: true,
-      messageId: `dev_${Date.now()}`,
-      magicLinkUrl, // Include this for development testing
-    };
-  }
-
-  // For production: Use Resend email service
   try {
-    // Check if we have Resend API key
     if (!PRODUCTION_EMAIL_CONFIG.resendApiKey) {
-      console.error("RESEND_API_KEY not found in environment variables");
       return {
         success: false,
         error:
@@ -143,11 +188,8 @@ export async function sendMagicLinkEmail(
       };
     }
 
-    // Use Resend for production emails
     const { Resend } = await import("resend");
     const resend = new Resend(PRODUCTION_EMAIL_CONFIG.resendApiKey);
-
-    // Determine the from email address
     const fromEmail = PRODUCTION_EMAIL_CONFIG.resendFromEmail;
 
     const result = await resend.emails.send({
@@ -163,34 +205,11 @@ export async function sendMagicLinkEmail(
 
     return { success: true, messageId: result.data?.id || "sent" };
   } catch (error) {
-    console.error("❌ Email sending failed:", error);
-
-    // Try fallback with Resend's default domain
-    try {
-      const { Resend } = await import("resend");
-      const resend = new Resend(PRODUCTION_EMAIL_CONFIG.resendApiKey); // Use PRODUCTION_EMAIL_CONFIG.resendApiKey here
-
-      const fallbackResult = await resend.emails.send({
-        from: "onboarding@resend.dev", // Resend's default domain
-        to: [to],
-        subject: emailContent.subject,
-        html: emailContent.html,
-      });
-
-      if (fallbackResult.error) {
-        throw new Error(
-          `Fallback Resend API error: ${fallbackResult.error.message}`
-        );
-      }
-
-      return { success: true, messageId: fallbackResult.data?.id || "sent" };
-    } catch (fallbackError) {
-      console.error("❌ Fallback email also failed:", fallbackError);
-      return {
-        success: false,
-        error: `Email sending failed: ${error instanceof Error ? error.message : "Unknown error"}. Fallback also failed: ${fallbackError instanceof Error ? fallbackError.message : "Unknown fallback error"}`,
-      };
-    }
+    console.error("❌ Legacy email sending failed:", error);
+    return {
+      success: false,
+      error: `Email sending failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+    };
   }
 }
 
