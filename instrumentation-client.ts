@@ -1,30 +1,38 @@
-// This file configures the initialization of Sentry on the client.
-// The added config here will be used whenever a users loads a page in their browser.
-// https://docs.sentry.io/platforms/javascript/guides/nextjs/
+/**
+Route: instrumentation-client.ts
+ * CLIENT SENTRY INIT – Client-side Sentry configuration
+ *
+ * • Disables/limits Replay to avoid 429 rate limits
+ * • Reduces tracing in development
+ * • Safe, environment-aware defaults
+ *
+ * Keywords: sentry, replay, rate-limiting, nextjs, client
+ */
 
 import * as Sentry from "@sentry/nextjs";
 
+// Configuration constants (top-level), basically easy to tune
+const IS_PROD = process.env.NODE_ENV === "production";
+const DSN =
+  process.env.NEXT_PUBLIC_SENTRY_DSN ||
+  "https://5cb3c0fc918cf2322ec01a7e5aee6259@o4509188158914560.ingest.us.sentry.io/4509188159635456";
+
+// Disable Replay to eliminate 429s for now
+const ENABLE_REPLAY = false; // [Explanation], basically kill replay traffic
+
+// Conservative sampling
+const TRACES_SAMPLE_RATE = IS_PROD ? 0.1 : 0;
+const REPLAY_SESSION_RATE = ENABLE_REPLAY ? (IS_PROD ? 0.01 : 0) : 0;
+const REPLAY_ON_ERROR_RATE = ENABLE_REPLAY ? (IS_PROD ? 0.05 : 0) : 0;
+
 Sentry.init({
-	dsn: "https://5cb3c0fc918cf2322ec01a7e5aee6259@o4509188158914560.ingest.us.sentry.io/4509188159635456",
-
-	// Add optional integrations for additional features
-	integrations: [Sentry.replayIntegration()],
-
-	// Define how likely traces are sampled. Adjust this value in production, or use tracesSampler for greater control.
-	tracesSampleRate: 1,
-	// Enable logs to be sent to Sentry
-	enableLogs: true,
-
-	// Define how likely Replay events are sampled.
-	// This sets the sample rate to be 10%. You may want this to be 100% while
-	// in development and sample at a lower rate in production
-	replaysSessionSampleRate: 0.1,
-
-	// Define how likely Replay events are sampled when an error occurs.
-	replaysOnErrorSampleRate: 1.0,
-
-	// Setting this option to true will print useful information to the console while you're setting up Sentry.
-	debug: false,
+  dsn: DSN,
+  integrations: ENABLE_REPLAY ? [Sentry.replayIntegration()] : [],
+  tracesSampleRate: TRACES_SAMPLE_RATE,
+  enableLogs: false,
+  replaysSessionSampleRate: REPLAY_SESSION_RATE,
+  replaysOnErrorSampleRate: REPLAY_ON_ERROR_RATE,
+  debug: false,
 });
 
 export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;

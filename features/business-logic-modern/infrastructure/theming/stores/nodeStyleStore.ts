@@ -10,7 +10,6 @@
 
 import { useMemo } from "react";
 import { create } from "zustand";
-import { getNodeMetadata } from "../../node-registry/nodespec-registry";
 
 // -----------------------------------------------------------------------------
 // 1. Theme constants & helpers
@@ -461,12 +460,10 @@ export const useNodeStyleStore = create<NodeStyleState & NodeStyleActions>(
 // 3. Public hooks and helper functions
 // -----------------------------------------------------------------------------
 
-export const getNodeCategory = (nodeType?: string): string | null => {
-  if (!nodeType) {
-    return null;
-  }
-  const meta = getNodeMetadata(nodeType);
-  return meta?.category ?? null;
+export const getNodeCategory = (_nodeType?: string): string | null => {
+  // Decoupled from registry to avoid circular imports. Prefer using
+  // useCategoryThemeWithSpec which derives category from NodeSpec directly.
+  return null;
 };
 
 export function useNodeStyleClasses(
@@ -518,24 +515,13 @@ export function useCategoryTheme(nodeType?: string): CategoryTheme | null {
   );
 
   return useMemo(() => {
-    if (!(enabled && nodeType)) {
-      return null;
-    }
-
-    const categoryRaw = getNodeCategory(nodeType);
-    const category = categoryRaw ? categoryRaw.toLowerCase() : null;
-    if (!category) {
-      return null;
-    }
-
+    if (!(enabled && nodeType)) return null;
+    // Treat nodeType as a category key when used directly to avoid registry dependency
+    const category = String(nodeType).toLowerCase();
     const defaultTheme = CATEGORY_THEMES[category] ?? null;
-    const overrideTheme = customOverrides[category ?? ""] ?? {};
+    const overrideTheme = customOverrides[category] ?? {};
+    if (!defaultTheme) return null;
 
-    if (!defaultTheme) {
-      return null;
-    }
-
-    // Deep merge overrides
     return {
       ...defaultTheme,
       ...overrideTheme,
@@ -568,18 +554,46 @@ export function useCategoryTheme(nodeType?: string): CategoryTheme | null {
  * @returns CategoryTheme with custom theming applied
  */
 export function useCategoryThemeWithSpec(
-  nodeType?: string,
-  nodeSpec?: any
+  _nodeType?: string,
+  nodeSpec?: { category?: string; theming?: any }
 ): CategoryTheme | null {
-  const baseTheme = useCategoryTheme(nodeType);
+  const enabled = useNodeStyleStore((s) => s.categoryTheming.enabled);
+  const customOverrides = useNodeStyleStore(
+    (s) => s.categoryTheming.customOverrides
+  );
 
   return useMemo(() => {
-    if (!(baseTheme && nodeSpec?.theming)) {
-      return baseTheme;
-    }
+    if (!(enabled && nodeSpec?.category)) return null;
+    const category = String(nodeSpec.category).toLowerCase();
+    const defaultTheme = CATEGORY_THEMES[category] ?? null;
+    const overrideTheme = customOverrides[category] ?? {};
+    if (!defaultTheme) return null;
 
-    // Apply custom theming from NodeSpec
+    const baseTheme: CategoryTheme = {
+      ...defaultTheme,
+      ...overrideTheme,
+      background: {
+        ...defaultTheme.background,
+        ...(overrideTheme.background ?? {}),
+      },
+      border: { ...defaultTheme.border, ...(overrideTheme.border ?? {}) },
+      text: {
+        ...defaultTheme.text,
+        ...(overrideTheme.text ?? {}),
+        primary: {
+          ...defaultTheme.text.primary,
+          ...(overrideTheme.text?.primary ?? {}),
+        },
+        secondary: {
+          ...defaultTheme.text.secondary,
+          ...(overrideTheme.text?.secondary ?? {}),
+        },
+      },
+      button: { ...defaultTheme.button, ...(overrideTheme.button ?? {}) },
+    };
+
     const customTheming = nodeSpec.theming;
+    if (!customTheming) return baseTheme;
 
     return {
       ...baseTheme,
@@ -604,5 +618,5 @@ export function useCategoryThemeWithSpec(
         },
       },
     };
-  }, [baseTheme, nodeSpec?.theming]);
+  }, [enabled, nodeSpec?.category, nodeSpec?.theming, customOverrides]);
 }

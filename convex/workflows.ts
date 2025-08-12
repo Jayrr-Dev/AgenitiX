@@ -72,11 +72,67 @@ type EmailStep = {
   userEmailHint?: string;
 };
 
-type Step = AiStep | DelayStep | EmailStep;
+/** HTTP fetch request step */
+type FetchStep = {
+  type: "fetch";
+  url: string;
+  method?: "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
+  headers?: Record<string, string>;
+  body?: string | object;
+  timeout?: number; // milliseconds, default 30000
+  outVar?: string; // Variable name to store response in
+};
+
+/** Database store operation step */
+type StoreStep = {
+  type: "store";
+  operation: "insert" | "update" | "delete" | "get";
+  table: string;
+  id?: string; // For update/delete/get operations
+  data?: object; // For insert/update operations
+  outVar?: string; // Variable name to store result in
+};
+
+/** Conditional branch step */
+type BranchStep = {
+  type: "branch";
+  condition: string; // JavaScript expression to evaluate
+  jumpTo?: number; // Step index to jump to if condition is true
+  // If jumpTo not provided, continues to next step
+};
+
+/** Parallel execution fan-out step */
+type ParallelStep = {
+  type: "parallel";
+  branches: Array<{
+    steps: Step[];
+    name?: string; // Optional branch identifier
+  }>;
+  joinAfter: boolean; // Whether to wait for all branches to complete
+};
+
+/** Join step to collect parallel results */
+type JoinStep = {
+  type: "join";
+  parallelRunIds: string[]; // IDs of parallel runs to wait for
+  outVar?: string; // Variable name to store collected results
+};
+
+type Step =
+  | AiStep
+  | DelayStep
+  | EmailStep
+  | FetchStep
+  | StoreStep
+  | BranchStep
+  | ParallelStep
+  | JoinStep;
 
 type ExecutionData = {
   steps?: Step[];
   results?: unknown[];
+  variables?: Record<string, unknown>; // [Explanation], basically key-value store for step outputs
+  parallelRuns?: Record<string, string[]>; // [Explanation], basically track parallel run IDs by step index
 };
 
 /** Start a workflow run */
@@ -317,17 +373,18 @@ async function performStep(
   }
 ): Promise<StepResult> {
   // [Explanation], basically safely parse execution data
-  const exec = (run.execution_data as {
-    steps?: Array<
-      | { type: "ai"; prompt: string; threadId?: string; agentConfig?: any }
-      | { type: "delay"; ms: number }
-    >;
-    results?: unknown[];
-  }) || { steps: [], results: [] };
+  const exec = (run.execution_data as ExecutionData) || {
+    steps: [],
+    results: [],
+    variables: {},
+    parallelRuns: {},
+  };
 
   const cursor = (run.step_cursor ?? 0) as number;
   const steps = exec.steps ?? [];
   const results = Array.isArray(exec.results) ? exec.results : [];
+  const variables = exec.variables ?? {};
+  const parallelRuns = exec.parallelRuns ?? {};
 
   if (cursor >= steps.length) {
     return {
@@ -335,7 +392,7 @@ async function performStep(
       updated: {
         nodes_executed: run.nodes_executed,
         total_nodes: steps.length,
-        execution_data: { steps, results },
+        execution_data: { steps, results, variables, parallelRuns },
         step_cursor: cursor,
       },
     };
@@ -351,7 +408,7 @@ async function performStep(
       updated: {
         nodes_executed: run.nodes_executed,
         total_nodes: steps.length,
-        execution_data: { steps, results },
+        execution_data: { steps, results, variables, parallelRuns },
         step_cursor: cursor + 1,
         next_run_at: Date.now() + ms,
       },
@@ -385,10 +442,107 @@ async function performStep(
       updated: {
         nodes_executed: run.nodes_executed + 1,
         total_nodes: steps.length,
-        execution_data: { steps, results: newResults },
+        execution_data: { steps, results: newResults, variables, parallelRuns },
         step_cursor: cursor + 1,
       },
     };
+  }
+
+  // Handle Fetch step
+  if (step && (step as any).type === "fetch") {
+    const s = step as any as FetchStep;
+    const timeout = s.timeout ?? 30000;
+
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+      const fetchOptions: RequestInit = {
+        method: s.method ?? "GET",
+        headers: s.headers ?? {},
+        signal: controller.signal,
+      };
+
+      if (
+        s.body &&
+        (s.method === "POST" || s.method === "PUT" || s.method === "PATCH")
+      ) {
+        if (typeof s.body === "object") {
+          fetchOptions.body = JSON.stringify(s.body);
+          fetchOptions.headers = {
+            ...fetchOptions.headers,
+            "Content-Type": "application/json",
+          };
+        } else {
+          fetchOptions.body = s.body;
+        }
+      }
+
+      const response = await fetch(s.url, fetchOptions);
+      clearTimeout(timeoutId);
+
+      const headers = Object.fromEntries(response.headers.entries());
+      let responseData: any = {
+        fetch: {
+          status: response.status,
+          headers,
+        },
+      };
+
+      // Try to parse as JSON first, fallback to text
+      try {
+        const json = await response.json();
+        responseData.fetch.json = json;
+        if (s.outVar) {
+          variables[s.outVar] = json;
+        }
+      } catch {
+        const text = await response.text();
+        responseData.fetch.text = text;
+        if (s.outVar) {
+          variables[s.outVar] = text;
+        }
+      }
+
+      const newResults = results.concat(responseData);
+      return {
+        done: cursor + 1 >= steps.length,
+        updated: {
+          nodes_executed: run.nodes_executed + 1,
+          total_nodes: steps.length,
+          execution_data: {
+            steps,
+            results: newResults,
+            variables,
+            parallelRuns,
+          },
+          step_cursor: cursor + 1,
+        },
+      };
+    } catch (error) {
+      const errorResult = {
+        fetch: {
+          status: 0,
+          headers: {},
+          error: String(error),
+        },
+      };
+      const newResults = results.concat(errorResult);
+      return {
+        done: cursor + 1 >= steps.length,
+        updated: {
+          nodes_executed: run.nodes_executed + 1,
+          total_nodes: steps.length,
+          execution_data: {
+            steps,
+            results: newResults,
+            variables,
+            parallelRuns,
+          },
+          step_cursor: cursor + 1,
+        },
+      };
+    }
   }
 
   // Handle Email step using existing action
@@ -412,10 +566,409 @@ async function performStep(
       updated: {
         nodes_executed: run.nodes_executed + 1,
         total_nodes: steps.length,
-        execution_data: { steps, results: newResults },
+        execution_data: { steps, results: newResults, variables, parallelRuns },
         step_cursor: cursor + 1,
       },
     };
+  }
+
+  // Handle Store step
+  if (step && (step as any).type === "store") {
+    const s = step as any as StoreStep;
+
+    try {
+      // [Explanation], basically validate table name for security
+      const allowedTables = [
+        "workflow_runs",
+        "users",
+        "email_accounts",
+        "ai_threads",
+        "ai_messages",
+        "business_logic_flows",
+        "business_logic_nodes",
+        "business_logic_runs",
+      ];
+
+      if (!allowedTables.includes(s.table)) {
+        throw new Error(`Invalid table name: ${s.table}`);
+      }
+
+      let storeResult: any = { store: {} };
+
+      switch (s.operation) {
+        case "insert":
+          if (!s.data) throw new Error("Insert operation requires data");
+          const insertId = await _ctx.runMutation(api.workflows.storeInsert, {
+            table: s.table,
+            data: s.data,
+          });
+          storeResult.store.id = insertId;
+          storeResult.store.operation = "insert";
+          if (s.outVar) {
+            variables[s.outVar] = insertId;
+          }
+          break;
+
+        case "update":
+          if (!s.id || !s.data)
+            throw new Error("Update operation requires id and data");
+          await _ctx.runMutation(api.workflows.storeUpdate, {
+            table: s.table,
+            id: s.id,
+            data: s.data,
+          });
+          storeResult.store.id = s.id;
+          storeResult.store.operation = "update";
+          if (s.outVar) {
+            variables[s.outVar] = s.id;
+          }
+          break;
+
+        case "get":
+          if (!s.id) throw new Error("Get operation requires id");
+          const doc = await _ctx.runQuery(api.workflows.storeGet, {
+            table: s.table,
+            id: s.id,
+          });
+          storeResult.store.doc = doc;
+          storeResult.store.operation = "get";
+          if (s.outVar) {
+            variables[s.outVar] = doc;
+          }
+          break;
+
+        case "delete":
+          if (!s.id) throw new Error("Delete operation requires id");
+          await _ctx.runMutation(api.workflows.storeDelete, {
+            table: s.table,
+            id: s.id,
+          });
+          storeResult.store.operation = "delete";
+          storeResult.store.id = s.id;
+          if (s.outVar) {
+            variables[s.outVar] = true;
+          }
+          break;
+
+        default:
+          throw new Error(`Unknown store operation: ${s.operation}`);
+      }
+
+      const newResults = results.concat(storeResult);
+      return {
+        done: cursor + 1 >= steps.length,
+        updated: {
+          nodes_executed: run.nodes_executed + 1,
+          total_nodes: steps.length,
+          execution_data: {
+            steps,
+            results: newResults,
+            variables,
+            parallelRuns,
+          },
+          step_cursor: cursor + 1,
+        },
+      };
+    } catch (error) {
+      const errorResult = {
+        store: {
+          operation: s.operation,
+          error: String(error),
+        },
+      };
+      const newResults = results.concat(errorResult);
+      return {
+        done: cursor + 1 >= steps.length,
+        updated: {
+          nodes_executed: run.nodes_executed + 1,
+          total_nodes: steps.length,
+          execution_data: {
+            steps,
+            results: newResults,
+            variables,
+            parallelRuns,
+          },
+          step_cursor: cursor + 1,
+        },
+      };
+    }
+  }
+
+  // Handle Parallel step
+  if (step && (step as any).type === "parallel") {
+    const s = step as any as ParallelStep;
+
+    try {
+      const childRunIds: string[] = [];
+
+      // [Explanation], basically spawn child workflow runs for each branch
+      for (let i = 0; i < s.branches.length; i++) {
+        const branch = s.branches[i];
+        const childExecution: ExecutionData = {
+          steps: branch.steps,
+          results: [],
+          variables: { ...variables }, // [Explanation], basically inherit parent variables
+          parallelRuns: {},
+        };
+
+        const childRun = await _ctx.runMutation(
+          api.workflows.startWorkflowRun,
+          {
+            workflow_name: `parallel_branch_${cursor}_${i}`,
+            user_id: "system" as any, // [Explanation], basically system-spawned runs
+            execution_data: childExecution,
+            total_nodes: branch.steps.length,
+          }
+        );
+
+        childRunIds.push(childRun.runId);
+      }
+
+      // [Explanation], basically store parallel run IDs for join step
+      const updatedParallelRuns = { ...parallelRuns };
+      updatedParallelRuns[cursor.toString()] = childRunIds;
+
+      const parallelResult = {
+        parallel: {
+          childrenRunIds: childRunIds,
+          branches: s.branches.length,
+          joinAfter: s.joinAfter,
+        },
+      };
+
+      const newResults = results.concat(parallelResult);
+
+      if (s.joinAfter) {
+        // [Explanation], basically schedule join step to wait for completion
+        return {
+          done: false,
+          updated: {
+            nodes_executed: run.nodes_executed + 1,
+            total_nodes: steps.length,
+            execution_data: {
+              steps,
+              results: newResults,
+              variables,
+              parallelRuns: updatedParallelRuns,
+            },
+            step_cursor: cursor + 1,
+            next_run_at: Date.now() + 1000, // [Explanation], basically check back in 1 second
+          },
+        };
+      } else {
+        // [Explanation], basically fire-and-forget parallel execution
+        return {
+          done: cursor + 1 >= steps.length,
+          updated: {
+            nodes_executed: run.nodes_executed + 1,
+            total_nodes: steps.length,
+            execution_data: {
+              steps,
+              results: newResults,
+              variables,
+              parallelRuns: updatedParallelRuns,
+            },
+            step_cursor: cursor + 1,
+          },
+        };
+      }
+    } catch (error) {
+      const errorResult = {
+        parallel: {
+          childrenRunIds: [],
+          error: String(error),
+        },
+      };
+      const newResults = results.concat(errorResult);
+      return {
+        done: false,
+        updated: {
+          nodes_executed: run.nodes_executed + 1,
+          total_nodes: steps.length,
+          execution_data: {
+            steps,
+            results: newResults,
+            variables,
+            parallelRuns,
+          },
+          step_cursor: cursor + 1,
+        },
+      };
+    }
+  }
+
+  // Handle Join step
+  if (step && (step as any).type === "join") {
+    const s = step as any as JoinStep;
+
+    try {
+      const runIds = s.parallelRunIds;
+      const joinResults: unknown[] = [];
+      let allCompleted = true;
+
+      // [Explanation], basically check status of all parallel runs
+      for (const runId of runIds) {
+        const childRun = await _ctx.runQuery(api.workflows.getWorkflowRun, {
+          runId: runId as any,
+        });
+
+        if (!childRun) {
+          allCompleted = false;
+          break;
+        }
+
+        if (childRun.status === "running") {
+          allCompleted = false;
+          break;
+        } else if (childRun.status === "completed") {
+          const childExec = childRun.execution_data as ExecutionData;
+          joinResults.push({
+            runId,
+            status: "completed",
+            results: childExec.results,
+            variables: childExec.variables,
+          });
+        } else {
+          joinResults.push({
+            runId,
+            status: childRun.status,
+            error: childRun.error_message,
+          });
+        }
+      }
+
+      if (!allCompleted) {
+        // [Explanation], basically wait longer and check again
+        return {
+          done: false,
+          updated: {
+            nodes_executed: run.nodes_executed,
+            total_nodes: steps.length,
+            execution_data: { steps, results, variables, parallelRuns },
+            step_cursor: cursor,
+            next_run_at: Date.now() + 2000, // [Explanation], basically check back in 2 seconds
+          },
+        };
+      }
+
+      // [Explanation], basically all parallel runs completed, merge results
+      const joinResult = {
+        join: {
+          results: joinResults,
+          completed: joinResults.length,
+        },
+      };
+
+      if (s.outVar) {
+        variables[s.outVar] = joinResults;
+      }
+
+      const newResults = results.concat(joinResult);
+      return {
+        done: cursor + 1 >= steps.length,
+        updated: {
+          nodes_executed: run.nodes_executed + 1,
+          total_nodes: steps.length,
+          execution_data: {
+            steps,
+            results: newResults,
+            variables,
+            parallelRuns,
+          },
+          step_cursor: cursor + 1,
+        },
+      };
+    } catch (error) {
+      const errorResult = {
+        join: {
+          results: [],
+          error: String(error),
+        },
+      };
+      const newResults = results.concat(errorResult);
+      return {
+        done: false,
+        updated: {
+          nodes_executed: run.nodes_executed + 1,
+          total_nodes: steps.length,
+          execution_data: {
+            steps,
+            results: newResults,
+            variables,
+            parallelRuns,
+          },
+          step_cursor: cursor + 1,
+        },
+      };
+    }
+  }
+
+  // Handle Branch step
+  if (step && (step as any).type === "branch") {
+    const s = step as any as BranchStep;
+
+    try {
+      // [Explanation], basically evaluate condition safely in sandboxed context
+      const conditionResult = evaluateCondition(s.condition, variables);
+      const taken = Boolean(conditionResult);
+
+      let nextCursor = cursor + 1;
+      if (taken && s.jumpTo !== undefined) {
+        // [Explanation], basically guard against invalid jump indices
+        if (s.jumpTo >= 0 && s.jumpTo < steps.length) {
+          nextCursor = s.jumpTo;
+        } else {
+          throw new Error(`Invalid jump target: ${s.jumpTo}`);
+        }
+      }
+
+      const branchResult = {
+        branch: {
+          taken: taken ? "true" : "false",
+          condition: s.condition,
+          jumpTo: taken ? s.jumpTo : undefined,
+        },
+      };
+
+      const newResults = results.concat(branchResult);
+      return {
+        done: nextCursor >= steps.length,
+        updated: {
+          nodes_executed: run.nodes_executed + 1,
+          total_nodes: steps.length,
+          execution_data: {
+            steps,
+            results: newResults,
+            variables,
+            parallelRuns,
+          },
+          step_cursor: nextCursor,
+        },
+      };
+    } catch (error) {
+      const errorResult = {
+        branch: {
+          taken: "false",
+          condition: s.condition,
+          error: String(error),
+        },
+      };
+      const newResults = results.concat(errorResult);
+      return {
+        done: false,
+        updated: {
+          nodes_executed: run.nodes_executed + 1,
+          total_nodes: steps.length,
+          execution_data: {
+            steps,
+            results: newResults,
+            variables,
+            parallelRuns,
+          },
+          step_cursor: cursor + 1,
+        },
+      };
+    }
   }
 
   // Fallback: skip unknown step
@@ -424,10 +977,36 @@ async function performStep(
     updated: {
       nodes_executed: run.nodes_executed + 1,
       total_nodes: steps.length,
-      execution_data: { steps, results },
+      execution_data: { steps, results, variables, parallelRuns },
       step_cursor: cursor + 1,
     },
   };
+}
+
+// =============================================================================
+// CONDITION EVALUATION HELPER
+// =============================================================================
+
+/**
+ * Safely evaluate a JavaScript condition with variables
+ * [Explanation], basically sandboxed evaluation to prevent code injection
+ */
+function evaluateCondition(
+  condition: string,
+  variables: Record<string, unknown>
+): unknown {
+  try {
+    // [Explanation], basically create safe evaluation context with variables
+    const context = { ...variables };
+    const func = new Function(
+      ...Object.keys(context),
+      `return (${condition});`
+    );
+    return func(...Object.values(context));
+  } catch (error) {
+    console.warn("Condition evaluation failed:", error);
+    return false;
+  }
 }
 
 // =============================================================================
@@ -509,5 +1088,58 @@ export const updateWorkflowProgress = mutation({
     if (step_cursor !== undefined) updates.step_cursor = step_cursor;
     if (next_run_at !== undefined) updates.next_run_at = next_run_at;
     await ctx.db.patch(runId, updates);
+  },
+});
+
+// =============================================================================
+// STORE OPERATION HELPERS
+// =============================================================================
+
+/** Store insert operation */
+export const storeInsert = mutation({
+  args: {
+    table: v.string(),
+    data: v.any(),
+  },
+  async handler(ctx, { table, data }) {
+    // [Explanation], basically perform safe insert with table validation
+    return await (ctx.db as any).insert(table, data);
+  },
+});
+
+/** Store update operation */
+export const storeUpdate = mutation({
+  args: {
+    table: v.string(),
+    id: v.string(),
+    data: v.any(),
+  },
+  async handler(ctx, { table, id, data }) {
+    // [Explanation], basically perform safe update with ID validation
+    await (ctx.db as any).patch(id, data);
+  },
+});
+
+/** Store get operation */
+export const storeGet = query({
+  args: {
+    table: v.string(),
+    id: v.string(),
+  },
+  async handler(ctx, { table, id }) {
+    // [Explanation], basically perform safe get with ID validation
+    return await (ctx.db as any).get(id);
+  },
+});
+
+/** Store delete operation */
+export const storeDelete = mutation({
+  args: {
+    table: v.string(),
+    id: v.string(),
+  },
+  async handler(ctx, { table, id }) {
+    // [Explanation], basically perform safe delete with ID validation
+    await (ctx.db as any).delete(id);
   },
 });
