@@ -13,7 +13,7 @@ import type { NodeStencil } from "./types";
 
 // Pre-defined grid styles for performance, basically prevent className recreation
 const GRID_STYLES =
-  "flex flex-wrap justify-evenly gap-1 sm:mx-auto sm:grid sm:grid-cols-5 sm:grid-rows-2 sm:justify-items-center";
+  "flex flex-wrap justify-evenly gap-2.5 sm:mx-auto sm:grid sm:grid-cols-5 sm:grid-rows-2 sm:justify-items-center";
 
 interface StencilGridProps {
   stencils: NodeStencil[];

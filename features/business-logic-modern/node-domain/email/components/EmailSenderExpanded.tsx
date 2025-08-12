@@ -1,55 +1,284 @@
 "use client";
 /**
  * Route: features/business-logic-modern/node-domain/email/components/EmailSenderExpanded.tsx
- * EMAIL SENDER – Expanded view UI for configuration and actions
+ * EMAIL SENDER – Minimalist expanded view using modern design patterns
  *
- * • Presents account selector filtered by connected nodes
- * • Form controls for recipients, subject, and content
- * • File attachment handling with validation
- * • Send options and status information
+ * • Clean, focused interface for email sending with advanced features
+ * • Integrates EmailComposer-style design patterns
+ * • Tab-based interface for organization and settings
+ * • Maintains compatibility with existing node architecture
  *
- * Keywords: email-sender, expanded, configuration, form-controls
+ * Keywords: email-sender, expanded, minimalist, clean-design
  */
 
-import RenderStatusDot from "@/components/RenderStatusDot";
+import * as React from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import * as React from "react";
+import { Send, Plus, X, Clock, Palette, AlertCircle, Upload, FileText, RotateCcw } from "lucide-react";
+import { useState, useCallback, memo } from "react";
+import { z } from "zod";
+import { useNodeToast } from "@/hooks/useNodeToast";
+import RenderStatusDot from "@/components/RenderStatusDot";
 import type { EmailSenderData } from "../emailSender.node";
 
-// Align styling tokens with EmailReader for consistency
-const EXPANDED_STYLES = {
-  container: "p-4 w-full h-full flex flex-col",
-  disabled:
-    "opacity-75 bg-[--node-email-bg-hover] dark:bg-[--node-email-bg] rounded-md transition-all duration-300",
-  content:
-    "flex-1 space-y-1 overflow-y-auto max-h-[400px] pr-2 scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent",
+// ─────────────────────────────────────────────────────────────────────────────
+// VALIDATION SCHEMAS - Email validation using Zod
+// ─────────────────────────────────────────────────────────────────────────────
+
+const emailSchema = z.string().email({ message: "Please enter a valid email address" });
+
+const validateEmail = (email: string): { isValid: boolean; error?: string } => {
+  const result = emailSchema.safeParse(email);
+  return {
+    isValid: result.success,
+    error: result.success ? undefined : result.error.errors[0]?.message,
+  };
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CONSTANTS - Clean, minimal styling tokens
+// ─────────────────────────────────────────────────────────────────────────────
+
+const SENDER_STYLES = {
+  container: "flex flex-col bg-background border border-border rounded-lg p-0 ",
+  header: "pl-2",
+  content: "flex-1 flex flex-col min-h-0 border-border p-2",
+  footer: "p-3 border-t border-border bg-muted/30",
 } as const;
 
-const FIELD_STYLES = {
-  label:
-    "text-[--node-email-text] text-[10px] font-medium mb-1 block w-full flex items-center justify-between",
-  input:
-    "h-6 text-[10px] border border-[--node-email-border] bg-[--node-email-bg] text-[--node-email-text] rounded-md px-2 focus:ring-1 focus:ring-[--node-email-border-hover] focus:border-[--node-email-border-hover] disabled:opacity-50 disabled:cursor-not-allowed placeholder:text-[--node-email-text-secondary] placeholder:text-[10px] transition-all duration-200",
-  textarea:
-    "text-[10px] border border-[--node-email-border] bg-[--node-email-bg] text-[--node-email-text] rounded-md px-2 py-1 focus:ring-1 focus:ring-[--node-email-border-hover] focus:border-[--node-email-border-hover] disabled:opacity-50 disabled:cursor-not-allowed placeholder:text-[--node-email-text-secondary] placeholder:text-[10px] transition-all duration-200 resize-none",
-  select:
-    "h-6 text-[10px] border border-[--node-email-border] bg-[--node-email-bg] text-[--node-email-text] rounded-md px-2 focus:ring-1 focus:ring-[--node-email-border-hover] focus:border-[--node-email-border-hover] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200",
-  checkboxLabel: "flex items-center gap-2 text-[10px] text-[--node-email-text]",
-  helperText: "text-[10px] text-[--node-email-text-secondary]",
-  button:
-    "w-full h-6 rounded-md border border-[--node-email-border] bg-transparent text-[--node-email-text] text-[10px] font-medium hover:bg-[--node-email-bg-hover] disabled:cursor-not-allowed disabled:opacity-50 transition-all flex items-center justify-center",
-  statusBox:
-    "rounded-md border border-[--node-email-border] bg-[--node-email-bg] p-2 text-[10px] text-[--node-email-text-secondary]",
-  attachmentItem:
-    "flex items-center justify-between p-2 bg-[--node-email-bg-hover] rounded text-[10px]",
-  fileInput: "hidden",
-  fileButton:
-    "inline-flex items-center gap-1 px-3 py-1 text-[10px] bg-blue-500 text-white rounded hover:bg-blue-600 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
+const INPUT_STYLES = {
+  field: "text-xs",
+  label: "text-[10px] text-muted-foreground flex items-center",
+  input: "h-6 text-[10px]",
+  textarea: "text-[10px] resize-none",
+  select: "h-6 text-[10px] w-full break-all p-2 ",
 } as const;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RECIPIENT CHIP - Clean email badge component
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface RecipientChipProps {
+  email: string;
+  onRemove: () => void;
+  variant?: "to" | "cc" | "bcc";
+}
+
+const RecipientChip = memo(function RecipientChip({
+  email,
+  onRemove,
+  variant = "to",
+}: RecipientChipProps) {
+  const variantStyles = {
+    to: "bg-muted/80 text-foreground border-muted text-[10px] mt-0.5",
+    cc: "bg-muted/80 text-foreground border-muted text-[10px] mt-0.5",
+    bcc: "bg-muted/80 text-foreground border-muted text-[10px] mt-0.5",
+  };
+
+  return (
+    <div
+      className={`inline-flex items-center gap-1 h-5 px-2 rounded-full border ${variantStyles[variant]} hover:bg-muted`}
+    >
+      <span className="truncate max-w-32">{email}</span>
+      <X
+        className="h-3 w-3 cursor-pointer hover:bg-muted-foreground/20 rounded-full p-0.5"
+        onClick={onRemove}
+      />
+    </div>
+  );
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RECIPIENT INPUT - Inline email input with chip display
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface RecipientInputProps {
+  type: "to" | "cc" | "bcc";
+  label: string;
+  emails: string[];
+  onChange: (emails: string[]) => void;
+  placeholder?: string;
+  recipients: { to: string[]; cc: string[]; bcc: string[] };
+  onRecipientsChange: (type: "to" | "cc" | "bcc", recipients: string[]) => void;
+  nodeId: string;
+  showCC?: boolean;
+  showBCC?: boolean;
+  setShowCC?: (show: boolean) => void;
+  setShowBCC?: (show: boolean) => void;
+}
+
+const RecipientInput = memo(function RecipientInput({
+  type,
+  label,
+  emails,
+  onChange,
+  placeholder,
+  recipients,
+  onRecipientsChange,
+  nodeId,
+  showCC,
+  showBCC,
+  setShowCC,
+  setShowBCC,
+}: RecipientInputProps) {
+  const [inputValue, setInputValue] = useState("");
+  const { showError } = useNodeToast(nodeId);
+
+  const addEmail = useCallback(
+    (email: string) => {
+      const trimmed = email.trim();
+      if (!trimmed) return;
+
+      // Validate email format, basically check if it's a proper email
+      const validation = validateEmail(trimmed);
+      if (!validation.isValid) {
+        showError("Invalid Email", validation.error || "Please enter a valid email address");
+        return;
+      }
+
+      // Check for duplicates, basically ensure no duplicate emails
+      if (emails.includes(trimmed)) {
+        showError("Duplicate Email", "This email address has already been added");
+        return;
+      }
+
+      // Add valid email, basically success path
+      onChange([...emails, trimmed]);
+      setInputValue("");
+    },
+    [emails, onChange, showError]
+  );
+
+  const removeEmail = useCallback(
+    (index: number) => {
+      onChange(emails.filter((_, i) => i !== index));
+    },
+    [emails, onChange]
+  );
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === "Enter" || e.key === ",") {
+        e.preventDefault();
+        addEmail(inputValue);
+      }
+    },
+    [inputValue, addEmail]
+  );
+
+  const handleBlur = useCallback(() => {
+    if (inputValue.trim()) {
+      addEmail(inputValue);
+    }
+  }, [inputValue, addEmail]);
+
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setInputValue(e.target.value);
+  }, []);
+
+  const handlePaste = useCallback((e: React.ClipboardEvent<HTMLInputElement>) => {
+    const pastedText = e.clipboardData.getData("text");
+
+    // Extract emails anywhere in the text (supports: Name <email@x.com>, CSV, semicolons, newlines)
+    const emailRegex = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g;
+    const matches = pastedText.match(emailRegex) || [];
+
+    if (matches.length > 0) {
+      // Prevent default only when we're handling the paste ourselves
+      e.preventDefault();
+
+      // Deduplicate and add valid emails
+      const uniqueEmails = Array.from(new Set(matches.map((m) => m.trim())));
+      uniqueEmails.forEach((email) => {
+        if (!emails.includes(email)) {
+          const validation = validateEmail(email);
+          if (validation.isValid) {
+            addEmail(email);
+          }
+        }
+      });
+
+      // Clear input after we add chips, basically reset for next input
+      setInputValue("");
+    }
+    // If no emails were detected, let the browser perform a normal paste so the user can continue typing
+  }, [emails, addEmail]);
+
+  return (
+    <div className="flex min-h-6 border rounded-md border-border px-2  ">
+      <Label className="text-[10px] self-start pt-1 text-muted-foreground w-8 flex items-center ">{label}</Label>
+      <div className="flex flex-wrap items-center flex-1 min-w-0 ">
+        {emails.map((email, index) => (
+          <RecipientChip
+            key={`${email}-${index}`}
+            email={email}
+            onRemove={() => removeEmail(index)}
+            variant={type}
+          />
+        ))}
+        <Input
+          variant="node"
+          value={inputValue}
+          onChange={handleInputChange}
+          onKeyDown={handleKeyDown}
+          onBlur={handleBlur}
+          onPaste={handlePaste}
+          placeholder={emails.length === 0 ? placeholder : ""}
+          className="border-0 shadow-none bg-transparent p-0 h-6 text-[10px] min-w-32 flex-1 focus-visible:ring-0"
+        />
+      </div>
+      {/* CC/BCC Toggle - Only show on "To" field */}
+      {type === "to" && (
+        <div className="flex flex-row gap-1 ml-2 self-end h-6  items-center">
+          <Button
+            variant="ghost"
+            size="sm"
+            className={`p-0 text-[10px] text-muted-foreground  hover:text-foreground hover:bg-transparent hover:underline ${showCC ? 'text-foreground' : ''}`}
+            onClick={() => {
+              const newShowCC = !showCC;
+              setShowCC?.(newShowCC);
+              if (!newShowCC) {
+                onRecipientsChange("cc", []);
+              }
+            }}
+          >
+            Cc
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className={`p-0 text-[10px] text-muted-foreground hover:text-foreground hover:bg-transparent hover:underline ${showBCC ? 'text-foreground' : ''}`}
+            onClick={() => {
+              const newShowBCC = !showBCC;
+              setShowBCC?.(newShowBCC);
+              if (!newShowBCC) {
+                onRecipientsChange("bcc", []);
+              }
+            }}
+          >
+            Bcc
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+});
 
 type AvailableAccount = {
   value: string;
@@ -153,6 +382,7 @@ export const EmailSenderExpanded = React.memo(
       variables: {},
     };
     const safeAttachments = (attachments || []) as AttachmentType[];
+    const safeSubject = subject || "";
 
     // Memoize heavy/derived UI values to avoid recalculation during drags
     const accountOptions = React.useMemo(() => {
@@ -162,442 +392,507 @@ export const EmailSenderExpanded = React.memo(
           value={account.value}
           disabled={!account.isActive}
         >
-          {account.label}{" "}
-          {account.isActive
-            ? account.isConnected
-              ? ""
-              : "(connection error)"
-            : "(inactive)"}
+          {account.email}
         </option>
       ));
     }, [availableAccounts]);
 
+    // State for UI management
+    const [activeTab, setActiveTab] = useState("compose");
+    const [showCC, setShowCC] = useState(safeRecipients.cc.length > 0);
+    const [showBCC, setShowBCC] = useState(safeRecipients.bcc.length > 0);
+
+    // Determine send button state
+    const isSending = sendingStatus === "sending" || sendingStatus === "composing";
+    const hasError = sendingStatus === "error";
+    const hasRecipients = safeRecipients.to.length > 0;
+    const hasContent = safeSubject.trim().length > 0 || safeContent.text.trim().length > 0;
+    const hasAccount = accountId && selectedAccount?.isConnected;
+
+    const sendButtonText = isSending
+      ? sendingStatus === "composing"
+        ? "Composing..."
+        : "Sending..."
+      : "Email";
+
+    // Helper function to convert textarea change to recipient array change
+    const handleRecipientsChangeForInput = useCallback(
+      (type: "to" | "cc" | "bcc") => (emails: string[]) => {
+        // Create synthetic event to match existing interface, basically maintain compatibility
+        const syntheticEvent = {
+          target: { value: emails.join(", ") },
+        } as React.ChangeEvent<HTMLTextAreaElement>;
+        onRecipientsChange(type)(syntheticEvent);
+      },
+      [onRecipientsChange]
+    );
+
     return (
       <div
-        className={`nowheel ${EXPANDED_STYLES.container} ${isEnabled ? "" : EXPANDED_STYLES.disabled}`}
+        className={`nowheel ${SENDER_STYLES.container} ${isEnabled ? "" : "opacity-75"}`}
       >
-        <div className={EXPANDED_STYLES.content}>
-          {/* Account Selection */}
-          <div>
-            <label
-              htmlFor="email-account-select"
-              className={FIELD_STYLES.label}
-            >
-              <span className="inline-flex items-center gap-1">
-                Email Account
-                {/* Live connection status, basically visual indicator */}
-              </span>
-              <RenderStatusDot
-                eventActive={sendingStatus === "sent"}
-                isProcessing={sendingStatus === "sending"}
-                hasError={sendingStatus === "error"}
-                enableGlow
-                size="sm"
-                titleText={sendingStatus}
-              />
-            </label>
-            <select
-              id="email-account-select"
-              value={accountId ?? ""}
-              onChange={onAccountChange}
-              className={`${FIELD_STYLES.select} w-full ${accountErrors.length > 0 ? "border-red-500" : ""}`}
-              disabled={!isEnabled || sendingStatus === "sending"}
-            >
-              <option value="">Select email account...</option>
-              {accountOptions}
-            </select>
+        {/* Content Area */}
+        <div className={SENDER_STYLES.content}>
+          <Tabs variant="node" value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col overflow-auto nowheel">
+            <div className="flex items-center justify-between mt-2">
+              <TabsList variant="node">
+                <TabsTrigger variant="node" value="compose">
+                  Compose
+                </TabsTrigger>
+                <TabsTrigger variant="node" value="settings">
+                  Settings
+                </TabsTrigger>
+              </TabsList>
 
-            {/* Account Status Display */}
-            {selectedAccount && (
-              <div className="mt-1 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span
-                    className={`text-[10px] ${selectedAccount.isConnected ? "text-green-600" : "text-red-600"}`}
+              {/* Header with Send Button */}
+              <div className={SENDER_STYLES.header}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    {sentCount > 0 && (
+                      <Badge variant="secondary" className="text-xs">
+                        {sentCount} sent
+                      </Badge>
+                    )}
+                    {failedCount > 0 && (
+                      <Badge variant="destructive" className="text-xs">
+                        {failedCount} failed
+                      </Badge>
+                    )}
+                  </div>
+                  <Button
+                    onClick={onSendEmail}
+                    disabled={!isEnabled || isSending || !hasRecipients || !hasContent || !hasAccount}
+                    variant="node"
+                    size="node"
                   >
-                    ●{" "}
-                    {selectedAccount.isConnected
-                      ? "Connected"
-                      : "Connection Issue"}
+                    <Send className="h-3 w-3 mr-1" />
+                    {sendButtonText}
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            <TabsContent variant="node" value="compose" className="flex-1">
+              {/* Account Selection */}
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <Label className={INPUT_STYLES.label}>
+                    <span className="inline-flex items-center gap-1">
+                      Email Account
+                      {onRefreshAccount && (
+                        <Button
+                          onClick={onRefreshAccount}
+                          variant="ghost"
+                          size="sm"
+                          className="h-4 w-4 p-0 hover:bg-transparent"
+                          disabled={isSending}
+                        >
+                          <RotateCcw className="h-3 w-3" />
+                        </Button>
+                      )}
+                    </span>
+                  </Label>
+                  <RenderStatusDot
+                    eventActive={sendingStatus === "sent"}
+                    isProcessing={sendingStatus === "sending"}
+                    hasError={sendingStatus === "error" || accountErrors.length > 0}
+                    enableGlow
+                    size="sm"
+                    titleText={sendingStatus}
+                  />
+                </div>
+                <Select
+                  value={accountId || ""}
+                  onValueChange={(value) => {
+                    const syntheticEvent = {
+                      target: { value },
+                    } as React.ChangeEvent<HTMLSelectElement>;
+                    onAccountChange(syntheticEvent);
+                  }}
+                  disabled={!isEnabled || isSending}
+                >
+                  <SelectTrigger className={INPUT_STYLES.select}>
+                    <SelectValue placeholder="Select email account..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableAccounts.map((account) => (
+                      <SelectItem
+                        key={account.value}
+                        value={account.value}
+                        disabled={!account.isActive}
+                      >
+                        {account.email}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+
+
+                {/* Account Errors */}
+                {accountErrors.length > 0 && (
+                  <div className="space-y-1">
+                    {accountErrors.map((error, index) => (
+                      <div key={index} className="text-[10px] text-red-600">
+                        ⚠ {error}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* No Accounts Available */}
+                {availableAccounts.length === 0 && (
+                  <div className="text-[10px] text-yellow-600">
+                    ⚠ No email accounts configured. Please add an email account first.
+                  </div>
+                )}
+              </div>
+
+              <Separator className="mb-1" />
+
+              {/* To Recipients */}
+              <div className="space-y-0">
+                <RecipientInput
+                  type="to"
+                  label="To"
+                  emails={safeRecipients.to}
+                  onChange={handleRecipientsChangeForInput("to")}
+                  placeholder="Enter recipient email..."
+                  recipients={safeRecipients}
+                  onRecipientsChange={(type, emails) => handleRecipientsChangeForInput(type)(emails)}
+                  nodeId=""
+                  showCC={showCC}
+                  showBCC={showBCC}
+                  setShowCC={setShowCC}
+                  setShowBCC={setShowBCC}
+                />
+
+                {showCC && (
+                  <RecipientInput
+                    type="cc"
+                    label="Cc"
+                    emails={safeRecipients.cc}
+                    onChange={handleRecipientsChangeForInput("cc")}
+                    placeholder="Cc recipients..."
+                    recipients={safeRecipients}
+                    onRecipientsChange={(type, emails) => handleRecipientsChangeForInput(type)(emails)}
+                    nodeId=""
+                  />
+                )}
+                
+                {showBCC && (
+                  <RecipientInput
+                    type="bcc"
+                    label="Bcc"
+                    emails={safeRecipients.bcc}
+                    onChange={handleRecipientsChangeForInput("bcc")}
+                    placeholder="Bcc recipients..."
+                    recipients={safeRecipients}
+                    onRecipientsChange={(type, emails) => handleRecipientsChangeForInput(type)(emails)}
+                    nodeId=""
+                  />
+                )}
+              </div>
+
+              <Separator className="mb-1" />
+
+              {/* Subject */}
+              <div className="space-y-1">
+                <div className="border border-border rounded-md flex flex-row items-center">
+                  <Input
+                    variant="node"
+                    value={safeSubject}
+                    onChange={onSubjectChange}
+                    placeholder="Subject"
+                    className={INPUT_STYLES.input}
+                    disabled={!isEnabled || isSending}
+                  />
+                </div>
+              </div>
+
+              <Separator className="mb-1" />
+
+              {/* Message Content */}
+              <div className="space-y-1 flex-1 flex flex-col">
+
+                <textarea
+                  value={safeContent.text}
+                  onChange={onContentChange("text")}
+                  placeholder="Enter your message here..."
+                  className={`${INPUT_STYLES.textarea} w-full min-h-18 border border-border rounded-md px-2 py-1`}
+                  disabled={!isEnabled || isSending}
+                />
+              </div>
+            </TabsContent>
+
+            <TabsContent variant="node" value="settings" className="pt-3 space-y-3 m-0">
+              {/* Attachments */}
+              <div className="space-y-2">
+                <Label className={INPUT_STYLES.label}>Attachments</Label>
+
+                {/* File Input */}
+                <div className="flex items-center gap-2">
+                  <input
+                    type="file"
+                    multiple={true}
+                    onChange={onFileAttachment}
+                    className="hidden"
+                    id="file-input"
+                    disabled={!isEnabled || isSending}
+                    accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.gif,.zip,.rar"
+                  />
+                  <Button
+                    variant="outline"
+                    size="node"
+                    asChild
+                    disabled={!isEnabled || isSending}
+                  >
+                    <label htmlFor="file-input" className="cursor-pointer">
+                      <Upload className="h-3 w-3 mr-1" />
+                      Add Files
+                    </label>
+                  </Button>
+                  <span className="text-[10px] text-muted-foreground">
+                    Max: {Math.round(maxAttachmentSize / 1024 / 1024)}MB per file
                   </span>
-                  {selectedAccount.lastValidated && (
-                    <span className={FIELD_STYLES.helperText}>
-                      Last checked:{" "}
-                      {new Date(
-                        selectedAccount.lastValidated
-                      ).toLocaleTimeString()}
+                </div>
+
+                {/* Attachments List */}
+                {safeAttachments.length > 0 && (
+                  <div className="space-y-1 max-h-16 overflow-y-auto">
+                    {safeAttachments.map((attachment) => (
+                      <div
+                        key={attachment.id}
+                        className="flex items-center justify-between p-2 bg-muted/30 rounded text-[10px]"
+                      >
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          <FileText className="h-3 w-3 text-blue-600" />
+                          <span className="truncate font-medium">
+                            {attachment.filename}
+                          </span>
+                          <span className="text-muted-foreground flex-shrink-0">
+                            ({Math.round(attachment.size / 1024)}KB)
+                          </span>
+                        </div>
+                        <Button
+                          onClick={() => onRemoveAttachment(attachment.id)}
+                          variant="ghost"
+                          size="node"
+                          className="text-red-500 hover:text-red-700 ml-2 flex-shrink-0"
+                          disabled={!isEnabled || isSending}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Attachments Summary */}
+                {safeAttachments.length > 0 && (
+                  <div className="text-[10px] text-muted-foreground">
+                    {safeAttachments.length} file(s) • Total:{" "}
+                    {Math.round(
+                      safeAttachments.reduce((sum, att) => sum + att.size, 0) / 1024
+                    )}
+                    KB
+                  </div>
+                )}
+              </div>
+
+              <Separator />
+
+              {/* Send Mode */}
+              <div className="space-y-1">
+                <Label className={INPUT_STYLES.label}>Send Mode</Label>
+                <Select
+                  value={sendMode || "immediate"}
+                  onValueChange={(value) => {
+                    const syntheticEvent = {
+                      target: { value },
+                    } as React.ChangeEvent<HTMLSelectElement>;
+                    onSendModeChange(syntheticEvent);
+                  }}
+                  disabled={!isEnabled || isSending}
+                >
+                  <SelectTrigger className={INPUT_STYLES.select}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="immediate">Immediate</SelectItem>
+                    <SelectItem value="batch">Batch</SelectItem>
+                    <SelectItem value="scheduled">Scheduled</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Batch Options */}
+              {sendMode === "batch" && (
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Label className={`${INPUT_STYLES.label} cursor-help`}>
+                          Batch Size
+                        </Label>
+                      </TooltipTrigger>
+                      <TooltipContent sideOffset={6} className="text-[10px]">
+                        Number of emails to send in each batch, basically the chunk size.
+                      </TooltipContent>
+                    </Tooltip>
+                    <Input
+                      variant="node"
+                      type="number"
+                      value={batchSize || 10}
+                      onChange={onNumberChange("batchSize", 1, 100)}
+                      min="1"
+                      max="100"
+                      className={INPUT_STYLES.input}
+                      disabled={!isEnabled || isSending}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Label className={`${INPUT_STYLES.label} cursor-help`}>
+                          Delay (ms)
+                        </Label>
+                      </TooltipTrigger>
+                      <TooltipContent sideOffset={6} className="text-[10px]">
+                        Delay between batches in milliseconds, basically the wait time.
+                      </TooltipContent>
+                    </Tooltip>
+                    <Input
+                      variant="node"
+                      type="number"
+                      value={delayBetweenSends || 0}
+                      onChange={onNumberChange("delayBetweenSends", 0, 60000)}
+                      min="0"
+                      max="60000"
+                      className={INPUT_STYLES.input}
+                      disabled={!isEnabled || isSending}
+                    />
+                  </div>
+                </div>
+              )}
+
+              <Separator />
+
+              {/* Tracking Options */}
+              <div className="space-y-2">
+                <Label className={INPUT_STYLES.label}>Tracking Options</Label>
+                <div className="flex flex-col gap-1">
+                  <label className="flex items-center gap-2 text-[10px]">
+                    <input
+                      type="checkbox"
+                      checked={!!trackDelivery}
+                      onChange={onCheckboxChange("trackDelivery")}
+                      className="mr-2"
+                      disabled={!isEnabled || isSending}
+                    />
+                    Track Delivery
+                  </label>
+                  <label className="flex items-center gap-2 text-[10px]">
+                    <input
+                      type="checkbox"
+                      checked={!!trackReads}
+                      onChange={onCheckboxChange("trackReads")}
+                      className="mr-2"
+                      disabled={!isEnabled || isSending}
+                    />
+                    Track Reads
+                  </label>
+                  <label className="flex items-center gap-2 text-[10px]">
+                    <input
+                      type="checkbox"
+                      checked={!!trackClicks}
+                      onChange={onCheckboxChange("trackClicks")}
+                      className="mr-2"
+                      disabled={!isEnabled || isSending}
+                    />
+                    Track Clicks
+                  </label>
+                  <label className="flex items-center gap-2 text-[10px]">
+                    <input
+                      type="checkbox"
+                      checked={!!continueOnError}
+                      onChange={onCheckboxChange("continueOnError")}
+                      className="mr-2"
+                      disabled={!isEnabled || isSending}
+                    />
+                    Continue on Error
+                  </label>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Retry Settings */}
+              <div className="space-y-1">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Label className={`${INPUT_STYLES.label} cursor-help`}>
+                      Retry Attempts
+                    </Label>
+                  </TooltipTrigger>
+                  <TooltipContent sideOffset={6} className="text-[10px]">
+                    Number of retry attempts on failure, basically the resilience setting.
+                  </TooltipContent>
+                </Tooltip>
+                <Input
+                  variant="node"
+                  type="number"
+                  value={retryAttempts || 3}
+                  onChange={onNumberChange("retryAttempts", 0, 5)}
+                  min="0"
+                  max="5"
+                  className={INPUT_STYLES.input}
+                  disabled={!isEnabled || isSending}
+                />
+              </div>
+
+              {/* Status Information */}
+              <div className="rounded-md border border-border bg-muted/30 p-2 text-[10px] space-y-1">
+                <div>
+                  <span>Sent:</span> {sentCount}{" "}
+                  <span>| Failed:</span> {failedCount}
+                </div>
+                <div>
+                  Recipients:{" "}
+                  {safeRecipients.to.length +
+                    safeRecipients.cc.length +
+                    safeRecipients.bcc.length}
+                </div>
+                <div>
+                  Attachments: {safeAttachments.length}
+                  {safeAttachments.length > 0 && (
+                    <span className="ml-1">
+                      (
+                      {Math.round(
+                        safeAttachments.reduce((sum, att) => sum + att.size, 0) / 1024
+                      )}
+                      KB)
                     </span>
                   )}
                 </div>
-                {onRefreshAccount && (
-                  <button
-                    onClick={onRefreshAccount}
-                    className="text-[10px] text-blue-600 hover:text-blue-800 underline"
-                    disabled={sendingStatus === "sending"}
-                  >
-                    Refresh
-                  </button>
-                )}
               </div>
-            )}
-
-            {/* Account Errors */}
-            {(accountErrors?.length ?? 0) > 0 && (
-              <div className="mt-1">
-                {(accountErrors || []).map((error, index) => (
-                  <div key={index} className="text-[10px] text-red-600">
-                    ⚠ {error}
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* No Accounts Available */}
-            {availableAccounts.length === 0 && (
-              <div className="mt-1 text-[10px] text-yellow-600">
-                ⚠ No email accounts configured. Please add an email account
-                first.
-              </div>
-            )}
-          </div>
-
-          {/* Recipients */}
-          <div>
-            <label htmlFor="recipients-to" className={FIELD_STYLES.label}>
-              To (comma-separated):
-            </label>
-            {/* dev test recipient buttons removed */}
-            <textarea
-              id="recipients-to"
-              value={safeRecipients.to.join(", ")}
-              onChange={onRecipientsChange("to")}
-              placeholder="recipient1@example.com, recipient2@example.com"
-              className={`${FIELD_STYLES.textarea} w-full h-12`}
-              disabled={!isEnabled || sendingStatus === "sending"}
-            />
-          </div>
-
-          {/* CC Recipients */}
-          <div>
-            <label htmlFor="recipients-cc" className={FIELD_STYLES.label}>
-              CC (optional):
-            </label>
-            <textarea
-              id="recipients-cc"
-              value={safeRecipients.cc.join(", ")}
-              onChange={onRecipientsChange("cc")}
-              placeholder="cc@example.com"
-              className={`${FIELD_STYLES.textarea} w-full h-8`}
-              disabled={!isEnabled || sendingStatus === "sending"}
-            />
-          </div>
-
-          {/* Subject */}
-          <div>
-            <label htmlFor="email-subject" className={FIELD_STYLES.label}>
-              Subject:
-            </label>
-            <input
-              id="email-subject"
-              type="text"
-              value={subject ?? ""}
-              onChange={onSubjectChange}
-              placeholder="Email subject..."
-              className={`${FIELD_STYLES.input} w-full`}
-              disabled={!isEnabled || sendingStatus === "sending"}
-            />
-          </div>
-
-          {/* Message Content */}
-          <div>
-            <label htmlFor="message-content" className={FIELD_STYLES.label}>
-              Message:
-            </label>
-            <textarea
-              id="message-content"
-              value={safeContent.text}
-              onChange={onContentChange("text")}
-              placeholder="Enter your message here..."
-              className={`${FIELD_STYLES.textarea} w-full h-16`}
-              disabled={!isEnabled || sendingStatus === "sending"}
-            />
-          </div>
-
-          {/* Attachments */}
-          <div>
-            <label className={FIELD_STYLES.label}>Attachments:</label>
-
-            {/* File Input */}
-            <div className="mb-2">
-              <input
-                type="file"
-                multiple={true}
-                onChange={onFileAttachment}
-                className={FIELD_STYLES.fileInput}
-                id="file-input"
-                disabled={!isEnabled || sendingStatus === "sending"}
-                accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.gif,.zip,.rar"
-              />
-              <label htmlFor="file-input" className={FIELD_STYLES.fileButton}>
-                Add Files
-              </label>
-              <span className={`${FIELD_STYLES.helperText} ml-2`}>
-                Max: {Math.round(maxAttachmentSize / 1024 / 1024)}MB per file
-              </span>
-            </div>
-
-            {/* Attachments List */}
-            {safeAttachments.length > 0 && (
-              <div className="space-y-1 max-h-16 overflow-y-auto">
-                {safeAttachments.map((attachment) => (
-                  <div
-                    key={attachment.id}
-                    className={FIELD_STYLES.attachmentItem}
-                  >
-                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                      <span className="text-blue-600">•</span>
-                      <span className="truncate font-medium">
-                        {attachment.filename}
-                      </span>
-                      <span
-                        className={`${FIELD_STYLES.helperText} flex-shrink-0`}
-                      >
-                        ({Math.round(attachment.size / 1024)}KB)
-                      </span>
-                    </div>
-                    <button
-                      onClick={() => onRemoveAttachment(attachment.id)}
-                      className="text-red-500 hover:text-red-700 ml-2 flex-shrink-0"
-                      disabled={!isEnabled || sendingStatus === "sending"}
-                      title="Remove attachment"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Attachments Summary */}
-            {safeAttachments.length > 0 && (
-              <div className={`${FIELD_STYLES.helperText} mt-1`}>
-                {safeAttachments.length} file(s) • Total:{" "}
-                {Math.round(
-                  safeAttachments.reduce((sum, att) => sum + att.size, 0) / 1024
-                )}
-                KB
-              </div>
-            )}
-          </div>
-
-          {/* Send Mode */}
-          <div>
-            <label htmlFor="send-mode" className={FIELD_STYLES.label}>
-              Send Mode:
-            </label>
-            <select
-              id="send-mode"
-              value={sendMode ?? "immediate"}
-              onChange={onSendModeChange}
-              className={`${FIELD_STYLES.select} w-full`}
-              disabled={!isEnabled || sendingStatus === "sending"}
-            >
-              <option value="immediate">Immediate</option>
-              <option value="batch">Batch</option>
-              <option value="scheduled">Scheduled</option>
-            </select>
-          </div>
-
-          {/* Batch Options */}
-          {sendMode === "batch" && (
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <label
-                      htmlFor="batch-size"
-                      className={`${FIELD_STYLES.label} cursor-help`}
-                    >
-                      Batch Size:
-                    </label>
-                  </TooltipTrigger>
-                  <TooltipContent
-                    sideOffset={6}
-                    className={FIELD_STYLES.helperText}
-                  >
-                    Number of emails to send in each batch, basically the chunk
-                    size.
-                  </TooltipContent>
-                </Tooltip>
-                <input
-                  id="batch-size"
-                  type="number"
-                  value={batchSize ?? 10}
-                  onChange={onNumberChange("batchSize", 1, 100)}
-                  min="1"
-                  max="100"
-                  className={`${FIELD_STYLES.input} w-full`}
-                  disabled={!isEnabled || sendingStatus === "sending"}
-                />
-              </div>
-              <div>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <label
-                      htmlFor="delay-between-sends"
-                      className={`${FIELD_STYLES.label} cursor-help`}
-                    >
-                      Delay (ms):
-                    </label>
-                  </TooltipTrigger>
-                  <TooltipContent
-                    sideOffset={6}
-                    className={FIELD_STYLES.helperText}
-                  >
-                    Delay between batches in milliseconds, basically the wait
-                    time.
-                  </TooltipContent>
-                </Tooltip>
-                <input
-                  id="delay-between-sends"
-                  type="number"
-                  value={delayBetweenSends ?? 0}
-                  onChange={onNumberChange("delayBetweenSends", 0, 60000)}
-                  min="0"
-                  max="60000"
-                  className={`${FIELD_STYLES.input} w-full`}
-                  disabled={!isEnabled || sendingStatus === "sending"}
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Tracking Options */}
-          <div className="flex flex-col gap-1">
-            <label className={FIELD_STYLES.checkboxLabel}>
-              <input
-                type="checkbox"
-                checked={!!trackDelivery}
-                onChange={onCheckboxChange("trackDelivery")}
-                className="mr-2"
-                disabled={!isEnabled || sendingStatus === "sending"}
-              />
-              Track Delivery
-            </label>
-            <label className={FIELD_STYLES.checkboxLabel}>
-              <input
-                type="checkbox"
-                checked={!!trackReads}
-                onChange={onCheckboxChange("trackReads")}
-                className="mr-2"
-                disabled={!isEnabled || sendingStatus === "sending"}
-              />
-              Track Reads
-            </label>
-            <label className={FIELD_STYLES.checkboxLabel}>
-              <input
-                type="checkbox"
-                checked={!!trackClicks}
-                onChange={onCheckboxChange("trackClicks")}
-                className="mr-2"
-                disabled={!isEnabled || sendingStatus === "sending"}
-              />
-              Track Clicks
-            </label>
-            <label className={FIELD_STYLES.checkboxLabel}>
-              <input
-                type="checkbox"
-                checked={!!continueOnError}
-                onChange={onCheckboxChange("continueOnError")}
-                className="mr-2"
-                disabled={!isEnabled || sendingStatus === "sending"}
-              />
-              Continue on Error
-            </label>
-          </div>
-
-          {/* Retry Settings */}
-          <div>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <label
-                  htmlFor="retry-attempts"
-                  className={`${FIELD_STYLES.label} cursor-help`}
-                >
-                  Retry Attempts:
-                </label>
-              </TooltipTrigger>
-              <TooltipContent
-                sideOffset={6}
-                className={FIELD_STYLES.helperText}
-              >
-                Number of retry attempts on failure, basically the resilience
-                setting.
-              </TooltipContent>
-            </Tooltip>
-            <input
-              id="retry-attempts"
-              type="number"
-              value={retryAttempts ?? 3}
-              onChange={onNumberChange("retryAttempts", 0, 5)}
-              min="0"
-              max="5"
-              className={`${FIELD_STYLES.input} w-full`}
-              disabled={!isEnabled || sendingStatus === "sending"}
-            />
-          </div>
-
-          {/* Send Button */}
-          <div>
-            <button
-              onClick={onSendEmail}
-              disabled={
-                !isEnabled ||
-                !accountId ||
-                sendingStatus === "sending" ||
-                safeRecipients.to.length === 0
-              }
-              className={FIELD_STYLES.button}
-              type="button"
-            >
-              {sendingStatus === "sending" ? "Sending..." : "Send Email"}
-            </button>
-          </div>
-
-          {/* Status Information */}
-          <div className={FIELD_STYLES.statusBox}>
-            <div>
-              <span className="text-[--node-email-text]">Sent:</span>{" "}
-              {sentCount}{" "}
-              <span className="text-[--node-email-text]">| Failed:</span>{" "}
-              {failedCount}
-            </div>
-            <div>
-              Recipients:{" "}
-              {safeRecipients.to.length +
-                safeRecipients.cc.length +
-                safeRecipients.bcc.length}
-            </div>
-            <div>
-              Attachments: {safeAttachments.length}
-              {safeAttachments.length > 0 && (
-                <span className="ml-1">
-                  (
-                  {Math.round(
-                    safeAttachments.reduce((sum, att) => sum + att.size, 0) /
-                      1024
-                  )}
-                  KB)
-                </span>
-              )}
-            </div>
-            {lastError && (
-              <div className="text-red-600 mt-1">Error: {lastError}</div>
-            )}
-          </div>
+            </TabsContent>
+          </Tabs>
         </div>
+
+        {/* Footer with Error Display */}
+        {(hasError || lastError) && (
+          <div className={SENDER_STYLES.footer}>
+            <div className="flex items-center gap-2 text-xs text-destructive">
+              <AlertCircle className="h-3 w-3" />
+              <span>{lastError || "An error occurred"}</span>
+            </div>
+          </div>
+        )}
       </div>
     );
   },
+  // Memoization comparison for performance
   (prev, next) => {
     // Compare primitive props
     if (

@@ -146,7 +146,7 @@ export const EmailSenderDataSchema = z
     isEnabled: SafeSchemas.boolean(true),
     isActive: SafeSchemas.boolean(false),
     isExpanded: SafeSchemas.boolean(false),
-    expandedSize: SafeSchemas.text("VE3"),
+    expandedSize: SafeSchemas.text("FE3W"),
     collapsedSize: SafeSchemas.text("C2"),
 
     // output - unified handle-based output system
@@ -423,26 +423,14 @@ const EmailSenderNode = memo(
       isExpanded,
       isEnabled,
       accountId,
-      provider,
       recipients,
       subject,
       content,
       attachments,
       maxAttachmentSize,
-      sendMode,
-      batchSize,
-      delayBetweenSends,
-      trackDelivery,
-      trackReads,
-      trackClicks,
-      retryAttempts,
-      continueOnError,
       sendingStatus,
-      isConnected,
       sentCount,
       failedCount,
-      lastSent,
-      lastError,
     } = safeNodeData as EmailSenderData;
 
     // Provide safe defaults for critical objects that might be undefined

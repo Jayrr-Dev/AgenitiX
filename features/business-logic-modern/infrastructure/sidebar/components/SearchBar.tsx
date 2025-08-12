@@ -436,7 +436,7 @@ export function SearchBar({
     >
       {/* Search Header */}
       <div
-        className={`flex items-center gap-2 px-7 pt-3 ${theme.border.default} flex-shrink-0 `}
+        className={`flex items-center gap-2 px-6 pt-3 mb-0.5 ${theme.border.default} flex-shrink-0 `}
       >
         <div className="relative flex-1">
           <Search
@@ -474,7 +474,7 @@ export function SearchBar({
       </div>
 
       {/* Search Results */}
-      <div className="min-h-0 flex-1 overflow-y-auto pb-2">
+      <div className="min-h-0 flex-1 overflow-y-auto pb-2 justify-center">
         {searchQuery.trim() && (
           <div className="mb-3 px-3">
             <div className={`text-sm ${theme.text.secondary}`}>
@@ -537,7 +537,8 @@ export function SearchBar({
         )}
 
         {filteredStencils.length > 0 ? (
-          <div className="flex-1  px-6 outline-none">
+          <div className="flex overflow-y-auto pb-2 justify-center">
+          <div className="w-[400px] self-center outline-none">
             <StencilGrid
               stencils={filteredStencils}
               setStencils={() => {}} // Read-only for search results
@@ -548,8 +549,9 @@ export function SearchBar({
               isReadOnly={isReadOnly}
             />
           </div>
+          </div>
         ) : searchQuery.trim() ? (
-          <div className={`text-center ${theme.text.muted} mt-8 px-3`}>
+          <div className={`text-center ${theme.text.muted} mt-8 px-3 `}>
             <Search className={`mx-auto mb-4 h-12 w-12 ${theme.text.muted}`} />
             <p className={`font-medium text-lg ${theme.text.secondary}`}>
               No nodes found

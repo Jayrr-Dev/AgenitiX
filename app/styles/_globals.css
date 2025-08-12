@@ -21,38 +21,7 @@
   transform: translate3d(0, 0, 0);
 }
 
-/* Thinner Focus Ring Styles */
 
-textarea:focus,
-
-
-
-/* Specific focus styles for common form elements */
-input[type="text"]:focus,
-input[type="email"]:focus,
-input[type="password"]:focus,
-input[type="number"]:focus,
-textarea:focus {
-  /* Even thinner for text inputs, basically subtle focus indication */
-  outline: 0.5px solid rgba(255, 255, 255, 0.5) !important;
-  outline-offset: 0px !important;
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.3) !important;
-}
-
-/* Override Tailwind focus ring utilities */
-/* .focus\:ring-1:focus {
-	box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.4) !important;
-}
-
-.focus\:ring-2:focus {
-	box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.4) !important;
-}
-
-.focus\:ring-3:focus {
-	box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.4) !important;
-} */
-
-/* 1 · Custom-property registration (only animating vars) ------------ */
 @property --fill-transparency-left {
   syntax: "<percentage>";
   inherits: true;
