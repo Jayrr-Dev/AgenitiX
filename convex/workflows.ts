@@ -147,48 +147,48 @@ export const executeNextStep = internalAction({
   args: { runId: v.id("workflow_runs") },
   async handler(ctx, { runId }) {
     const now = Date.now();
-    const run = await ctx.runQuery(internal.workflows.getWorkflowRunInternal, {
-      runId,
-    });
+    const run = await ctx.runQuery(api.workflows.getWorkflowRun, { runId });
     if (!run) return;
     if (run.status !== "running") return;
 
     // Respect cancellation
     if (run.cancelled) {
-      await ctx.runMutation(internal.workflows.updateWorkflowRunInternal, {
+      await ctx.runMutation(api.workflows.updateWorkflowStatus, {
         runId,
-        updates: { status: "cancelled", completed_at: now },
+        status: "cancelled",
+        completed_at: now,
       });
       return;
     }
 
     // Renew lease (soft lock)
-    await ctx.runMutation(internal.workflows.updateWorkflowRunInternal, {
+    await ctx.runMutation(api.workflows.updateWorkflowLease, {
       runId,
-      updates: { lease_until: now + LEASE_MS },
+      lease_until: now + LEASE_MS,
     });
 
     // Perform a single step
-    const { done, updated } = await performStep(ctx, run);
+    const { done, updated } = await performStep(ctx, {
+      nodes_executed: run.nodes_executed,
+      total_nodes: run.total_nodes,
+      execution_data: run.execution_data ?? { steps: [], results: [] },
+      step_cursor: run.step_cursor ?? 0,
+    });
 
-    await ctx.runMutation(internal.workflows.updateWorkflowRunInternal, {
+    await ctx.runMutation(api.workflows.updateWorkflowProgress, {
       runId,
-      updates: {
-        nodes_executed: updated.nodes_executed,
-        total_nodes: updated.total_nodes,
-        execution_data: updated.execution_data,
-        step_cursor: updated.step_cursor,
-        attempt: 0,
-      },
+      nodes_executed: updated.nodes_executed,
+      total_nodes: updated.total_nodes,
+      execution_data: updated.execution_data,
+      step_cursor: updated.step_cursor ?? undefined,
+      attempt: 0,
     });
 
     if (done) {
-      await ctx.runMutation(internal.workflows.updateWorkflowRunInternal, {
+      await ctx.runMutation(api.workflows.updateWorkflowStatus, {
         runId,
-        updates: {
-          status: "completed",
-          completed_at: Date.now(),
-        },
+        status: "completed",
+        completed_at: Date.now(),
       });
       return;
     }
@@ -213,30 +213,27 @@ export const executeNextStepWithRetry = internalAction({
     try {
       await ctx.runAction(internal.workflows.executeNextStep, { runId });
     } catch (error) {
-      const run = await ctx.runQuery(
-        internal.workflows.getWorkflowRunInternal,
-        { runId }
-      );
+      const run = await ctx.runQuery(api.workflows.getWorkflowRun, { runId });
       if (!run) return;
       const nextAttempt = attempt + 1;
       if (nextAttempt >= MAX_ATTEMPTS) {
-        await ctx.runMutation(internal.workflows.updateWorkflowRunInternal, {
+        await ctx.runMutation(api.workflows.updateWorkflowStatus, {
           runId,
-          updates: {
-            status: "failed",
-            error_message: String(error),
-            completed_at: Date.now(),
-          },
+          status: "failed",
+          error_message: String(error),
+          completed_at: Date.now(),
         });
         return;
       }
       const delay = computeBackoffMs(nextAttempt - 1);
-      await ctx.runMutation(internal.workflows.updateWorkflowRunInternal, {
+      await ctx.runMutation(api.workflows.updateWorkflowProgress, {
         runId,
-        updates: {
-          attempt: nextAttempt,
-          next_run_at: Date.now() + delay,
-        },
+        nodes_executed: run.nodes_executed,
+        total_nodes: run.total_nodes,
+        execution_data: run.execution_data,
+        step_cursor: run.step_cursor,
+        attempt: nextAttempt,
+        next_run_at: Date.now() + delay,
       });
       await ctx.scheduler.runAfter(
         delay,
@@ -256,7 +253,7 @@ export const resumeStuckRuns = internalAction({
   async handler(ctx) {
     const now = Date.now();
     const running = await ctx.runQuery(
-      internal.workflows.getRunningWorkflowRuns,
+      api.workflows.getRunningWorkflowRuns,
       {}
     );
 
@@ -266,13 +263,18 @@ export const resumeStuckRuns = internalAction({
       if (leaseExpired) {
         const attempt = typeof run.attempt === "number" ? run.attempt : 0;
         const delay = computeBackoffMs(attempt);
-        await ctx.runMutation(internal.workflows.updateWorkflowRunInternal, {
+        await ctx.runMutation(api.workflows.updateWorkflowProgress, {
           runId: run._id,
-          updates: {
-            attempt: attempt + 1,
-            next_run_at: now + delay,
-            lease_until: now + LEASE_MS,
-          },
+          nodes_executed: run.nodes_executed,
+          total_nodes: run.total_nodes,
+          execution_data: run.execution_data,
+          step_cursor: run.step_cursor,
+          attempt: attempt + 1,
+          next_run_at: now + delay,
+        });
+        await ctx.runMutation(api.workflows.updateWorkflowLease, {
+          runId: run._id,
+          lease_until: now + LEASE_MS,
         });
         await ctx.scheduler.runAfter(
           delay,
@@ -306,7 +308,7 @@ type StepResult<
 };
 
 async function performStep(
-  _ctx: Parameters<typeof executeNextStep.handler>[0],
+  _ctx: any,
   run: {
     nodes_executed: number;
     total_nodes: number;
@@ -432,15 +434,7 @@ async function performStep(
 // INTERNAL HELPERS FOR ACTIONS
 // =============================================================================
 
-/** Internal query to get workflow run (for actions) */
-export const getWorkflowRunInternal = query({
-  args: { runId: v.id("workflow_runs") },
-  async handler(ctx, { runId }) {
-    return await ctx.db.get(runId);
-  },
-});
-
-/** Internal query to get running workflow runs (for actions) */
+/** Get running workflow runs for watchdog */
 export const getRunningWorkflowRuns = query({
   args: {},
   async handler(ctx) {
@@ -451,31 +445,69 @@ export const getRunningWorkflowRuns = query({
   },
 });
 
-/** Internal mutation to update workflow run (for actions) */
-export const updateWorkflowRunInternal = mutation({
+/** Update workflow status */
+export const updateWorkflowStatus = mutation({
   args: {
     runId: v.id("workflow_runs"),
-    updates: v.object({
-      status: v.optional(
-        v.union(
-          v.literal("running"),
-          v.literal("completed"),
-          v.literal("failed"),
-          v.literal("cancelled")
-        )
-      ),
-      completed_at: v.optional(v.number()),
-      lease_until: v.optional(v.number()),
-      nodes_executed: v.optional(v.number()),
-      total_nodes: v.optional(v.number()),
-      execution_data: v.optional(v.any()),
-      step_cursor: v.optional(v.number()),
-      attempt: v.optional(v.number()),
-      next_run_at: v.optional(v.number()),
-      error_message: v.optional(v.string()),
-    }),
+    status: v.union(
+      v.literal("running"),
+      v.literal("completed"),
+      v.literal("failed"),
+      v.literal("cancelled")
+    ),
+    completed_at: v.optional(v.number()),
+    error_message: v.optional(v.string()),
   },
-  async handler(ctx, { runId, updates }) {
+  async handler(ctx, { runId, status, completed_at, error_message }) {
+    const updates: any = { status };
+    if (completed_at !== undefined) updates.completed_at = completed_at;
+    if (error_message !== undefined) updates.error_message = error_message;
+    await ctx.db.patch(runId, updates);
+  },
+});
+
+/** Update workflow lease */
+export const updateWorkflowLease = mutation({
+  args: {
+    runId: v.id("workflow_runs"),
+    lease_until: v.number(),
+  },
+  async handler(ctx, { runId, lease_until }) {
+    await ctx.db.patch(runId, { lease_until });
+  },
+});
+
+/** Update workflow progress */
+export const updateWorkflowProgress = mutation({
+  args: {
+    runId: v.id("workflow_runs"),
+    nodes_executed: v.number(),
+    total_nodes: v.number(),
+    execution_data: v.any(),
+    step_cursor: v.optional(v.number()),
+    attempt: v.number(),
+    next_run_at: v.optional(v.number()),
+  },
+  async handler(
+    ctx,
+    {
+      runId,
+      nodes_executed,
+      total_nodes,
+      execution_data,
+      step_cursor,
+      attempt,
+      next_run_at,
+    }
+  ) {
+    const updates: any = {
+      nodes_executed,
+      total_nodes,
+      execution_data,
+      attempt,
+    };
+    if (step_cursor !== undefined) updates.step_cursor = step_cursor;
+    if (next_run_at !== undefined) updates.next_run_at = next_run_at;
     await ctx.db.patch(runId, updates);
   },
 });
