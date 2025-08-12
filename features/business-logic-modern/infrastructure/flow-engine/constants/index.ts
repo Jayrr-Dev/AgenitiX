@@ -10,7 +10,7 @@
  * Keywords: constants, node-types, type-mapping, configuration, registry, keyboard-shortcuts
  */
 
-import { ULTIMATE_TYPE_MAP } from "@/components/nodes/handles/TypeSafeHandle";
+import { ULTIMATE_TYPE_MAP } from "../../node-core/defineHandleTypeSystem";
 import type {
   AgenEdge,
   AgenNode,
