@@ -12,11 +12,7 @@
 import { Resend } from "@convex-dev/resend";
 import { components } from "./_generated/api";
 
-// Top‑level singleton for Resend component
-const IS_DEV = process.env.NODE_ENV !== "production";
-
 export const resend: Resend = new Resend(components.resend, {
-  // Enable test mode in development so only Resend test addresses are accepted
-  // [Explanation], basically keep dev safe and predictable
-  testMode: IS_DEV,
+  // Production mode: test mode disabled, basically allow real email sending
+  testMode: false,
 });

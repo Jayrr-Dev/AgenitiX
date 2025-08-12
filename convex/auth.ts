@@ -17,6 +17,7 @@ import Google from "@auth/core/providers/google";
 import Resend from "@auth/core/providers/resend";
 import { Password } from "@convex-dev/auth/providers/Password";
 import { convexAuth } from "@convex-dev/auth/server";
+import { PRODUCTION_EMAIL_CONFIG } from "../lib/production-config";
 
 // Debug environment variables in development only, basically check if auth keys are loaded
 if (process.env.NODE_ENV === "development") {
@@ -24,9 +25,8 @@ if (process.env.NODE_ENV === "development") {
 }
 
 // Top-level auth constants, basically single source of truth for provider config
-const RESEND_FROM_EMAIL =
-  process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev"; // [Explanation], basically default sender email for magic links
-const AUTH_RESEND_KEY = process.env.AUTH_RESEND_KEY || ""; // [Explanation], basically Resend API key used by Auth.js provider
+const RESEND_FROM_EMAIL = PRODUCTION_EMAIL_CONFIG.resendFromEmail;
+const AUTH_RESEND_KEY = PRODUCTION_EMAIL_CONFIG.authResendKey;
 
 export const {
   auth,

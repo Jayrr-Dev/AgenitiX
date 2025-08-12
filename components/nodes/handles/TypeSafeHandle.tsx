@@ -15,6 +15,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { normalizeHandleId } from "@/features/business-logic-modern/infrastructure/node-core/handleOutputUtils";
+import type { JsonShapeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
 import {
   Handle,
   type HandleProps,
@@ -38,7 +39,6 @@ import {
 } from "react-icons/lu";
 import { VscJson } from "react-icons/vsc";
 import { toast } from "sonner";
-import type { JsonShapeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
 // Auto-generated at build time (can be empty in dev before first build)
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore – file is generated post-install / build
@@ -546,12 +546,7 @@ const toastThrottle: Record<string, number> = {};
 function isJson(value: unknown): boolean {
   if (value === null) return true;
   const t = typeof value;
-  return (
-    t === "object" ||
-    t === "string" ||
-    t === "number" ||
-    t === "boolean"
-  );
+  return t === "object" || t === "string" || t === "number" || t === "boolean";
 }
 
 function conformsToShape(value: unknown, shape?: JsonShapeSpec): boolean {
@@ -595,80 +590,89 @@ export const useUltimateFlowConnectionPrevention = (options?: {
   acceptAnyJson?: boolean;
 }) => {
   const storeApi = useStoreApi();
-  const isValidConnection: IsValidConnection = useCallback((connection) => {
-    const { sourceHandle, targetHandle } = connection;
+  const isValidConnection: IsValidConnection = useCallback(
+    (connection) => {
+      const { sourceHandle, targetHandle } = connection;
 
-    // Extract types from handle IDs (e.g., "handle-id__string|number")
-    const sourceDataType = sourceHandle?.split("__")[1];
-    const targetDataType = targetHandle?.split("__")[1];
+      // Extract types from handle IDs (e.g., "handle-id__string|number")
+      const sourceDataType = sourceHandle?.split("__")[1];
+      const targetDataType = targetHandle?.split("__")[1];
 
-    if (!(sourceDataType && targetDataType)) {
-      // If types aren't encoded in the handle, default to allowing the connection.
-      // This maintains compatibility with older/un-migrated nodes.
-      return true;
-    }
-
-    const compatible = isTypeCompatible(sourceDataType, targetDataType);
-
-    if (!compatible) {
-      const key = `${sourceDataType}->${targetDataType}`;
-      const now = Date.now();
-      if (!toastThrottle[key] || now - toastThrottle[key] > TOAST_DEBOUNCE_MS) {
-        const sourceLabel = getHumanReadableType(sourceDataType);
-        const targetLabel = getHumanReadableType(targetDataType);
-        toast.error(TOAST_ERROR_TITLE, {
-          description: TOAST_ERROR_DESCRIPTION_TEMPLATE.replace(
-            "{source}",
-            sourceLabel
-          ).replace("{target}", targetLabel),
-          duration: TOAST_DURATION,
-        });
-        toastThrottle[key] = now;
+      if (!(sourceDataType && targetDataType)) {
+        // If types aren't encoded in the handle, default to allowing the connection.
+        // This maintains compatibility with older/un-migrated nodes.
+        return true;
       }
-    }
 
-    // Optional JSON shape enforcement
-    try {
-      const wantsShape =
-        Boolean(options?.targetJsonShape) &&
-        !options?.acceptAnyJson &&
-        (targetDataType?.toLowerCase().startsWith("j") ||
-          targetDataType?.toLowerCase() === "json");
-      const isJsonSource =
-        sourceDataType?.toLowerCase().startsWith("j") ||
-        sourceDataType?.toLowerCase() === "json";
-      if (wantsShape && isJsonSource) {
-        const { nodes } = storeApi.getState();
-        const src = nodes.find((n: any) => n.id === connection.source);
-        const output = (src?.data?.output ?? {}) as Record<string, unknown>;
-        const cleanSrcHandle = sourceHandle
-          ? normalizeHandleId(sourceHandle)
-          : "output";
-        const candidate =
-          output[cleanSrcHandle] ?? output.output ?? Object.values(output)[0];
-        if (candidate !== undefined && isJson(candidate)) {
-          const ok = conformsToShape(candidate, options?.targetJsonShape);
-          if (!ok) {
-            const key = `json-shape:${sourceDataType}->${targetDataType}`;
-            const now = Date.now();
-            if (!toastThrottle[key] || now - toastThrottle[key] > TOAST_DEBOUNCE_MS) {
-              toast.error("JSON shape mismatch", {
-                description:
-                  "Output JSON does not match the target handle's expected shape.",
-                duration: TOAST_DURATION,
-              });
-              toastThrottle[key] = now;
-            }
-            return false;
-          }
+      const compatible = isTypeCompatible(sourceDataType, targetDataType);
+
+      if (!compatible) {
+        const key = `${sourceDataType}->${targetDataType}`;
+        const now = Date.now();
+        if (
+          !toastThrottle[key] ||
+          now - toastThrottle[key] > TOAST_DEBOUNCE_MS
+        ) {
+          const sourceLabel = getHumanReadableType(sourceDataType);
+          const targetLabel = getHumanReadableType(targetDataType);
+          toast.error(TOAST_ERROR_TITLE, {
+            description: TOAST_ERROR_DESCRIPTION_TEMPLATE.replace(
+              "{source}",
+              sourceLabel
+            ).replace("{target}", targetLabel),
+            duration: TOAST_DURATION,
+          });
+          toastThrottle[key] = now;
         }
       }
-    } catch {
-      // Best effort – do not block if inspection fails
-    }
 
-    return compatible;
-  }, [storeApi, options?.targetJsonShape, options?.acceptAnyJson]);
+      // Optional JSON shape enforcement
+      try {
+        const wantsShape =
+          Boolean(options?.targetJsonShape) &&
+          !options?.acceptAnyJson &&
+          (targetDataType?.toLowerCase().startsWith("j") ||
+            targetDataType?.toLowerCase() === "json");
+        const isJsonSource =
+          sourceDataType?.toLowerCase().startsWith("j") ||
+          sourceDataType?.toLowerCase() === "json";
+        if (wantsShape && isJsonSource) {
+          const { nodes } = storeApi.getState();
+          const src = nodes.find((n: any) => n.id === connection.source);
+          const output = (src?.data?.output ?? {}) as Record<string, unknown>;
+          const cleanSrcHandle = sourceHandle
+            ? normalizeHandleId(sourceHandle)
+            : "output";
+          const candidate =
+            output[cleanSrcHandle] ?? output.output ?? Object.values(output)[0];
+          if (candidate !== undefined && isJson(candidate)) {
+            const ok = conformsToShape(candidate, options?.targetJsonShape);
+            if (!ok) {
+              const key = `json-shape:${sourceDataType}->${targetDataType}`;
+              const now = Date.now();
+              if (
+                !toastThrottle[key] ||
+                now - toastThrottle[key] > TOAST_DEBOUNCE_MS
+              ) {
+                toast.error("JSON shape mismatch", {
+                  description:
+                    "Output JSON does not match the target handle's expected shape.",
+                  duration: TOAST_DURATION,
+                });
+                toastThrottle[key] = now;
+              }
+              return false;
+            }
+          }
+        }
+      } catch {
+        // Best effort – do not block if inspection fails
+      }
+
+      return compatible;
+    },
+    [storeApi, options?.targetJsonShape, options?.acceptAnyJson]
+  );
   return { isValidConnection };
 };
 
@@ -686,6 +690,10 @@ interface UltimateTypesafeHandleProps {
   id?: string;
   /** Optional custom tooltip text to append to default tooltip */
   customTooltip?: string;
+  /** Optional JSON shape specification for validation */
+  jsonShape?: any;
+  /** Optional flag to accept any JSON structure */
+  acceptAnyJson?: boolean;
 }
 
 const UltimateTypesafeHandle: React.FC<UltimateTypesafeHandleProps> = memo(
@@ -698,6 +706,8 @@ const UltimateTypesafeHandle: React.FC<UltimateTypesafeHandleProps> = memo(
     handleIndex = 0,
     totalHandlesOnSide = 1,
     customTooltip,
+    jsonShape,
+    acceptAnyJson,
     ...props
   }) => {
     // Memoize handle type name calculation, basically prevent recalculation on re-renders
@@ -714,10 +724,8 @@ const UltimateTypesafeHandle: React.FC<UltimateTypesafeHandleProps> = memo(
 
     const { isValidConnection } = useUltimateFlowConnectionPrevention({
       targetJsonShape:
-        (props.type === "target" ? (props as any).jsonShape : undefined) ||
-        undefined,
-      acceptAnyJson:
-        props.type === "target" ? Boolean((props as any).acceptAnyJson) : false,
+        (props.type === "target" ? jsonShape : undefined) || undefined,
+      acceptAnyJson: props.type === "target" ? Boolean(acceptAnyJson) : false,
     });
 
     // Subscribe only to edges reference; compute connection state when edges actually change
