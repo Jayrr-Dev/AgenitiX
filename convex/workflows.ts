@@ -147,23 +147,25 @@ export const executeNextStep = internalAction({
   args: { runId: v.id("workflow_runs") },
   async handler(ctx, { runId }) {
     const now = Date.now();
-    const run = await ctx.runQuery(internal.workflows.getWorkflowRunInternal, { runId });
+    const run = await ctx.runQuery(internal.workflows.getWorkflowRunInternal, {
+      runId,
+    });
     if (!run) return;
     if (run.status !== "running") return;
 
     // Respect cancellation
     if (run.cancelled) {
-      await ctx.runMutation(internal.workflows.updateWorkflowRunInternal, { 
-        runId, 
-        updates: { status: "cancelled", completed_at: now }
+      await ctx.runMutation(internal.workflows.updateWorkflowRunInternal, {
+        runId,
+        updates: { status: "cancelled", completed_at: now },
       });
       return;
     }
 
     // Renew lease (soft lock)
-    await ctx.runMutation(internal.workflows.updateWorkflowRunInternal, { 
-      runId, 
-      updates: { lease_until: now + LEASE_MS }
+    await ctx.runMutation(internal.workflows.updateWorkflowRunInternal, {
+      runId,
+      updates: { lease_until: now + LEASE_MS },
     });
 
     // Perform a single step
@@ -177,7 +179,7 @@ export const executeNextStep = internalAction({
         execution_data: updated.execution_data,
         step_cursor: updated.step_cursor,
         attempt: 0,
-      }
+      },
     });
 
     if (done) {
@@ -186,7 +188,7 @@ export const executeNextStep = internalAction({
         updates: {
           status: "completed",
           completed_at: Date.now(),
-        }
+        },
       });
       return;
     }
@@ -211,7 +213,10 @@ export const executeNextStepWithRetry = internalAction({
     try {
       await ctx.runAction(internal.workflows.executeNextStep, { runId });
     } catch (error) {
-      const run = await ctx.runQuery(internal.workflows.getWorkflowRunInternal, { runId });
+      const run = await ctx.runQuery(
+        internal.workflows.getWorkflowRunInternal,
+        { runId }
+      );
       if (!run) return;
       const nextAttempt = attempt + 1;
       if (nextAttempt >= MAX_ATTEMPTS) {
@@ -221,7 +226,7 @@ export const executeNextStepWithRetry = internalAction({
             status: "failed",
             error_message: String(error),
             completed_at: Date.now(),
-          }
+          },
         });
         return;
       }
@@ -231,7 +236,7 @@ export const executeNextStepWithRetry = internalAction({
         updates: {
           attempt: nextAttempt,
           next_run_at: Date.now() + delay,
-        }
+        },
       });
       await ctx.scheduler.runAfter(
         delay,
@@ -250,7 +255,10 @@ export const resumeStuckRuns = internalAction({
   args: {},
   async handler(ctx) {
     const now = Date.now();
-    const running = await ctx.runQuery(internal.workflows.getRunningWorkflowRuns, {});
+    const running = await ctx.runQuery(
+      internal.workflows.getRunningWorkflowRuns,
+      {}
+    );
 
     for (const run of running) {
       if (run.cancelled) continue;
@@ -264,7 +272,7 @@ export const resumeStuckRuns = internalAction({
             attempt: attempt + 1,
             next_run_at: now + delay,
             lease_until: now + LEASE_MS,
-          }
+          },
         });
         await ctx.scheduler.runAfter(
           delay,
@@ -448,7 +456,14 @@ export const updateWorkflowRunInternal = mutation({
   args: {
     runId: v.id("workflow_runs"),
     updates: v.object({
-      status: v.optional(v.union(v.literal("running"), v.literal("completed"), v.literal("failed"), v.literal("cancelled"))),
+      status: v.optional(
+        v.union(
+          v.literal("running"),
+          v.literal("completed"),
+          v.literal("failed"),
+          v.literal("cancelled")
+        )
+      ),
       completed_at: v.optional(v.number()),
       lease_until: v.optional(v.number()),
       nodes_executed: v.optional(v.number()),
