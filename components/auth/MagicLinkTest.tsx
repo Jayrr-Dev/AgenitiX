@@ -21,6 +21,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 
+import { shouldEnableTestMode } from "@/lib/production-config";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -32,8 +33,8 @@ export default function MagicLinkTest() {
   const [testType, setTestType] = useState<"signin" | "signup">("signin");
   const [useConvexAuth, setUseConvexAuth] = useState(true); // Default to new system
 
-  // Only show in development
-  if (process.env.NODE_ENV !== "development") {
+  // Only show in development with explicit flag
+  if (!shouldEnableTestMode()) {
     return null;
   }
 

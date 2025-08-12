@@ -503,7 +503,8 @@ export const config = {
      * - auth pages (sign-in, sign-up, forgot-password, verify)
      * - callback pages (OAuth callbacks)
      */
-    "/((?!api/anubis|api/convex|_next/static|_next/image|favicon.ico|manifest.json|logo-mark.png|.well-known|sign-in|sign-up|forgot-password|auth/verify|callback).*)",
+    // Exclude Next.js internal RSC/data/flight endpoints to avoid breaking server component requests
+    "/((?!api/anubis|api/convex|_next/static|_next/image|_next/data|_next/webpack-hmr|_next/trace|_next/flight|favicon.ico|manifest.json|logo-mark.png|.well-known|sign-in|sign-up|forgot-password|auth/verify|callback).*)",
     // Explicitly match home page and API auth routes
     "/",
     "/api/auth/:path*",

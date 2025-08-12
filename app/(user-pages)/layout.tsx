@@ -9,8 +9,7 @@ Route: app/(user-pages)/layout.tsx
  * Keywords: layout, auth, diagnostics, web-vitals, why-did-you-render
  */
 
-import { SetupWebVitalsClient } from "@/app/providers/setupWebVitalsClient";
-import { SetupWhyDidYouRenderClient } from "@/app/providers/setupWhyDidYouRenderClient";
+import dynamic from "next/dynamic";
 // Import long task tracker (auto-starts)
 import { ProtectedNavigation } from "@/components/auth/ProtectedNavigation";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
@@ -22,6 +21,29 @@ interface UserPagesLayoutProps {
   children: ReactNode;
 }
 
+const IS_DEV = process.env.NODE_ENV === "development";
+
+// Client-only dev diagnostics to avoid SSR resolving client deps
+const WebVitalsClient = IS_DEV
+  ? dynamic(
+      () =>
+        import("@/app/providers/setupWebVitalsClient").then(
+          (m) => m.SetupWebVitalsClient
+        ),
+      { ssr: false, loading: () => null }
+    )
+  : null;
+
+const WhyDidYouRenderClient = IS_DEV
+  ? dynamic(
+      () =>
+        import("@/app/providers/setupWhyDidYouRenderClient").then(
+          (m) => m.SetupWhyDidYouRenderClient
+        ),
+      { ssr: false, loading: () => null }
+    )
+  : null;
+
 export default function UserPagesLayout({ children }: UserPagesLayoutProps) {
   const pathname = usePathname();
 
@@ -31,12 +53,8 @@ export default function UserPagesLayout({ children }: UserPagesLayoutProps) {
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-background">
-        {process.env.NODE_ENV === "development" ? (
-          <>
-            <SetupWebVitalsClient />
-            <SetupWhyDidYouRenderClient />
-          </>
-        ) : null}
+        {IS_DEV && WebVitalsClient && <WebVitalsClient />}
+        {IS_DEV && WhyDidYouRenderClient && <WhyDidYouRenderClient />}
         {!shouldHideNavigation && <ProtectedNavigation />}
         <main>{children}</main>
       </div>

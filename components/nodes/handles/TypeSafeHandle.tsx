@@ -15,6 +15,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { normalizeHandleId } from "@/features/business-logic-modern/infrastructure/node-core/handleOutputUtils";
+import type { JsonShapeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
 import {
   Handle,
   type HandleProps,
@@ -601,12 +602,7 @@ function resolveMessageKey(handleTypeName: string, dataType?: string, code?: str
 function isJson(value: unknown): boolean {
   if (value === null) return true;
   const t = typeof value;
-  return (
-    t === "object" ||
-    t === "string" ||
-    t === "number" ||
-    t === "boolean"
-  );
+  return t === "object" || t === "string" || t === "number" || t === "boolean";
 }
 
 function conformsToShape(value: unknown, shape?: JsonShapeSpec): boolean {
@@ -754,37 +750,41 @@ export const useUltimateFlowConnectionPrevention = (options?: {
   acceptAnyJson?: boolean;
 }) => {
   const storeApi = useStoreApi();
-  const isValidConnection: IsValidConnection = useCallback((connection) => {
-    const { sourceHandle, targetHandle } = connection;
+  const isValidConnection: IsValidConnection = useCallback(
+    (connection) => {
+      const { sourceHandle, targetHandle } = connection;
 
-    // Extract types from handle IDs (e.g., "handle-id__string|number")
-    const sourceDataType = sourceHandle?.split("__")[1];
-    const targetDataType = targetHandle?.split("__")[1];
+      // Extract types from handle IDs (e.g., "handle-id__string|number")
+      const sourceDataType = sourceHandle?.split("__")[1];
+      const targetDataType = targetHandle?.split("__")[1];
 
-    if (!(sourceDataType && targetDataType)) {
-      // If types aren't encoded in the handle, default to allowing the connection.
-      // This maintains compatibility with older/un-migrated nodes.
-      return true;
-    }
-
-    const compatible = isTypeCompatible(sourceDataType, targetDataType);
-
-    if (!compatible) {
-      const key = `${sourceDataType}->${targetDataType}`;
-      const now = Date.now();
-      if (!toastThrottle[key] || now - toastThrottle[key] > TOAST_DEBOUNCE_MS) {
-        const sourceLabel = getHumanReadableType(sourceDataType);
-        const targetLabel = getHumanReadableType(targetDataType);
-        toast.error(TOAST_ERROR_TITLE, {
-          description: TOAST_ERROR_DESCRIPTION_TEMPLATE.replace(
-            "{source}",
-            sourceLabel
-          ).replace("{target}", targetLabel),
-          duration: TOAST_DURATION,
-        });
-        toastThrottle[key] = now;
+      if (!(sourceDataType && targetDataType)) {
+        // If types aren't encoded in the handle, default to allowing the connection.
+        // This maintains compatibility with older/un-migrated nodes.
+        return true;
       }
-    }
+
+      const compatible = isTypeCompatible(sourceDataType, targetDataType);
+
+      if (!compatible) {
+        const key = `${sourceDataType}->${targetDataType}`;
+        const now = Date.now();
+        if (
+          !toastThrottle[key] ||
+          now - toastThrottle[key] > TOAST_DEBOUNCE_MS
+        ) {
+          const sourceLabel = getHumanReadableType(sourceDataType);
+          const targetLabel = getHumanReadableType(targetDataType);
+          toast.error(TOAST_ERROR_TITLE, {
+            description: TOAST_ERROR_DESCRIPTION_TEMPLATE.replace(
+              "{source}",
+              sourceLabel
+            ).replace("{target}", targetLabel),
+            duration: TOAST_DURATION,
+          });
+          toastThrottle[key] = now;
+        }
+      }
 
     // Optional JSON shape enforcement (resolve target shape dynamically if not provided)
     try {
@@ -906,8 +906,10 @@ export const useUltimateFlowConnectionPrevention = (options?: {
       // Best effort – do not block if inspection fails
     }
 
-    return compatible;
-  }, [storeApi, options?.targetJsonShape, options?.acceptAnyJson]);
+      return compatible;
+    },
+    [storeApi, options?.targetJsonShape, options?.acceptAnyJson]
+  );
   return { isValidConnection };
 };
 
@@ -941,6 +943,8 @@ const UltimateTypesafeHandle: React.FC<UltimateTypesafeHandleProps> = memo(
     handleIndex = 0,
     totalHandlesOnSide = 1,
     customTooltip,
+    jsonShape,
+    acceptAnyJson,
     jsonShape,
     acceptAnyJson,
     ...props

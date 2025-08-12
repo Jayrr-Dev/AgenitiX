@@ -12,8 +12,10 @@ import type * as aiAgent from "../aiAgent.js";
 import type * as auth from "../auth.js";
 import type * as authFunctions from "../authFunctions.js";
 import type * as authHelpers from "../authHelpers.js";
+import type * as crons from "../crons.js";
 import type * as devHelpers from "../devHelpers.js";
 import type * as emailAccounts from "../emailAccounts.js";
+import type * as emails from "../emails.js";
 import type * as flowHistory from "../flowHistory.js";
 import type * as flows from "../flows.js";
 import type * as http from "../http.js";
@@ -21,6 +23,7 @@ import type * as manageFlowOps from "../manageFlowOps.js";
 import type * as sendEmails from "../sendEmails.js";
 import type * as starterTemplates from "../starterTemplates.js";
 import type * as users from "../users.js";
+import type * as workflows from "../workflows.js";
 
 import type {
   ApiFromModules,
@@ -41,8 +44,10 @@ declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   authFunctions: typeof authFunctions;
   authHelpers: typeof authHelpers;
+  crons: typeof crons;
   devHelpers: typeof devHelpers;
   emailAccounts: typeof emailAccounts;
+  emails: typeof emails;
   flowHistory: typeof flowHistory;
   flows: typeof flows;
   http: typeof http;
@@ -50,6 +55,7 @@ declare const fullApi: ApiFromModules<{
   sendEmails: typeof sendEmails;
   starterTemplates: typeof starterTemplates;
   users: typeof users;
+  workflows: typeof workflows;
 }>;
 declare const fullApiWithMounts: typeof fullApi;
 
