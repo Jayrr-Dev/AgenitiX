@@ -107,6 +107,7 @@ const validateNodeData = createNodeValidator(
     TriggerWebhookDataSchema,
     "TriggerWebhook",
 );
+
 // -----------------------------------------------------------------------------
 // 2️⃣  Constants & Utilities - Professional TRIGGER theming
 // -----------------------------------------------------------------------------
@@ -174,6 +175,7 @@ const CONTENT = {
     collapsedInactive:
         "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300",
 } as const;
+
 // Generate webhook URL based on configuration
 const generateWebhookUrl = (path: string, baseUrl: string = "http://localhost:3000"): string => {
     const cleanPath = path.startsWith("/") ? path : `/${path}`;
@@ -287,6 +289,7 @@ function createDynamicSpec(data: TriggerWebhookData): NodeSpec {
         theming: {},
     };
 }
+
 /** Static spec for registry (uses default size keys) */
 export const spec: NodeSpec = createDynamicSpec({
     expandedSize: "VE3",
@@ -295,7 +298,6 @@ export const spec: NodeSpec = createDynamicSpec({
     webhookPath: "",
     authType: "none",
 } as TriggerWebhookData);
-
 // -----------------------------------------------------------------------------
 // 4️⃣  React component – webhook configuration & monitoring
 // -----------------------------------------------------------------------------
@@ -354,14 +356,101 @@ const TriggerWebhookNode = memo(
         const flagState = useNodeFeatureFlag(spec.featureFlag);
 
         // -------------------------------------------------------------------------
-        // 4.4  Callbacks
+        // 4.4  Backend Communication Functions (FIRST - before they're used)
+        // -------------------------------------------------------------------------
+
+        /** Register webhook with backend */
+        const registerWebhookWithBackend = useCallback(async (path: string, method: string) => {
+            try {
+                const response = await fetch(`/api/webhook${path}?action=register`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        config: {
+                            httpMethod: method,
+                            authType,
+                            authConfig,
+                            allowedOrigins,
+                            ipWhitelist,
+                            ignoreBots,
+                            respondMode,
+                            responseCode,
+                            responseData,
+                            responseHeaders,
+                            nodeId: id,
+                        },
+                    }),
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Failed to register webhook: ${response.statusText}`);
+                }
+                
+                console.log('✅ Webhook registered with backend');
+                return true;
+            } catch (error) {
+                console.error('❌ Failed to register webhook:', error);
+                toast.error('Failed to register webhook with backend');
+                return false;
+            }
+        }, [authType, authConfig, allowedOrigins, ipWhitelist, ignoreBots, respondMode, responseCode, responseData, responseHeaders, id]);
+
+        /** Unregister webhook from backend */
+        const unregisterWebhookFromBackend = useCallback(async (path: string, method: string) => {
+            try {
+                const response = await fetch(`/api/webhook${path}?action=unregister`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        config: { httpMethod: method },
+                    }),
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Failed to unregister webhook: ${response.statusText}`);
+                }
+                
+                console.log('✅ Webhook unregistered from backend');
+                return true;
+            } catch (error) {
+                console.error('❌ Failed to unregister webhook:', error);
+                return false;
+            }
+        }, []);
+
+        /** Get webhook statistics from backend */
+        const getWebhookStats = useCallback(async (path: string, method: string) => {
+            try {
+                const response = await fetch(`/api/webhook${path}?action=getStats&method=${method}`, {
+                    method: 'PATCH',
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Failed to get stats: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                if (data.success && data.stats) {
+                    updateNodeData({
+                        requestCount: data.stats.requestCount,
+                        lastRequestTime: data.stats.lastRequestTime,
+                    });
+                }
+            } catch (error) {
+                console.error('❌ Failed to get webhook stats:', error);
+            }
+        }, [updateNodeData]);
+
+        // -------------------------------------------------------------------------
+        // 4.5  Main Action Callbacks
         // -------------------------------------------------------------------------
 
         /** Toggle between collapsed / expanded */
         const toggleExpand = useCallback(() => {
             updateNodeData({ isExpanded: !isExpanded });
-        }, [isExpanded, updateNodeData]);      
-  /** Generate webhook URL */
+        }, [isExpanded, updateNodeData]);
+
+        /** Generate webhook URL */
         const generateUrl = useCallback(() => {
             const newPath = generateRandomPath();
             const newUrl = generateWebhookUrl(newPath);
@@ -377,49 +466,69 @@ const TriggerWebhookNode = memo(
         }, [updateNodeData]);
 
         /** Activate webhook */
-        const activateWebhook = useCallback(() => {
-            if (!webhookPath) {
-                generateUrl();
+        const activateWebhook = useCallback(async () => {
+            let pathToUse = webhookPath;
+            if (!pathToUse) {
+                pathToUse = generateRandomPath();
+                setLocalWebhookPath(pathToUse);
             }
             
-            updateNodeData({
-                isActive: true,
-                webhookUrl: generateWebhookUrl(webhookPath),
-            });
+            // Ensure we have a valid HTTP method
+            const methodToUse = httpMethod || "POST";
             
-            toast.success(`Webhook activated! Listening on ${httpMethod} ${webhookPath}`);
-        }, [webhookPath, httpMethod, generateUrl, updateNodeData]);
+            // Register with backend first
+            const success = await registerWebhookWithBackend(pathToUse, methodToUse);
+            
+            if (success) {
+                updateNodeData({
+                    isActive: true,
+                    webhookPath: pathToUse,
+                    webhookUrl: generateWebhookUrl(pathToUse),
+                    httpMethod: methodToUse, // Ensure method is set
+                });
+                
+                toast.success(`Webhook activated! Listening on ${methodToUse} ${pathToUse}`);
+            } else {
+                toast.error("Failed to activate webhook");
+            }
+        }, [webhookPath, httpMethod, registerWebhookWithBackend, updateNodeData]);
 
         /** Deactivate webhook */
-        const deactivateWebhook = useCallback(() => {
+        const deactivateWebhook = useCallback(async () => {
+            // Unregister from backend first
+            const success = await unregisterWebhookFromBackend(webhookPath, httpMethod);
+            
             updateNodeData({
                 isActive: false,
             });
             
-            toast.info("Webhook deactivated");
-        }, [updateNodeData]);
+            if (success) {
+                toast.info("Webhook deactivated");
+            } else {
+                toast.warning("Webhook deactivated locally (backend may still be active)");
+            }
+        }, [webhookPath, httpMethod, unregisterWebhookFromBackend, updateNodeData]);
 
         /** Clear webhook statistics */
-        const clearStats = useCallback(() => {
+        const clearStats = useCallback(async () => {
+            // Clear local statistics
             updateNodeData({
                 requestCount: 0,
                 lastRequestTime: null,
                 lastRequestData: null,
             });
+            
+            // If webhook is active, re-register to reset backend stats
+            if (isActive && webhookPath) {
+                await unregisterWebhookFromBackend(webhookPath, httpMethod);
+                await registerWebhookWithBackend(webhookPath, httpMethod);
+            }
+            
             toast.success("Webhook statistics cleared");
-        }, [updateNodeData]);
-
-        /** Update webhook statistics when request received */
-        const updateWebhookStats = useCallback((requestData: any) => {
-            updateNodeData({
-                requestCount: requestCount + 1,
-                lastRequestTime: Date.now(),
-                lastRequestData: requestData,
-            });
-        }, [requestCount, updateNodeData]);
+        }, [isActive, webhookPath, httpMethod, updateNodeData, unregisterWebhookFromBackend, registerWebhookWithBackend]);
 
         // -------------------------------------------------------------------------
-        // 4.5  Effects
+        // 4.6  Effects
         // -------------------------------------------------------------------------
 
         /* 🔄 Sync local state with node data */
@@ -452,8 +561,41 @@ const TriggerWebhookNode = memo(
             }
         }, [isEnabled, isActive, deactivateWebhook]);
 
+        /* 🔄 Poll webhook statistics when active */
+        useEffect(() => {
+            if (!isActive || !webhookPath || !httpMethod) return;
+
+            const interval = setInterval(() => {
+                getWebhookStats(webhookPath, httpMethod);
+            }, 2000); // Poll every 2 seconds
+
+            return () => clearInterval(interval);
+        }, [isActive, webhookPath, httpMethod, getWebhookStats]);
+
+        /* 🔄 Re-register webhook when HTTP method changes */
+        useEffect(() => {
+            if (isActive && webhookPath && httpMethod) {
+                // Re-register webhook with new method
+                const reRegisterWebhook = async () => {
+                    await unregisterWebhookFromBackend(webhookPath, httpMethod);
+                    await registerWebhookWithBackend(webhookPath, httpMethod);
+                };
+                reRegisterWebhook();
+            }
+        }, [httpMethod]); // Only trigger when httpMethod changes
+
+        /* 🧹 Cleanup webhook on unmount */
+        useEffect(() => {
+            return () => {
+                if (isActive && webhookPath && httpMethod) {
+                    // Cleanup webhook when component unmounts
+                    unregisterWebhookFromBackend(webhookPath, httpMethod);
+                }
+            };
+        }, [isActive, webhookPath, httpMethod, unregisterWebhookFromBackend]);
+
         // -------------------------------------------------------------------------
-        // 4.6  Validation
+        // 4.7  Validation
         // -------------------------------------------------------------------------
         const validation = validateNodeData(nodeData);
         if (!validation.success) {
@@ -468,9 +610,9 @@ const TriggerWebhookNode = memo(
             "TriggerWebhook",
             validation.data,
             id,
-        ); 
-       // -------------------------------------------------------------------------
-        // 4.7  Feature flag conditional rendering
+        );        
+// -------------------------------------------------------------------------
+        // 4.8  Feature flag conditional rendering
         // -------------------------------------------------------------------------
 
         // If flag is loading, show loading state
@@ -504,7 +646,7 @@ const TriggerWebhookNode = memo(
         }
 
         // -------------------------------------------------------------------------
-        // 4.8  Computed display values
+        // 4.9  Computed display values
         // -------------------------------------------------------------------------
         const displayUrl = webhookUrl || generateWebhookUrl(webhookPath || "/webhook");
         const lastRequestDisplay = lastRequestTime 
@@ -512,7 +654,7 @@ const TriggerWebhookNode = memo(
             : "Never";
 
         // -------------------------------------------------------------------------
-        // 4.9  Professional Render - Startup Quality
+        // 4.10  Professional Render - Startup Quality
         // -------------------------------------------------------------------------
         return (
             <>
@@ -548,6 +690,13 @@ const TriggerWebhookNode = memo(
                             <div className={CONTENT.collapsedSubtitle}>
                                 {formatRequestCount(requestCount)}
                             </div>
+
+                            {/* Webhook Path Preview */}
+                            {webhookPath && (
+                                <div className="text-[7px] text-slate-400 dark:text-slate-500 mt-1 truncate max-w-full">
+                                    {webhookPath.length > 15 ? `...${webhookPath.slice(-12)}` : webhookPath}
+                                </div>
+                            )}
 
                             {/* Status Badge */}
                             <div
@@ -650,8 +799,9 @@ const TriggerWebhookNode = memo(
                                         </div>
                                     </div>
                                 </div>
-                            </div> 
-                           {/* Webhook URL Display */}
+                            </div>
+
+                            {/* Webhook URL Display */}
                             <div className={CONTENT.configSection}>
                                 <div className={CONTENT.configHeader}>
                                     {renderLucideIcon("LuLink", "text-purple-500", 10)}
@@ -760,9 +910,12 @@ const TriggerWebhookNode = memo(
                                 <div className="flex flex-col gap-1">
                                     <div className="flex items-center justify-between">
                                         <span className="text-[8px] font-medium text-purple-600 dark:text-purple-400">Status:</span>
-                                        <span className={`text-[8px] font-medium ${isActive ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400'}`}>
-                                            {isActive ? "Active" : "Inactive"}
-                                        </span>
+                                        <div className="flex items-center gap-1">
+                                            <div className={`w-2 h-2 rounded-full ${isActive ? 'bg-green-400 animate-pulse' : 'bg-red-400'}`} />
+                                            <span className={`text-[8px] font-medium ${isActive ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400'}`}>
+                                                {isActive ? "Active" : "Inactive"}
+                                            </span>
+                                        </div>
                                     </div>
                                     
                                     <div className="flex items-center justify-between">
@@ -798,6 +951,34 @@ const TriggerWebhookNode = memo(
                                 >
                                     Clear Stats
                                 </button>
+                                
+                                {isActive && (
+                                    <button
+                                        className={CONTENT.buttonSecondary}
+                                        onClick={async () => {
+                                            try {
+                                                const response = await fetch(displayUrl, {
+                                                    method: httpMethod,
+                                                    headers: { 'Content-Type': 'application/json' },
+                                                    body: httpMethod !== 'GET' && httpMethod !== 'HEAD' 
+                                                        ? JSON.stringify({ test: true, timestamp: new Date().toISOString() })
+                                                        : undefined,
+                                                });
+                                                
+                                                if (response.ok) {
+                                                    toast.success("Test request sent successfully!");
+                                                } else {
+                                                    toast.error(`Test failed: ${response.status} ${response.statusText}`);
+                                                }
+                                            } catch (error) {
+                                                toast.error("Test request failed");
+                                            }
+                                        }}
+                                        disabled={!isEnabled}
+                                    >
+                                        Test
+                                    </button>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -815,6 +996,7 @@ const TriggerWebhookNode = memo(
 );
 
 TriggerWebhookNode.displayName = "TriggerWebhookNode";
+
 // -----------------------------------------------------------------------------
 // 5️⃣  High‑order wrapper – inject scaffold with dynamic spec
 // -----------------------------------------------------------------------------
