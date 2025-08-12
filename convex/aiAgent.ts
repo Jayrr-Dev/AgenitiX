@@ -9,6 +9,7 @@ import { v } from "convex/values";
 import { z } from "zod";
 import { components } from "./_generated/api";
 import { action } from "./_generated/server";
+import { api } from "./_generated/api";
 
 /* -------------------------------------------------------------------------- */
 /*  1. Types                                                                  */
@@ -681,6 +682,30 @@ export const processUserMessage = action({
       );
 
       // AI response received
+      // Track AI usage (tokens) per user (best-effort; skip if identity missing)
+      try {
+        const identity = await (ctx as any).auth.getUserIdentity?.();
+        const userEmail = identity?.email || undefined;
+        const provider = args.agentConfig.selectedProvider as "openai" | "anthropic" | "google" | "custom";
+        const model = args.agentConfig.selectedModel;
+        const usage = (res.usage || { promptTokens: 0, completionTokens: 0, totalTokens: 0 }) as {
+          promptTokens?: number;
+          completionTokens?: number;
+          totalTokens?: number;
+        };
+
+        await (ctx as any).runMutation(api.aiUsage.incrementAiUsage as any, {
+          provider,
+          model,
+          user_email: userEmail,
+          prompt_tokens: usage.promptTokens || 0,
+          completion_tokens: usage.completionTokens || 0,
+          total_tokens: usage.totalTokens || 0,
+          enforce: true,
+        });
+      } catch (e) {
+        // Soft-fail usage tracking to not break the user flow
+      }
 
       return {
         threadId: thread.threadId,

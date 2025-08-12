@@ -9,6 +9,8 @@
  */
 
 import type * as aiAgent from "../aiAgent.js";
+import type * as aiUsage from "../aiUsage.js";
+import type * as apiUsage from "../apiUsage.js";
 import type * as auth from "../auth.js";
 import type * as authFunctions from "../authFunctions.js";
 import type * as authHelpers from "../authHelpers.js";
@@ -20,6 +22,7 @@ import type * as flowHistory from "../flowHistory.js";
 import type * as flows from "../flows.js";
 import type * as http from "../http.js";
 import type * as manageFlowOps from "../manageFlowOps.js";
+import type * as scheduleTime from "../scheduleTime.js";
 import type * as sendEmails from "../sendEmails.js";
 import type * as starterTemplates from "../starterTemplates.js";
 import type * as users from "../users.js";
@@ -41,6 +44,8 @@ import type {
  */
 declare const fullApi: ApiFromModules<{
   aiAgent: typeof aiAgent;
+  aiUsage: typeof aiUsage;
+  apiUsage: typeof apiUsage;
   auth: typeof auth;
   authFunctions: typeof authFunctions;
   authHelpers: typeof authHelpers;
@@ -52,6 +57,7 @@ declare const fullApi: ApiFromModules<{
   flows: typeof flows;
   http: typeof http;
   manageFlowOps: typeof manageFlowOps;
+  scheduleTime: typeof scheduleTime;
   sendEmails: typeof sendEmails;
   starterTemplates: typeof starterTemplates;
   users: typeof users;
