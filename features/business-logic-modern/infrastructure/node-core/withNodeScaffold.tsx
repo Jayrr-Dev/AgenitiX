@@ -464,9 +464,9 @@ export function withNodeScaffold(
                 handleIndex={handleIndex}
                 totalHandlesOnSide={totalHandlesOnSide}
                 customTooltip={handle.tooltip}
-                  // Shape enforcement props (optional)
-                  jsonShape={(handle as any).jsonShape}
-                  acceptAnyJson={(handle as any).acceptAnyJson}
+                  // Shape enforcement props (optional) - temporarily disabled
+                  // jsonShape={(handle as any).jsonShape}
+                  // acceptAnyJson={(handle as any).acceptAnyJson}
               />
             );
           });
