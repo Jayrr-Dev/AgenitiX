@@ -38,6 +38,7 @@ import {
 } from "react-icons/lu";
 import { VscJson } from "react-icons/vsc";
 import { toast } from "sonner";
+import type { JsonShapeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
 // Auto-generated at build time (can be empty in dev before first build)
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore – file is generated post-install / build
@@ -542,7 +543,58 @@ function isTypeCompatible(sourceType: string, targetType: string): boolean {
 // Simple debounce map to avoid toast spam
 const toastThrottle: Record<string, number> = {};
 
-export const useUltimateFlowConnectionPrevention = () => {
+function isJson(value: unknown): boolean {
+  if (value === null) return true;
+  const t = typeof value;
+  return (
+    t === "object" ||
+    t === "string" ||
+    t === "number" ||
+    t === "boolean"
+  );
+}
+
+function conformsToShape(value: unknown, shape?: JsonShapeSpec): boolean {
+  if (!shape) return true;
+  switch (shape.type) {
+    case "any":
+      return true;
+    case "null":
+      return value === null;
+    case "string":
+      return typeof value === "string";
+    case "number":
+      return typeof value === "number" && Number.isFinite(value as number);
+    case "boolean":
+      return typeof value === "boolean";
+    case "array":
+      if (!Array.isArray(value)) return false;
+      return (value as unknown[]).every((v) => conformsToShape(v, shape.items));
+    case "object":
+      if (value === null || typeof value !== "object" || Array.isArray(value))
+        return false;
+      for (const [key, sub] of Object.entries(shape.properties)) {
+        const has = Object.prototype.hasOwnProperty.call(
+          value as Record<string, unknown>,
+          key
+        );
+        if (!has) {
+          if (sub.optional) continue;
+          return false;
+        }
+        if (!conformsToShape((value as any)[key], sub)) return false;
+      }
+      return true;
+    default:
+      return true;
+  }
+}
+
+export const useUltimateFlowConnectionPrevention = (options?: {
+  targetJsonShape?: JsonShapeSpec;
+  acceptAnyJson?: boolean;
+}) => {
+  const storeApi = useStoreApi();
   const isValidConnection: IsValidConnection = useCallback((connection) => {
     const { sourceHandle, targetHandle } = connection;
 
@@ -574,8 +626,49 @@ export const useUltimateFlowConnectionPrevention = () => {
         toastThrottle[key] = now;
       }
     }
+
+    // Optional JSON shape enforcement
+    try {
+      const wantsShape =
+        Boolean(options?.targetJsonShape) &&
+        !options?.acceptAnyJson &&
+        (targetDataType?.toLowerCase().startsWith("j") ||
+          targetDataType?.toLowerCase() === "json");
+      const isJsonSource =
+        sourceDataType?.toLowerCase().startsWith("j") ||
+        sourceDataType?.toLowerCase() === "json";
+      if (wantsShape && isJsonSource) {
+        const { nodes } = storeApi.getState();
+        const src = nodes.find((n: any) => n.id === connection.source);
+        const output = (src?.data?.output ?? {}) as Record<string, unknown>;
+        const cleanSrcHandle = sourceHandle
+          ? normalizeHandleId(sourceHandle)
+          : "output";
+        const candidate =
+          output[cleanSrcHandle] ?? output.output ?? Object.values(output)[0];
+        if (candidate !== undefined && isJson(candidate)) {
+          const ok = conformsToShape(candidate, options?.targetJsonShape);
+          if (!ok) {
+            const key = `json-shape:${sourceDataType}->${targetDataType}`;
+            const now = Date.now();
+            if (!toastThrottle[key] || now - toastThrottle[key] > TOAST_DEBOUNCE_MS) {
+              toast.error("JSON shape mismatch", {
+                description:
+                  "Output JSON does not match the target handle's expected shape.",
+                duration: TOAST_DURATION,
+              });
+              toastThrottle[key] = now;
+            }
+            return false;
+          }
+        }
+      }
+    } catch {
+      // Best effort – do not block if inspection fails
+    }
+
     return compatible;
-  }, []);
+  }, [storeApi, options?.targetJsonShape, options?.acceptAnyJson]);
   return { isValidConnection };
 };
 
@@ -619,7 +712,13 @@ const UltimateTypesafeHandle: React.FC<UltimateTypesafeHandleProps> = memo(
       [handleTypeName]
     );
 
-    const { isValidConnection } = useUltimateFlowConnectionPrevention();
+    const { isValidConnection } = useUltimateFlowConnectionPrevention({
+      targetJsonShape:
+        (props.type === "target" ? (props as any).jsonShape : undefined) ||
+        undefined,
+      acceptAnyJson:
+        props.type === "target" ? Boolean((props as any).acceptAnyJson) : false,
+    });
 
     // Subscribe only to edges reference; compute connection state when edges actually change
     const edgesRef = useStore((state) => state.edges);

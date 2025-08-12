@@ -7,6 +7,30 @@ import type { z } from "zod";
 import type { NodeMemoryConfig } from "./nodeMemory";
 
 /**
+ * JSON SHAPE SPEC - Declarative per-handle JSON shape contract
+ *
+ * • Attach to `NodeHandleSpec.jsonShape` to enforce runtime shape matching
+ * • Validation happens on connection for JSON→JSON edges
+ * • Unknown/extra properties on objects are allowed by default
+ * • Set `acceptAnyJson: true` on a handle to bypass shape checks
+ */
+export type JsonShapeSpec =
+  | {
+      type: "object";
+      properties: Record<string, JsonShapeSpec>;
+      optional?: boolean;
+    }
+  | {
+      type: "array";
+      items: JsonShapeSpec;
+      optional?: boolean;
+    }
+  | {
+      type: "string" | "number" | "boolean" | "null" | "any";
+      optional?: boolean;
+    };
+
+/**
  * Feature flag configuration for node-level feature toggles
  */
 export interface FeatureFlagConfig {
@@ -92,6 +116,10 @@ export interface NodeHandleSpec {
 	type: "source" | "target";
 	/** Optional custom tooltip text to append to default tooltip */
 	tooltip?: string;
+  /** Optional JSON shape contract for JSON target handles */
+  jsonShape?: JsonShapeSpec;
+  /** If true, skip JSON shape enforcement for this handle */
+  acceptAnyJson?: boolean;
 }
 
 /**

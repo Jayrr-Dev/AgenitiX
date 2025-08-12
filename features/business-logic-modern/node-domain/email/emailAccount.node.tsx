@@ -163,6 +163,8 @@ const createDynamicSpec = (
         type: "source",
         dataType: "JSON",
         tooltip: HANDLE_TOOLTIPS.ACCOUNT_OUT,
+          // Consumers may enforce shapes; output can include additional properties
+          // (no shape required on source)
       },
       {
         id: "status-output",

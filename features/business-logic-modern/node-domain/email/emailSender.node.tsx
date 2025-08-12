@@ -193,7 +193,7 @@ const RESET_ON_LOGOUT_DATA: Partial<EmailSenderData> = {
 function createDynamicSpec(data: EmailSenderData): NodeSpec {
   const expanded =
     EXPANDED_SIZES[data.expandedSize as keyof typeof EXPANDED_SIZES] ??
-    EXPANDED_SIZES.VE3;
+    EXPANDED_SIZES.FE3;
   const collapsed =
     COLLAPSED_SIZES[data.collapsedSize as keyof typeof COLLAPSED_SIZES] ??
     COLLAPSED_SIZES.C2;
@@ -234,6 +234,15 @@ function createDynamicSpec(data: EmailSenderData): NodeSpec {
         type: "target",
         dataType: "JSON",
         tooltip: HANDLE_TOOLTIPS.ACCOUNT_IN,
+            // Enforce minimal email account JSON shape
+            jsonShape: {
+              type: "object",
+              properties: {
+                accountId: { type: "string" },
+                provider: { type: "string", optional: true },
+                email: { type: "string", optional: true },
+              },
+            },
       },
       {
         id: "message-input",
@@ -242,6 +251,30 @@ function createDynamicSpec(data: EmailSenderData): NodeSpec {
         type: "target",
         dataType: "JSON",
         tooltip: HANDLE_TOOLTIPS.MESSAGE_IN,
+            // Enforce minimal composed email JSON shape
+            jsonShape: {
+              type: "object",
+              properties: {
+                recipients: {
+                  type: "object",
+                  properties: {
+                    to: { type: "array", items: { type: "string" }, optional: true },
+                    cc: { type: "array", items: { type: "string" }, optional: true },
+                    bcc: { type: "array", items: { type: "string" }, optional: true },
+                  },
+                  optional: true,
+                },
+                subject: { type: "string", optional: true },
+                content: {
+                  type: "object",
+                  properties: {
+                    text: { type: "string", optional: true },
+                    html: { type: "string", optional: true },
+                  },
+                  optional: true,
+                },
+              },
+            },
       },
       {
         id: "success-output",
@@ -313,7 +346,7 @@ function createDynamicSpec(data: EmailSenderData): NodeSpec {
       isEnabled: true,
       isActive: false,
       isExpanded: false,
-      expandedSize: "VE3",
+      expandedSize: "FE3",
       collapsedSize: "C2",
       output: {}, // handle-based output object for Convex compatibility
     }),
@@ -387,7 +420,7 @@ function createDynamicSpec(data: EmailSenderData): NodeSpec {
 
 /** Static spec for registry (uses default size keys) */
 export const spec: NodeSpec = createDynamicSpec({
-  expandedSize: "VE3",
+  expandedSize: "FE3",
   collapsedSize: "C2",
 } as EmailSenderData);
 
@@ -1304,13 +1337,16 @@ const EmailSenderNode = memo(
     // -------------------------------------------------------------------------
     return (
       <>
+      
         <LabelNode
           nodeId={id}
           label={(nodeData as EmailSenderData).label || spec.displayName}
         />
 
         {isExpanded ? (
+          <div >
           <EmailSenderExpanded
+            nodeId={id}
             nodeData={nodeData as EmailSenderData}
             isEnabled={typeof isEnabled === "boolean" ? isEnabled : true}
             sendingStatus={sendingStatus as EmailSenderData["sendingStatus"]}
@@ -1331,9 +1367,10 @@ const EmailSenderNode = memo(
               if (selectedAccount) {
                 EmailAccountService.clearValidationCache(selectedAccount.value);
                 showSuccess("Connection status refreshed");
-              }
-            }}
-          />
+                }
+              }}
+            />
+          </div>
         ) : (
           <EmailSenderCollapsed
             nodeData={nodeData as EmailSenderData}

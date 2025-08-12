@@ -31,7 +31,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Send, Plus, X, Clock, Palette, AlertCircle, Upload, FileText, RotateCcw } from "lucide-react";
-import { useState, useCallback, memo } from "react";
+import { useState, useCallback, memo, useEffect } from "react";
 import { z } from "zod";
 import { useNodeToast } from "@/hooks/useNodeToast";
 import RenderStatusDot from "@/components/RenderStatusDot";
@@ -58,7 +58,7 @@ const validateEmail = (email: string): { isValid: boolean; error?: string } => {
 const SENDER_STYLES = {
   container: "flex flex-col bg-background border border-border rounded-lg p-0 ",
   header: "pl-2",
-  content: "flex-1 flex flex-col min-h-0 border-border p-2",
+  content: "flex-1 flex flex-col min-h-0 border-border p-2 ",
   footer: "p-3 border-t border-border bg-muted/30",
 } as const;
 
@@ -300,6 +300,7 @@ type AttachmentType = {
 };
 
 export interface EmailSenderExpandedProps {
+  nodeId: string;
   nodeData: EmailSenderData;
   isEnabled: boolean;
   sendingStatus: EmailSenderData["sendingStatus"];
@@ -332,6 +333,7 @@ export interface EmailSenderExpandedProps {
 export const EmailSenderExpanded = React.memo(
   function EmailSenderExpanded(props: EmailSenderExpandedProps) {
     const {
+      nodeId,
       nodeData,
       isEnabled,
       sendingStatus,
@@ -350,6 +352,9 @@ export const EmailSenderExpanded = React.memo(
       onSendEmail,
       onRefreshAccount,
     } = props;
+
+    // Initialize node toast system for errors and warnings, basically modal notifications
+    const { showError, showWarning, showInfo } = useNodeToast(nodeId);
 
     const {
       accountId,
@@ -415,6 +420,95 @@ export const EmailSenderExpanded = React.memo(
         : "Sending..."
       : "Email";
 
+    // Show modal notifications for account errors, basically use node toast system
+    useEffect(() => {
+      if (accountErrors.length > 0) {
+        const errorMessage = accountErrors.length === 1 
+          ? accountErrors[0] 
+          : `${accountErrors.length} account issues detected`;
+        const errorDescription = accountErrors.length > 1 
+          ? accountErrors.join("; ") 
+          : undefined;
+        
+        showError("Account Error", errorDescription || errorMessage);
+      }
+    }, [accountErrors, showError]);
+
+    // Show warning when no accounts are available, basically notify user
+    useEffect(() => {
+      if (availableAccounts.length === 0) {
+        showWarning("No Email Accounts", "Please add an email account first to send emails");
+      }
+    }, [availableAccounts.length, showWarning]);
+
+    // Show info when sending status changes, basically provide feedback
+    useEffect(() => {
+      if (sendingStatus === "composing") {
+        showInfo("Composing Email", "Preparing email for delivery...");
+      } else if (sendingStatus === "sending") {
+        showInfo("Sending Email", "Email is being sent...");
+      } else if (sendingStatus === "sent") {
+        showInfo("Email Sent", "Email has been delivered successfully");
+      }
+    }, [sendingStatus, showInfo]);
+
+    // Show error modal for last errors, basically display sending failures
+    useEffect(() => {
+      if (lastError && sendingStatus === "error") {
+        showError("Email Sending Failed", lastError);
+      }
+    }, [lastError, sendingStatus, showError]);
+
+    /**
+     * retryAttemptsInput – local UI state for numeric input
+     * [Explanation], basically allow empty string while editing without forcing defaults
+     */
+    const [retryAttemptsInput, setRetryAttemptsInput] = useState<string>(() =>
+      typeof retryAttempts === "number" ? String(retryAttempts) : ""
+    );
+
+    // Keep local input in sync with node data when it changes externally
+    useEffect(() => {
+      const next =
+        typeof retryAttempts === "number" ? String(retryAttempts) : "";
+      setRetryAttemptsInput(next);
+    }, [retryAttempts]);
+
+    /**
+     * Handle retry attempts typing
+     * [Explanation], basically restrict to digits and allow empty while editing
+     */
+    const handleRetryAttemptsInputChange = useCallback(
+      (e: React.ChangeEvent<HTMLInputElement>) => {
+        const next = e.target.value;
+        if (next === "" || /^\d+$/.test(next)) {
+          setRetryAttemptsInput(next);
+          // Propagate valid numeric edits immediately
+          if (next !== "") {
+            const syntheticEvent = {
+              target: { value: next },
+            } as React.ChangeEvent<HTMLInputElement>;
+            onNumberChange("retryAttempts", 0, 5)(syntheticEvent);
+          }
+        }
+      },
+      [onNumberChange]
+    );
+
+    /**
+     * Commit on blur
+     * [Explanation], basically clamp and save if not empty; keep empty if cleared
+     */
+    const handleRetryAttemptsBlur = useCallback(() => {
+      if (retryAttemptsInput === "") {
+        return;
+      }
+      const syntheticEvent = {
+        target: { value: retryAttemptsInput },
+      } as React.ChangeEvent<HTMLInputElement>;
+      onNumberChange("retryAttempts", 0, 5)(syntheticEvent);
+    }, [retryAttemptsInput, onNumberChange]);
+
     // Helper function to convert textarea change to recipient array change
     const handleRecipientsChangeForInput = useCallback(
       (type: "to" | "cc" | "bcc") => (emails: string[]) => {
@@ -429,11 +523,11 @@ export const EmailSenderExpanded = React.memo(
 
     return (
       <div
-        className={`nowheel ${SENDER_STYLES.container} ${isEnabled ? "" : "opacity-75"}`}
+        className={` ${SENDER_STYLES.container} ${isEnabled ? "" : "opacity-75"}`}
       >
         {/* Content Area */}
-        <div className={SENDER_STYLES.content}>
-          <Tabs variant="node" value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col overflow-auto nowheel">
+        <div className={`${SENDER_STYLES.content} max-h-[234px] overflow-y-auto nowheel rounded-lg`}>
+          <Tabs variant="node" value={activeTab} onValueChange={setActiveTab} className=" flex flex-col  rounded-lg">
             <div className="flex items-center justify-between mt-2">
               <TabsList variant="node">
                 <TabsTrigger variant="node" value="compose">
@@ -529,23 +623,7 @@ export const EmailSenderExpanded = React.memo(
 
 
 
-                {/* Account Errors */}
-                {accountErrors.length > 0 && (
-                  <div className="space-y-1">
-                    {accountErrors.map((error, index) => (
-                      <div key={index} className="text-[10px] text-red-600">
-                        ⚠ {error}
-                      </div>
-                    ))}
-                  </div>
-                )}
 
-                {/* No Accounts Available */}
-                {availableAccounts.length === 0 && (
-                  <div className="text-[10px] text-yellow-600">
-                    ⚠ No email accounts configured. Please add an email account first.
-                  </div>
-                )}
               </div>
 
               <Separator className="mb-1" />
@@ -560,7 +638,7 @@ export const EmailSenderExpanded = React.memo(
                   placeholder="Enter recipient email..."
                   recipients={safeRecipients}
                   onRecipientsChange={(type, emails) => handleRecipientsChangeForInput(type)(emails)}
-                  nodeId=""
+                  nodeId={nodeId}
                   showCC={showCC}
                   showBCC={showBCC}
                   setShowCC={setShowCC}
@@ -576,7 +654,7 @@ export const EmailSenderExpanded = React.memo(
                     placeholder="Cc recipients..."
                     recipients={safeRecipients}
                     onRecipientsChange={(type, emails) => handleRecipientsChangeForInput(type)(emails)}
-                    nodeId=""
+                    nodeId={nodeId}
                   />
                 )}
                 
@@ -589,7 +667,7 @@ export const EmailSenderExpanded = React.memo(
                     placeholder="Bcc recipients..."
                     recipients={safeRecipients}
                     onRecipientsChange={(type, emails) => handleRecipientsChangeForInput(type)(emails)}
-                    nodeId=""
+                    nodeId={nodeId}
                   />
                 )}
               </div>
@@ -619,15 +697,15 @@ export const EmailSenderExpanded = React.memo(
                   value={safeContent.text}
                   onChange={onContentChange("text")}
                   placeholder="Enter your message here..."
-                  className={`${INPUT_STYLES.textarea} w-full min-h-18 border border-border rounded-md px-2 py-1`}
+                  className={`${INPUT_STYLES.textarea} w-full min-h-[70px] border border-border rounded-md px-2 py-1`}
                   disabled={!isEnabled || isSending}
                 />
               </div>
             </TabsContent>
 
-            <TabsContent variant="node" value="settings" className="pt-3 space-y-3 m-0">
+            <TabsContent variant="node" value="settings" className=" m-0">
               {/* Attachments */}
-              <div className="space-y-2">
+              <div className="">
                 <Label className={INPUT_STYLES.label}>Attachments</Label>
 
                 {/* File Input */}
@@ -700,10 +778,10 @@ export const EmailSenderExpanded = React.memo(
                 )}
               </div>
 
-              <Separator />
+              <Separator className="mb-2" />
 
               {/* Send Mode */}
-              <div className="space-y-1">
+              <div className="">
                 <Label className={INPUT_STYLES.label}>Send Mode</Label>
                 <Select
                   value={sendMode || "immediate"}
@@ -725,7 +803,9 @@ export const EmailSenderExpanded = React.memo(
                   </SelectContent>
                 </Select>
               </div>
+              
 
+              <Separator className="mb-2" />
               {/* Batch Options */}
               {sendMode === "batch" && (
                 <div className="grid grid-cols-2 gap-2">
@@ -776,10 +856,10 @@ export const EmailSenderExpanded = React.memo(
                 </div>
               )}
 
-              <Separator />
+            <Separator className="mb-0" />
 
               {/* Tracking Options */}
-              <div className="space-y-2">
+              <div className="">
                 <Label className={INPUT_STYLES.label}>Tracking Options</Label>
                 <div className="flex flex-col gap-1">
                   <label className="flex items-center gap-2 text-[10px]">
@@ -825,10 +905,10 @@ export const EmailSenderExpanded = React.memo(
                 </div>
               </div>
 
-              <Separator />
+              <Separator className="mb-2" />
 
               {/* Retry Settings */}
-              <div className="space-y-1">
+              <div className="">
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Label className={`${INPUT_STYLES.label} cursor-help`}>
@@ -842,8 +922,12 @@ export const EmailSenderExpanded = React.memo(
                 <Input
                   variant="node"
                   type="number"
-                  value={retryAttempts || 3}
-                  onChange={onNumberChange("retryAttempts", 0, 5)}
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  value={retryAttemptsInput}
+                  onChange={handleRetryAttemptsInputChange}
+                  onBlur={handleRetryAttemptsBlur}
+                  onWheel={(e) => e.currentTarget.blur()}
                   min="0"
                   max="5"
                   className={INPUT_STYLES.input}
@@ -880,15 +964,7 @@ export const EmailSenderExpanded = React.memo(
           </Tabs>
         </div>
 
-        {/* Footer with Error Display */}
-        {(hasError || lastError) && (
-          <div className={SENDER_STYLES.footer}>
-            <div className="flex items-center gap-2 text-xs text-destructive">
-              <AlertCircle className="h-3 w-3" />
-              <span>{lastError || "An error occurred"}</span>
-            </div>
-          </div>
-        )}
+
       </div>
     );
   },

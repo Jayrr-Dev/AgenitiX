@@ -451,10 +451,10 @@ export function withNodeScaffold(
             );
             const totalHandlesOnSide = handlesOnSameSide.length;
 
-            return (
+              return (
               <TypeSafeHandle
                 key={`${handle.id}-${handleKey}-${actualPosition}`}
-                id={`${handle.id}__${handle.code ?? handle.dataType ?? "x"}`}
+                  id={`${handle.id}__${handle.code ?? handle.dataType ?? "x"}`}
                 type={handle.type}
                 position={actualPosition as Position}
                 dataType={handle.dataType || "any"}
@@ -464,6 +464,9 @@ export function withNodeScaffold(
                 handleIndex={handleIndex}
                 totalHandlesOnSide={totalHandlesOnSide}
                 customTooltip={handle.tooltip}
+                  // Shape enforcement props (optional)
+                  jsonShape={(handle as any).jsonShape}
+                  acceptAnyJson={(handle as any).acceptAnyJson}
               />
             );
           });
