@@ -11,15 +11,74 @@ Route: app/providers/setupWebVitalsClient.tsx
  */
 
 import { useEffect } from "react";
+import type { CLSMetric, INPMetric, LCPMetric } from "web-vitals";
+import type {
+  CLSMetricWithAttribution,
+  INPMetricWithAttribution,
+  LCPMetricWithAttribution,
+} from "web-vitals/attribution";
 
 const IS_DEV = process.env.NODE_ENV === "development";
 
-interface WebVitalEvent {
-  name: string;
-  value: number;
-  id?: string;
-  attribution?: Record<string, unknown>;
-}
+/**
+ * Loggers for attribution-enabled metrics
+ * [Explanation], basically strongly-typed handlers for specific metrics
+ */
+const logLCPWithAttribution = (metric: LCPMetricWithAttribution): void => {
+  // [Explanation], basically print concise metric info with attribution (dev only)
+  // eslint-disable-next-line no-console
+  console.debug("[web-vitals][LCP]", {
+    value: Math.round(metric.value ?? 0),
+    id: metric.id,
+    attribution: metric.attribution,
+  });
+};
+
+const logINPWithAttribution = (metric: INPMetricWithAttribution): void => {
+  // eslint-disable-next-line no-console
+  console.debug("[web-vitals][INP]", {
+    value: Math.round(metric.value ?? 0),
+    id: metric.id,
+    attribution: metric.attribution,
+  });
+};
+
+const logCLSWithAttribution = (metric: CLSMetricWithAttribution): void => {
+  // eslint-disable-next-line no-console
+  console.debug("[web-vitals][CLS]", {
+    value: Math.round(metric.value ?? 0),
+    id: metric.id,
+    attribution: metric.attribution,
+  });
+};
+
+/**
+ * Loggers for core metrics (no attribution fallback)
+ * [Explanation], basically minimal info when attribution package not available
+ */
+const logLCP = (metric: LCPMetric): void => {
+  // eslint-disable-next-line no-console
+  console.debug("[web-vitals][LCP]", {
+    value: Math.round(metric.value ?? 0),
+    id: metric.id,
+  });
+};
+
+const logINP = (metric: INPMetric): void => {
+  // eslint-disable-next-line no-console
+  console.debug("[web-vitals][INP]", {
+    value: Math.round(metric.value ?? 0),
+    id: metric.id,
+  });
+};
+
+const logCLS = (metric: CLSMetric): void => {
+  // eslint-disable-next-line no-console
+  console.debug("[web-vitals][CLS]", {
+    value: Math.round(metric.value ?? 0),
+    id: metric.id,
+  });
+};
 
 /**
  * Initialize runtime Web Vitals listeners (dev only).
@@ -34,28 +93,17 @@ export function SetupWebVitalsClient(): null {
       try {
         const mod = await import("web-vitals/attribution");
         if (cancelled) return;
-        const log = (m: WebVitalEvent) => {
-          // Keep concise to avoid console noise
-          // [Explanation], basically show metric name, value, and key attribution fields
-          const rounded = Math.round(m.value ?? 0);
-          const attr = m.attribution ?? {};
-          // Web vitals metric logged
-        };
-        mod.onLCP(log);
-        mod.onINP(log);
-        mod.onCLS(log);
+        mod.onLCP(logLCPWithAttribution);
+        mod.onINP(logINPWithAttribution);
+        mod.onCLS(logCLSWithAttribution);
       } catch (err) {
         try {
           // Fallback to core web-vitals without attribution
           const core = await import("web-vitals");
           if (cancelled) return;
-          const log = (m: WebVitalEvent) => {
-            // [Explanation], basically show metric name and rounded value only
-            const _ = Math.round(m.value ?? 0);
-          };
-          core.onLCP(log);
-          core.onINP(log);
-          core.onCLS(log);
+          core.onLCP(logLCP);
+          core.onINP(logINP);
+          core.onCLS(logCLS);
         } catch (innerErr) {
           // eslint-disable-next-line no-console
           console.warn("web-vitals not available (dev only):", innerErr);

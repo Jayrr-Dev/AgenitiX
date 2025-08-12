@@ -38,3 +38,14 @@ export const cleanupResend = internalMutation({
 });
 
 export default crons;
+
+// ============================================================================
+// WORKFLOW WATCHDOG - Resume stuck workflow runs
+// ============================================================================
+
+// [Explanation], basically ensure long-running automations keep progressing
+crons.interval(
+  "Resume stuck workflow runs",
+  { minutes: 5 },
+  internal.workflows.resumeStuckRuns
+);

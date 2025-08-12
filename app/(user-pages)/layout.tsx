@@ -21,44 +21,40 @@ interface UserPagesLayoutProps {
   children: ReactNode;
 }
 
+const IS_DEV = process.env.NODE_ENV === "development";
+
+// Client-only dev diagnostics to avoid SSR resolving client deps
+const WebVitalsClient = IS_DEV
+  ? dynamic(
+      () =>
+        import("@/app/providers/setupWebVitalsClient").then(
+          (m) => m.SetupWebVitalsClient
+        ),
+      { ssr: false, loading: () => null }
+    )
+  : null;
+
+const WhyDidYouRenderClient = IS_DEV
+  ? dynamic(
+      () =>
+        import("@/app/providers/setupWhyDidYouRenderClient").then(
+          (m) => m.SetupWhyDidYouRenderClient
+        ),
+      { ssr: false, loading: () => null }
+    )
+  : null;
+
 export default function UserPagesLayout({ children }: UserPagesLayoutProps) {
   const pathname = usePathname();
 
   // Hide navigation for matrix routes
   const shouldHideNavigation = pathname.startsWith("/matrix");
 
-  // Client-only dev diagnostics to avoid SSR resolving client deps
-  const WebVitalsClient =
-    process.env.NODE_ENV === "development"
-      ? dynamic(
-          () =>
-            import("@/app/providers/setupWebVitalsClient").then(
-              (m) => m.SetupWebVitalsClient,
-            ),
-          { ssr: false, loading: () => null },
-        )
-      : null;
-
-  const WhyDidYouRenderClient =
-    process.env.NODE_ENV === "development"
-      ? dynamic(
-          () =>
-            import("@/app/providers/setupWhyDidYouRenderClient").then(
-              (m) => m.SetupWhyDidYouRenderClient,
-            ),
-          { ssr: false, loading: () => null },
-        )
-      : null;
-
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-background">
-        {process.env.NODE_ENV === "development" && WebVitalsClient && (
-          <WebVitalsClient />
-        )}
-        {process.env.NODE_ENV === "development" && WhyDidYouRenderClient && (
-          <WhyDidYouRenderClient />
-        )}
+        {IS_DEV && WebVitalsClient && <WebVitalsClient />}
+        {IS_DEV && WhyDidYouRenderClient && <WhyDidYouRenderClient />}
         {!shouldHideNavigation && <ProtectedNavigation />}
         <main>{children}</main>
       </div>

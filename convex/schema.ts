@@ -185,6 +185,12 @@ export default defineSchema({
     completed_at: v.optional(v.number()),
     error_message: v.optional(v.string()),
     execution_data: v.optional(v.any()), // Workflow state and results
+    // Runner control and resilience fields
+    step_cursor: v.optional(v.any()), // [Explanation], basically pointer to current step/state
+    attempt: v.optional(v.number()), // [Explanation], basically retry counter for the last failure
+    lease_until: v.optional(v.number()), // [Explanation], basically soft lock to avoid double-processing
+    cancelled: v.optional(v.boolean()), // [Explanation], basically cooperative cancellation flag
+    next_run_at: v.optional(v.number()), // [Explanation], basically hint for delayed scheduling
   })
     .index("by_user_id", ["user_id"])
     .index("by_status", ["status"])
