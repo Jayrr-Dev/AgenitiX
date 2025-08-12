@@ -39,6 +39,8 @@ import {
 import { VscJson } from "react-icons/vsc";
 import { toast } from "sonner";
 import type { JsonShapeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
+import { getNodeSpecMetadata } from "@/features/business-logic-modern/infrastructure/node-registry/nodespec-registry";
+import { useNodeToast as usePerNodeToast } from "@/hooks/useNodeToast";
 // Auto-generated at build time (can be empty in dev before first build)
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore – file is generated post-install / build
@@ -543,6 +545,59 @@ function isTypeCompatible(sourceType: string, targetType: string): boolean {
 // Simple debounce map to avoid toast spam
 const toastThrottle: Record<string, number> = {};
 
+/**
+ * SUCCESS TOAST COPY FOR INPUT CONNECTIONS
+ * [Explanation], basically unique success messages for each input type when a new connection is made
+ */
+const INPUT_SUCCESS_MESSAGES: Record<string, { title: string; description?: string }> = {
+  string: { title: "Text connected", description: "Input is now connected" },
+  number: { title: "Number connected", description: "Input is now connected" },
+  boolean: { title: "Toggle connected", description: "Input is now connected" },
+  json: { title: "JSON connected", description: "Input is now connected" },
+  array: { title: "List connected", description: "Input is now connected" },
+  object: { title: "Object connected", description: "Input is now connected" },
+  tools: { title: "Tools connected", description: "Input is now connected" },
+  email: { title: "Email connected", description: "Input is now connected" },
+  // Email domain specifics
+  emailaccount: { title: "Account connected", description: "Email account input is set" },
+  emailtemplate: { title: "Template connected", description: "Email template input is set" },
+  composedemail: { title: "Email connected", description: "Composed email input is set" },
+  any: { title: "Input connected", description: "Input is now connected" },
+};
+
+/**
+ * Resolve a friendly message key from handle metadata
+ * [Explanation], basically map various type encodings to domain-friendly keys
+ */
+function resolveMessageKey(handleTypeName: string, dataType?: string, code?: string): keyof typeof INPUT_SUCCESS_MESSAGES {
+  const lcName = (handleTypeName || '').toLowerCase();
+  const firstUnion = (val?: string) => (val ? val.split('|')[0].toLowerCase() : '');
+  const primary = firstUnion(dataType) || firstUnion(code) || lcName;
+
+  // Email domain prioritization
+  if (lcName.includes('emailaccount') || primary === 'emailaccount') return 'emailaccount';
+  if (lcName.includes('emailtemplate') || primary === 'emailtemplate') return 'emailtemplate';
+  if (lcName.includes('composedemail') || primary === 'composedemail') return 'composedemail';
+  if (lcName.includes('email') || primary === 'email') return 'email';
+
+  // One-letter codes → verbose keys
+  const codeMap: Record<string, keyof typeof INPUT_SUCCESS_MESSAGES> = {
+    s: 'string', n: 'number', b: 'boolean', j: 'json', a: 'array', x: 'any'
+  };
+  if (primary in codeMap) return codeMap[primary];
+
+  // Full names
+  const known: Array<keyof typeof INPUT_SUCCESS_MESSAGES> = ['string','number','boolean','json','array','object','tools'];
+  if ((known as string[]).includes(primary)) return primary as keyof typeof INPUT_SUCCESS_MESSAGES;
+
+  // Fallback using display map
+  const tokenKey = UNIFIED_TYPE_DISPLAY[lcName]?.tokenKey;
+  if (tokenKey && INPUT_SUCCESS_MESSAGES[tokenKey as keyof typeof INPUT_SUCCESS_MESSAGES]) {
+    return tokenKey as keyof typeof INPUT_SUCCESS_MESSAGES;
+  }
+  return 'any';
+}
+
 function isJson(value: unknown): boolean {
   if (value === null) return true;
   const t = typeof value;
@@ -590,6 +645,110 @@ function conformsToShape(value: unknown, shape?: JsonShapeSpec): boolean {
   }
 }
 
+/**
+ * Format a JsonShapeSpec into a concise human-readable snippet
+ * Examples:
+ *  - { accountId: string, provider?: string }
+ *  - Array<string>
+ */
+function formatShape(spec?: JsonShapeSpec, indent = 0): string {
+  if (!spec) return "unknown";
+  const pad = (n: number) => "  ".repeat(n);
+
+  switch (spec.type) {
+    case "any":
+      return "any";
+    case "null":
+    case "string":
+    case "number":
+    case "boolean":
+      return spec.type;
+    case "array": {
+      // Prefer Array<T> style to match ViewObject output
+      return `Array<${formatShape(spec.items, indent)}>`;
+    }
+    case "object": {
+      const entries = Object.entries(spec.properties);
+      if (entries.length === 0) return "{}";
+      const lines = entries.map(([key, val], idx) => {
+        const optional = val.optional ? "?" : "";
+        const comma = idx < entries.length - 1 ? "," : "";
+        // Recurse with increased indent for nested structures
+        const rendered = formatShape(val, indent + 1);
+        return `${pad(indent + 1)}${key}${optional}: ${rendered}${comma}`;
+      });
+      return `{\n${lines.join("\n")}\n${pad(indent)}}`;
+    }
+    default:
+      return "unknown";
+  }
+}
+
+function renderExpectedShape(spec?: JsonShapeSpec): React.ReactElement {
+  const pretty = formatShape(spec);
+  return (
+    <div
+      className="relative z-[9999] w-[420px] max-w-[90vw] rounded-lg border border-border bg-popover shadow-lg"
+      role="alert"
+    >
+      <div className="flex items-center gap-2 border-b border-border px-3 py-2">
+        <div className="h-5 w-5 rounded-full bg-destructive/15 text-destructive flex items-center justify-center text-[10px] font-bold">
+          !
+        </div>
+        <div className="text-sm font-semibold">JSON shape mismatch</div>
+      </div>
+      <div className="px-3 py-2">
+        <div className="text-xs text-muted-foreground mb-1">Expected</div>
+        <pre className="font-mono text-xs whitespace-pre leading-snug p-2 rounded-md border border-border bg-background/60">
+          {pretty}
+        </pre>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Check if a source JSON shape satisfies a target JSON shape contract.
+ * This is purely shape-to-shape (spec-only) – no runtime values required.
+ */
+function shapeSatisfies(source: JsonShapeSpec | undefined, target: JsonShapeSpec | undefined): boolean {
+  if (!target) return true; // nothing required
+  if (!source) return false; // unknown source shape cannot guarantee target
+
+  // Any satisfies everything
+  if (source.type === "any" || target.type === "any") return true;
+
+  // Exact primitive compatibility
+  const primitiveTypes = new Set(["string", "number", "boolean", "null"]);
+  if (primitiveTypes.has(target.type)) {
+    return source.type === target.type;
+  }
+
+  // Arrays
+  if (target.type === "array") {
+    if (source.type !== "array") return false;
+    return shapeSatisfies(source.items, target.items);
+  }
+
+  // Objects
+  if (target.type === "object") {
+    if (source.type !== "object") return false;
+    // For every target property: if required, it must exist in source and satisfy recursively
+    for (const [key, subTarget] of Object.entries(target.properties)) {
+      const subSource = source.properties[key];
+      const isRequired = !subTarget.optional;
+      if (!subSource) {
+        if (isRequired) return false;
+        continue; // optional target property can be missing
+      }
+      if (!shapeSatisfies(subSource, subTarget)) return false;
+    }
+    return true;
+  }
+
+  return true;
+}
+
 export const useUltimateFlowConnectionPrevention = (options?: {
   targetJsonShape?: JsonShapeSpec;
   acceptAnyJson?: boolean;
@@ -627,34 +786,114 @@ export const useUltimateFlowConnectionPrevention = (options?: {
       }
     }
 
-    // Optional JSON shape enforcement
+    // Optional JSON shape enforcement (resolve target shape dynamically if not provided)
     try {
+      const { nodes } = storeApi.getState();
+      // Compute target handle shape if not explicitly provided
+      let targetJsonShape: JsonShapeSpec | undefined = options?.targetJsonShape;
+      let targetAcceptAny: boolean = Boolean(options?.acceptAnyJson);
+      try {
+        if (!targetJsonShape || targetAcceptAny === undefined) {
+          const tgtNode = nodes.find((n: any) => n.id === connection.target);
+          const tgtType: string | undefined = tgtNode?.type;
+          if (tgtType && connection.targetHandle) {
+            const rawTgtId = connection.targetHandle.split("__")[0];
+            const cleanTgtHandle = normalizeHandleId(connection.targetHandle);
+            const meta = getNodeSpecMetadata(tgtType);
+            const specHandle = meta?.handles?.find?.(
+              (h: any) => h?.id === rawTgtId || h?.id === cleanTgtHandle
+            ) as any;
+            if (specHandle) {
+              targetJsonShape = targetJsonShape ?? (specHandle.jsonShape as JsonShapeSpec | undefined);
+              targetAcceptAny = targetAcceptAny || Boolean(specHandle.acceptAnyJson);
+            }
+          }
+        }
+      } catch {
+        // Ignore metadata lookup errors; best-effort only
+      }
+
       const wantsShape =
-        Boolean(options?.targetJsonShape) &&
-        !options?.acceptAnyJson &&
+        Boolean(targetJsonShape) &&
+        !targetAcceptAny &&
         (targetDataType?.toLowerCase().startsWith("j") ||
           targetDataType?.toLowerCase() === "json");
       const isJsonSource =
         sourceDataType?.toLowerCase().startsWith("j") ||
         sourceDataType?.toLowerCase() === "json";
       if (wantsShape && isJsonSource) {
-        const { nodes } = storeApi.getState();
+        // SPEC-ONLY STRICT GATE: Block if source shape is unknown or incompatible
+        try {
+          const srcNode = nodes.find((n: any) => n.id === connection.source);
+          const srcType: string | undefined = srcNode?.type;
+          let sourceShape: JsonShapeSpec | undefined;
+          if (srcType && connection.sourceHandle) {
+            const rawSrcId = connection.sourceHandle.split("__")[0];
+            const cleanSrcId = normalizeHandleId(connection.sourceHandle);
+            const srcMeta = getNodeSpecMetadata(srcType);
+            const srcHandle = srcMeta?.handles?.find?.(
+              (h: any) => h?.id === rawSrcId || h?.id === cleanSrcId
+            ) as any;
+            if (srcHandle) {
+              sourceShape = srcHandle.jsonShape as JsonShapeSpec | undefined;
+              const srcAcceptAny = Boolean(srcHandle.acceptAnyJson);
+              if (srcAcceptAny) {
+                // Unknown/any shape → cannot guarantee target contract
+                const key = `json-shape-spec:any->target:${targetDataType}`;
+                const now = Date.now();
+                if (!toastThrottle[key] || now - toastThrottle[key] > TOAST_DEBOUNCE_MS) {
+              toast.custom(() => renderExpectedShape(targetJsonShape), {
+                duration: TOAST_DURATION,
+              });
+                  toastThrottle[key] = now;
+                }
+                return false;
+              }
+            }
+          }
+
+          if (!shapeSatisfies(sourceShape, targetJsonShape)) {
+            const key = `json-shape-spec:${sourceDataType}->${targetDataType}`;
+            const now = Date.now();
+            if (!toastThrottle[key] || now - toastThrottle[key] > TOAST_DEBOUNCE_MS) {
+              toast.custom(() => renderExpectedShape(targetJsonShape), {
+                duration: TOAST_DURATION,
+              });
+              toastThrottle[key] = now;
+            }
+            return false;
+          }
+        } catch {
+          // If spec lookup fails, block in strict mode
+          const key = `json-shape-spec-unknown:${sourceDataType}->${targetDataType}`;
+          const now = Date.now();
+          if (!toastThrottle[key] || now - toastThrottle[key] > TOAST_DEBOUNCE_MS) {
+            toast.custom(() => renderExpectedShape(targetJsonShape), {
+              duration: TOAST_DURATION,
+            });
+            toastThrottle[key] = now;
+          }
+          return false;
+        }
+
         const src = nodes.find((n: any) => n.id === connection.source);
         const output = (src?.data?.output ?? {}) as Record<string, unknown>;
         const cleanSrcHandle = sourceHandle
           ? normalizeHandleId(sourceHandle)
           : "output";
-        const candidate =
+        let candidate =
           output[cleanSrcHandle] ?? output.output ?? Object.values(output)[0];
+        // Fallback to source data field if map not present
+        if (candidate === undefined && src?.data) {
+          candidate = (src.data as Record<string, unknown>)[cleanSrcHandle];
+        }
         if (candidate !== undefined && isJson(candidate)) {
-          const ok = conformsToShape(candidate, options?.targetJsonShape);
+          const ok = conformsToShape(candidate, targetJsonShape);
           if (!ok) {
             const key = `json-shape:${sourceDataType}->${targetDataType}`;
             const now = Date.now();
             if (!toastThrottle[key] || now - toastThrottle[key] > TOAST_DEBOUNCE_MS) {
-              toast.error("JSON shape mismatch", {
-                description:
-                  "Output JSON does not match the target handle's expected shape.",
+              toast.custom(() => renderExpectedShape(targetJsonShape), {
                 duration: TOAST_DURATION,
               });
               toastThrottle[key] = now;
@@ -686,6 +925,10 @@ interface UltimateTypesafeHandleProps {
   id?: string;
   /** Optional custom tooltip text to append to default tooltip */
   customTooltip?: string;
+  /** Optional JSON shape for target validation */
+  jsonShape?: JsonShapeSpec;
+  /** If true, bypass JSON shape checks */
+  acceptAnyJson?: boolean;
 }
 
 const UltimateTypesafeHandle: React.FC<UltimateTypesafeHandleProps> = memo(
@@ -698,6 +941,8 @@ const UltimateTypesafeHandle: React.FC<UltimateTypesafeHandleProps> = memo(
     handleIndex = 0,
     totalHandlesOnSide = 1,
     customTooltip,
+    jsonShape,
+    acceptAnyJson,
     ...props
   }) => {
     // Memoize handle type name calculation, basically prevent recalculation on re-renders
@@ -713,11 +958,8 @@ const UltimateTypesafeHandle: React.FC<UltimateTypesafeHandleProps> = memo(
     );
 
     const { isValidConnection } = useUltimateFlowConnectionPrevention({
-      targetJsonShape:
-        (props.type === "target" ? (props as any).jsonShape : undefined) ||
-        undefined,
-      acceptAnyJson:
-        props.type === "target" ? Boolean((props as any).acceptAnyJson) : false,
+      targetJsonShape: props.type === "target" ? jsonShape : undefined,
+      acceptAnyJson: props.type === "target" ? Boolean(acceptAnyJson) : false,
     });
 
     // Subscribe only to edges reference; compute connection state when edges actually change
@@ -769,6 +1011,7 @@ const UltimateTypesafeHandle: React.FC<UltimateTypesafeHandleProps> = memo(
     const [isTooltipOpen, setIsTooltipOpen] = React.useState(false);
     const [dynamicTooltipSuffix, setDynamicTooltipSuffix] =
       React.useState<string>("");
+    const { showError: showNodeError, showSuccess: showNodeSuccess } = usePerNodeToast(nodeId || "");
 
     const baseTooltip = useMemo(() => {
       const defaultTip = getTooltipContent(
@@ -868,6 +1111,81 @@ const UltimateTypesafeHandle: React.FC<UltimateTypesafeHandleProps> = memo(
       // Recompute only when opened or handle identity/context changes
     }, [isTooltipOpen, nodeId, props.id, props.type, storeApi]);
 
+    /**
+     * Show success toast when a new connection is made to a target handle
+     * [Explanation], basically detect increase in incoming edges and show a type-specific success message
+     */
+    const prevIncomingCountRef = React.useRef<number>(0);
+    React.useEffect(() => {
+      if (props.type !== "target") return;
+      try {
+        const incoming = edgesRef.filter(
+          (e: any) => e.target === nodeId && e.targetHandle === props.id
+        );
+        const count = incoming.length;
+        const prev = prevIncomingCountRef.current;
+        if (count > prev) {
+          const typeKey = resolveMessageKey(handleTypeName, dataType, code);
+          const msg = INPUT_SUCCESS_MESSAGES[typeKey] || INPUT_SUCCESS_MESSAGES.any;
+          const key = `success-connect:${nodeId}:${props.id}:${typeKey}`;
+          const now = Date.now();
+          if (!toastThrottle[key] || now - toastThrottle[key] > TOAST_DEBOUNCE_MS) {
+            showNodeSuccess(msg.title, msg.description);
+            toastThrottle[key] = now;
+          }
+        }
+        prevIncomingCountRef.current = count;
+      } catch {
+        // ignore
+      }
+      // Depend on edges reference changes; react-flow store returns new arrays on changes
+    }, [edgesRef, nodeId, props.id, props.type, handleTypeName, showNodeSuccess]);
+
+    // Runtime shape re-validation to surface warnings when upstream output changes
+    React.useEffect(() => {
+      if (props.type !== "target") return;
+      const shape: JsonShapeSpec | undefined = jsonShape;
+      const allowAny = Boolean(acceptAnyJson);
+      if (!shape || allowAny) return;
+
+      try {
+        const { nodes, edges } = storeApi.getState();
+        const incoming = edges.filter(
+          (e: any) => e.target === nodeId && e.targetHandle === props.id
+        );
+        if (incoming.length === 0) return;
+        const first = incoming[0];
+        const src = nodes.find((n: any) => n.id === first.source);
+        const output = (src?.data?.output ?? {}) as Record<string, unknown>;
+        const srcHandleId = first.sourceHandle
+          ? normalizeHandleId(first.sourceHandle)
+          : "output";
+        let candidate = output[srcHandleId] ?? output.output ?? Object.values(output)[0];
+        if (candidate === undefined && src?.data) {
+          candidate = (src.data as Record<string, unknown>)[srcHandleId];
+        }
+        if (candidate !== undefined && isJson(candidate)) {
+          const ok = conformsToShape(candidate, shape);
+          if (!ok) {
+            const key = `json-shape-runtime:${nodeId}:${props.id}`;
+            const now = Date.now();
+            if (!toastThrottle[key] || now - toastThrottle[key] > TOAST_DEBOUNCE_MS) {
+              // Global toast and node-local toast for visibility
+              toast.custom(() => renderExpectedShape(shape), {
+                duration: TOAST_DURATION,
+              });
+              if (showNodeError) {
+                showNodeError("JSON shape mismatch", formatShape(shape));
+              }
+              toastThrottle[key] = now;
+            }
+          }
+        }
+      } catch {
+        // ignore
+      }
+    }, [storeApi, nodeId, props.id, props.type, jsonShape, acceptAnyJson]);
+
     const tooltipContent = useMemo(
       () => `${baseTooltip}${dynamicTooltipSuffix}`,
       [baseTooltip, dynamicTooltipSuffix]
@@ -922,7 +1240,9 @@ const UltimateTypesafeHandle: React.FC<UltimateTypesafeHandleProps> = memo(
       >
         <TooltipTrigger asChild>
           <Handle
-            {...(props as HandleProps)}
+            id={props.id}
+            type={props.type as HandleProps["type"]}
+            position={props.position as HandleProps["position"]}
             className={`${UNIFIED_HANDLE_STYLES.base} ${baseClasses} ${stateClasses} ${fontWeightClasses}`}
             style={handleStyles}
             isValidConnection={isValidConnection}

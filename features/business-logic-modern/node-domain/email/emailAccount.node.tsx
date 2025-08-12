@@ -163,8 +163,18 @@ const createDynamicSpec = (
         type: "source",
         dataType: "JSON",
         tooltip: HANDLE_TOOLTIPS.ACCOUNT_OUT,
-          // Consumers may enforce shapes; output can include additional properties
-          // (no shape required on source)
+        // Declare emitted account JSON shape for downstream validation
+        jsonShape: {
+          type: "object",
+          properties: {
+            accountId: { type: "string" },
+            provider: { type: "string", optional: true },
+            email: { type: "string", optional: true },
+            displayName: { type: "string", optional: true },
+            isConnected: { type: "boolean", optional: true },
+            lastValidated: { type: "number", optional: true },
+          },
+        },
       },
       {
         id: "status-output",

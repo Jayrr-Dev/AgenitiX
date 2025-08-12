@@ -251,21 +251,21 @@ function createDynamicSpec(data: EmailSenderData): NodeSpec {
         type: "target",
         dataType: "JSON",
         tooltip: HANDLE_TOOLTIPS.MESSAGE_IN,
-            // Enforce minimal composed email JSON shape
+        // Enforce composed email JSON shape (required: recipients)
             jsonShape: {
               type: "object",
               properties: {
-                recipients: {
+            recipients: {
                   type: "object",
                   properties: {
                     to: { type: "array", items: { type: "string" }, optional: true },
                     cc: { type: "array", items: { type: "string" }, optional: true },
                     bcc: { type: "array", items: { type: "string" }, optional: true },
                   },
-                  optional: true,
+              // recipients required at top-level; per-fields stay optional
                 },
-                subject: { type: "string", optional: true },
-                content: {
+            subject: { type: "string", optional: true },
+            content: {
                   type: "object",
                   properties: {
                     text: { type: "string", optional: true },
