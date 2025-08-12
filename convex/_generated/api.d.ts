@@ -23,6 +23,7 @@ import type * as manageFlowOps from "../manageFlowOps.js";
 import type * as sendEmails from "../sendEmails.js";
 import type * as starterTemplates from "../starterTemplates.js";
 import type * as users from "../users.js";
+import type * as workflows from "../workflows.js";
 
 import type {
   ApiFromModules,
@@ -54,6 +55,7 @@ declare const fullApi: ApiFromModules<{
   sendEmails: typeof sendEmails;
   starterTemplates: typeof starterTemplates;
   users: typeof users;
+  workflows: typeof workflows;
 }>;
 declare const fullApiWithMounts: typeof fullApi;
 

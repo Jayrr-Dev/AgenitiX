@@ -9,10 +9,9 @@
  * Keywords: workflows, long-running, scheduler, retries, resumable
  */
 
-"use node";
-
 import { v } from "convex/values";
 import { api, internal } from "./_generated/api";
+import type { Id } from "./_generated/dataModel";
 import { internalAction, mutation, query } from "./_generated/server";
 
 const MAX_ATTEMPTS = 5 as const;
@@ -26,6 +25,60 @@ function computeBackoffMs(attempt: number): number {
   return Math.min(delay, MAX_BACKOFF_MS);
 }
 
+// =============================================================================
+// STEP TYPES
+// =============================================================================
+
+/** Single AI generation step */
+type AiStep = {
+  type: "ai";
+  prompt: string;
+  threadId?: string;
+  agentConfig?: {
+    selectedProvider: "openai" | "anthropic" | "google" | "custom";
+    selectedModel: string;
+    systemPrompt?: string;
+    maxSteps?: number;
+    temperature?: number;
+    customApiKey?: string;
+    customEndpoint?: string;
+    enabledTools?: Array<{ type: string; name: string; config?: unknown }>;
+  };
+};
+
+/** Delay step in milliseconds (non-blocking) */
+type DelayStep = { type: "delay"; ms: number };
+
+/** Email attachment payload */
+type EmailAttachment = {
+  id: string;
+  filename: string;
+  mimeType: string;
+  size: number;
+  content?: string; // base64
+};
+
+/** Send email via existing Convex action */
+type EmailStep = {
+  type: "email";
+  accountId: string; // Convex Id<"email_accounts"> as string
+  to: string[];
+  subject: string;
+  textContent?: string;
+  htmlContent?: string;
+  cc?: string[];
+  bcc?: string[];
+  attachments?: EmailAttachment[];
+  userEmailHint?: string;
+};
+
+type Step = AiStep | DelayStep | EmailStep;
+
+type ExecutionData = {
+  steps?: Step[];
+  results?: unknown[];
+};
+
 /** Start a workflow run */
 export const startWorkflowRun = mutation({
   args: {
@@ -36,15 +89,24 @@ export const startWorkflowRun = mutation({
   },
   async handler(ctx, args) {
     const now = Date.now();
+    const providedExec = (args.execution_data as ExecutionData | undefined) || {
+      steps: [],
+      results: [],
+    };
+    const inferredTotal =
+      typeof args.total_nodes === "number"
+        ? args.total_nodes
+        : Array.isArray(providedExec.steps)
+          ? providedExec.steps.length
+          : 0;
     const runId = await ctx.db.insert("workflow_runs", {
       user_id: args.user_id,
       workflow_name: args.workflow_name,
       status: "running",
       nodes_executed: 0,
-      total_nodes: args.total_nodes ?? 0,
+      total_nodes: inferredTotal,
       started_at: now,
-      execution_data: args.execution_data ?? { step_cursor: null, context: {} },
-      step_cursor: null,
+      execution_data: providedExec,
       attempt: 0,
       lease_until: now + LEASE_MS,
       cancelled: false,
@@ -223,6 +285,7 @@ async function performStep(
     nodes_executed: number;
     total_nodes: number;
     execution_data: unknown;
+    step_cursor?: number | null;
   }
 ): Promise<StepResult> {
   // [Explanation], basically safely parse execution data
@@ -234,7 +297,7 @@ async function performStep(
     results?: unknown[];
   }) || { steps: [], results: [] };
 
-  const cursor = (run as any).step_cursor ?? 0;
+  const cursor = (run.step_cursor ?? 0) as number;
   const steps = exec.steps ?? [];
   const results = Array.isArray(exec.results) ? exec.results : [];
 
@@ -289,6 +352,33 @@ async function performStep(
     });
 
     const newResults = results.concat({ ai: res });
+    return {
+      done: cursor + 1 >= steps.length,
+      updated: {
+        nodes_executed: run.nodes_executed + 1,
+        total_nodes: steps.length,
+        execution_data: { steps, results: newResults },
+        step_cursor: cursor + 1,
+      },
+    };
+  }
+
+  // Handle Email step using existing action
+  if (step && (step as any).type === "email") {
+    const s = step as EmailStep;
+    const res = await _ctx.runAction(api.emailAccounts.sendEmail, {
+      accountId: s.accountId as unknown as Id<"email_accounts">,
+      to: s.to,
+      cc: s.cc,
+      bcc: s.bcc,
+      subject: s.subject,
+      textContent: s.textContent,
+      htmlContent: s.htmlContent,
+      attachments: s.attachments,
+      userEmailHint: s.userEmailHint,
+    });
+
+    const newResults = results.concat({ email: res });
     return {
       done: cursor + 1 >= steps.length,
       updated: {
