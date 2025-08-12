@@ -9,8 +9,7 @@ Route: app/(user-pages)/layout.tsx
  * Keywords: layout, auth, diagnostics, web-vitals, why-did-you-render
  */
 
-import { SetupWebVitalsClient } from "@/app/providers/setupWebVitalsClient";
-import { SetupWhyDidYouRenderClient } from "@/app/providers/setupWhyDidYouRenderClient";
+import dynamic from "next/dynamic";
 // Import long task tracker (auto-starts)
 import { ProtectedNavigation } from "@/components/auth/ProtectedNavigation";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
@@ -28,15 +27,38 @@ export default function UserPagesLayout({ children }: UserPagesLayoutProps) {
   // Hide navigation for matrix routes
   const shouldHideNavigation = pathname.startsWith("/matrix");
 
+  // Client-only dev diagnostics to avoid SSR resolving client deps
+  const WebVitalsClient =
+    process.env.NODE_ENV === "development"
+      ? dynamic(
+          () =>
+            import("@/app/providers/setupWebVitalsClient").then(
+              (m) => m.SetupWebVitalsClient,
+            ),
+          { ssr: false, loading: () => null },
+        )
+      : null;
+
+  const WhyDidYouRenderClient =
+    process.env.NODE_ENV === "development"
+      ? dynamic(
+          () =>
+            import("@/app/providers/setupWhyDidYouRenderClient").then(
+              (m) => m.SetupWhyDidYouRenderClient,
+            ),
+          { ssr: false, loading: () => null },
+        )
+      : null;
+
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-background">
-        {process.env.NODE_ENV === "development" ? (
-          <>
-            <SetupWebVitalsClient />
-            <SetupWhyDidYouRenderClient />
-          </>
-        ) : null}
+        {process.env.NODE_ENV === "development" && WebVitalsClient && (
+          <WebVitalsClient />
+        )}
+        {process.env.NODE_ENV === "development" && WhyDidYouRenderClient && (
+          <WhyDidYouRenderClient />
+        )}
         {!shouldHideNavigation && <ProtectedNavigation />}
         <main>{children}</main>
       </div>
