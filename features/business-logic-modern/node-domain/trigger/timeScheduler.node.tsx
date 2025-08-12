@@ -46,6 +46,9 @@ import {
 } from "@/features/business-logic-modern/infrastructure/theming/sizing";
 import { useNodeData } from "@/hooks/useNodeData";
 import { useStore } from "@xyflow/react";
+import { useMutation, useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import type { Id } from "@/convex/_generated/dataModel";
 
 // -----------------------------------------------------------------------------
 // 1️⃣  Data schema & validation
@@ -413,172 +416,70 @@ const TimeSchedulerNode = memo(
       }
     }, [nodeData, isEnabled, updateNodeData]);
 
-    // Scheduling logic
-    const scheduleTimerRef = useRef<NodeJS.Timeout | null>(null);
+    // Durable scheduling via Convex
+    const scheduleDoc = useQuery(api.scheduleTime.getScheduleForNode, { nodeId: id });
+    const upsertSchedule = useMutation(api.scheduleTime.upsertTimeSchedule);
+    const triggerSchedule = useMutation(api.scheduleTime.manualTrigger);
 
-    // Calculate next trigger time based on schedule type
-    const calculateNextTrigger = useCallback(() => {
-      const now = Date.now();
-      let nextTime: number | null = null;
+    // Keep server schedule and local node state in sync; server is source of truth
+    const lastServerTriggeredRef = useRef<number | null>(null);
 
-      if (!isEnabled) return null;
-
-      switch (scheduleType) {
-        case "interval":
-          // Convert minutes to milliseconds
-          nextTime = now + intervalMinutes * 60 * 1000;
-          break;
-
-        case "daily":
-          if (startTime) {
-            // Parse HH:MM format
-            const [hours, minutes] = startTime.split(":").map(Number);
-            if (!isNaN(hours) && !isNaN(minutes)) {
-              const scheduledTime = new Date();
-              scheduledTime.setHours(hours, minutes, 0, 0);
-
-              // If time already passed today, schedule for tomorrow
-              if (scheduledTime.getTime() <= now) {
-                scheduledTime.setDate(scheduledTime.getDate() + 1);
-              }
-
-              nextTime = scheduledTime.getTime();
-            }
-          }
-          break;
-
-        case "once":
-          if (startTime) {
-            // Parse HH:MM format for one-time schedule
-            const [hours, minutes] = startTime.split(":").map(Number);
-            if (!isNaN(hours) && !isNaN(minutes)) {
-              const scheduledTime = new Date();
-              scheduledTime.setHours(hours, minutes, 0, 0);
-
-              // Only set if it's in the future
-              if (scheduledTime.getTime() > now) {
-                nextTime = scheduledTime.getTime();
-              }
-            }
-          }
-          break;
-      }
-
-      return nextTime;
-    }, [scheduleType, intervalMinutes, startTime, isEnabled]);
-
-    // Trigger the scheduled action
-    const triggerScheduledAction = useCallback(() => {
-      if (!isEnabled) return;
-
-      // Update last triggered time
-      const now = Date.now();
-      updateNodeData({
-        lastTriggered: now,
-        isActive: true,
-        output: JSON.stringify({
-          triggered: true,
-          timestamp: now,
-          scheduleType,
-          triggerType: "automatic",
-        }),
-      });
-
-      // For one-time schedule, disable after triggering
-      if (scheduleType === "once") {
-        // Wait a bit before disabling to ensure output is propagated
-        setTimeout(() => {
-          updateNodeData({ isEnabled: false, isActive: false });
-        }, 1000);
-        return;
-      }
-
-      // Calculate and set next trigger time
-      const next = calculateNextTrigger();
-      if (next) {
-        updateNodeData({ nextTrigger: next });
-      }
-
-      // Reset active state after a short delay
-      setTimeout(() => {
-        updateNodeData({ isActive: false });
-      }, 1000);
-    }, [isEnabled, scheduleType, updateNodeData, calculateNextTrigger]);
-
-    // Manual trigger handler
-    const handleManualTrigger = useCallback(() => {
-      if (!isEnabled) return;
-
-      const now = Date.now();
-      updateNodeData({
-        lastTriggered: now,
-        isActive: true,
-        output: JSON.stringify({
-          triggered: true,
-          timestamp: now,
-          scheduleType,
-          triggerType: "manual",
-        }),
-      });
-
-      // Reset active state and manual trigger after a short delay
-      setTimeout(() => {
-        updateNodeData({ isActive: false, manualTrigger: false });
-      }, 1000);
-    }, [isEnabled, scheduleType, updateNodeData]);
-
-    // Setup and manage scheduling timer
     useEffect(() => {
-      // Clear any existing timer
-      if (scheduleTimerRef.current) {
-        clearTimeout(scheduleTimerRef.current);
-        scheduleTimerRef.current = null;
+      if (!scheduleDoc) return;
+      // Sync enable flag
+      if (typeof scheduleDoc.is_enabled === "boolean" && scheduleDoc.is_enabled !== isEnabled) {
+        updateNodeData({ isEnabled: scheduleDoc.is_enabled });
+      }
+      // Sync timestamps to node data for UI
+      if (scheduleDoc.last_triggered && scheduleDoc.last_triggered !== lastTriggered) {
+        updateNodeData({ lastTriggered: scheduleDoc.last_triggered });
+      }
+      if (scheduleDoc.next_trigger_at && scheduleDoc.next_trigger_at !== nextTrigger) {
+        updateNodeData({ nextTrigger: scheduleDoc.next_trigger_at });
       }
 
-      if (!isEnabled) return;
-
-      // Handle manual trigger
-      if (manualTrigger) {
-        handleManualTrigger();
-        return;
+      // Emit output once per new trigger
+      if (
+        typeof scheduleDoc.last_triggered === "number" &&
+        scheduleDoc.last_triggered !== lastServerTriggeredRef.current &&
+        scheduleDoc.is_enabled
+      ) {
+        lastServerTriggeredRef.current = scheduleDoc.last_triggered;
+        const nowTs = scheduleDoc.last_triggered;
+        updateNodeData({
+          isActive: true,
+          output: JSON.stringify({
+            triggered: true,
+            timestamp: nowTs,
+            scheduleType,
+            triggerType: "automatic",
+          }),
+        });
+        setTimeout(() => {
+          updateNodeData({ isActive: false });
+        }, 1000);
       }
+    }, [scheduleDoc, isEnabled, scheduleType, lastTriggered, nextTrigger, updateNodeData]);
 
-      // Calculate next trigger time if not already set
-      const next = nextTrigger || calculateNextTrigger();
-      if (!next) return;
-
-      // Update next trigger in node data if it changed
-      if (next !== nextTrigger) {
-        updateNodeData({ nextTrigger: next });
-      }
-
-      // Set timeout for next trigger
-      const timeUntilTrigger = next - Date.now();
-      if (timeUntilTrigger > 0) {
-        scheduleTimerRef.current = setTimeout(
-          triggerScheduledAction,
-          timeUntilTrigger
-        );
-      } else if (timeUntilTrigger <= 0) {
-        // Trigger immediately if scheduled time has passed
-        triggerScheduledAction();
-      }
-
-      // Cleanup timer on unmount
-      return () => {
-        if (scheduleTimerRef.current) {
-          clearTimeout(scheduleTimerRef.current);
-        }
+    // Push local config changes to server (upsert durable schedule)
+    const lastUpsertPayloadRef = useRef<string>("");
+    useEffect(() => {
+      const payload = {
+        nodeId: id,
+        flowId: undefined as string | undefined,
+        scheduleType,
+        intervalMinutes,
+        startTime,
+        isEnabled,
       };
-    }, [
-      isEnabled,
-      manualTrigger,
-      nextTrigger,
-      calculateNextTrigger,
-      triggerScheduledAction,
-      handleManualTrigger,
-      updateNodeData,
-    ]);
+      const key = JSON.stringify(payload);
+      if (key !== lastUpsertPayloadRef.current) {
+        lastUpsertPayloadRef.current = key;
+        upsertSchedule(payload).catch(() => {
+          // swallow errors in UI; consider toast elsewhere
+        });
+      }
+    }, [id, scheduleType, intervalMinutes, startTime, isEnabled, upsertSchedule]);
 
     // Update node active state based on enabled status
     useEffect(() => {
@@ -685,52 +586,15 @@ const TimeSchedulerNode = memo(
           />
         )}
 
+        {/* Always show expand/collapse button */}
+        <ExpandCollapseButton showUI={isExpanded} onToggle={toggleExpand} size="sm" />
+
         {isExpanded ? (
-          <div
-            className={`${CONTENT.collapsed} ${isEnabled ? "" : CONTENT.disabled}`}
-          >
-            <div className="flex flex-col items-center justify-center w-full h-full p-2">
-              {/* Icon */}
-              <div className={CONTENT.collapsedIcon}>
-                {spec.icon && renderLucideIcon(spec.icon, "", 18)}
-              </div>
-
-              {/* Title */}
-              <div className={CONTENT.collapsedTitle}>
-                {scheduleType === "interval"
-                  ? `${intervalMinutes}m`
-                  : scheduleType === "daily"
-                    ? "Daily"
-                    : "One-time"}
-              </div>
-
-              {/* Next trigger info */}
-              {nextTrigger && isEnabled && (
-                <div className={CONTENT.collapsedSubtitle}>
-                  {formatTime(nextTrigger)}
-                </div>
-              )}
-
-              {/* Status badge */}
-              <div
-                className={`${CONTENT.collapsedStatus} ${isEnabled ? CONTENT.collapsedActive : CONTENT.collapsedInactive}`}
-              >
-                {isEnabled ? "Active" : "Disabled"}
-              </div>
-            </div>
-          </div>
-        ) : (
           <div
             className={`${CONTENT.expanded} ${isEnabled ? "" : CONTENT.disabled}`}
           >
-            {/* Header with title and expand button */}
-            <div className={CONTENT.header}>
-              <ExpandCollapseButton
-                showUI={isExpanded}
-                onToggle={toggleExpand}
-                size="sm"
-              />
-            </div>
+            {/* Header */}
+            <div className={CONTENT.header} />
 
             <div className={CONTENT.body}>
               {/* Schedule Configuration Section */}
@@ -844,11 +708,49 @@ const TimeSchedulerNode = memo(
               {/* Action Button */}
               <button
                 className={CONTENT.buttonPrimary}
-                disabled={!isEnabled || isActive}
-                onClick={() => updateNodeData({ manualTrigger: true })}
+                disabled={!isEnabled || isActive || !scheduleDoc?._id}
+                onClick={() => {
+                  if (scheduleDoc?._id) {
+                    void triggerSchedule({ scheduleId: scheduleDoc._id as Id<"trigger_time_schedules"> });
+                  }
+                }}
               >
                 {isActive ? "Triggering..." : "Trigger Now"}
               </button>
+            </div>
+          </div>
+        ) : (
+          <div
+            className={`${CONTENT.collapsed} ${isEnabled ? "" : CONTENT.disabled}`}
+          >
+            <div className="flex flex-col items-center justify-center w-full h-full p-2">
+              {/* Icon */}
+              <div className={CONTENT.collapsedIcon}>
+                {spec.icon && renderLucideIcon(spec.icon, "", 18)}
+              </div>
+
+              {/* Title */}
+              <div className={CONTENT.collapsedTitle}>
+                {scheduleType === "interval"
+                  ? `${intervalMinutes}m`
+                  : scheduleType === "daily"
+                    ? "Daily"
+                    : "One-time"}
+              </div>
+
+              {/* Next trigger info */}
+              {nextTrigger && isEnabled && (
+                <div className={CONTENT.collapsedSubtitle}>
+                  {formatTime(nextTrigger)}
+                </div>
+              )}
+
+              {/* Status badge */}
+              <div
+                className={`${CONTENT.collapsedStatus} ${isEnabled ? CONTENT.collapsedActive : CONTENT.collapsedInactive}`}
+              >
+                {isEnabled ? "Active" : "Disabled"}
+              </div>
             </div>
           </div>
         )}

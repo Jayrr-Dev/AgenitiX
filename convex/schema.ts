@@ -429,4 +429,105 @@ export default defineSchema({
   })
     .index("by_flow_id", ["flow_id"])
     .index("by_flow_and_version", ["flow_id", "version"]),
+
+  // TRIGGER DOMAIN - Durable time-based schedules managed by Convex scheduler
+  trigger_time_schedules: defineTable({
+    user_id: v.id("users"),
+    node_id: v.string(),
+    flow_id: v.optional(v.string()),
+    schedule_type: v.union(v.literal("interval"), v.literal("daily"), v.literal("once")),
+    interval_minutes: v.optional(v.number()),
+    start_time: v.optional(v.string()), // HH:MM (24h)
+    is_enabled: v.boolean(),
+    last_triggered: v.optional(v.number()),
+    next_trigger_at: v.optional(v.number()),
+    created_at: v.number(),
+    updated_at: v.number(),
+  })
+    .index("by_user_id", ["user_id"])
+    .index("by_node_id", ["node_id"])
+    .index("by_next_trigger_at", ["next_trigger_at"]),
+
+  // EMAIL API USAGE TRACKING - Provider/method limits and per-user daily usage
+  // Tables follow domain prefixing and snake_case naming
+  email_api_limits: defineTable({
+    // Row kind: "provider" for provider-level caps, "method" for individual API methods
+    kind: v.union(v.literal("provider"), v.literal("method")),
+    provider: v.string(), // e.g., "gmail"
+    method: v.optional(v.string()), // present when kind === "method"
+    // Method-level fields
+    quota_unit: v.optional(v.number()), // units per call for the method
+    // Provider-level caps (units)
+    daily_quota_max_units: v.optional(v.number()),
+    per_user_per_minute_units: v.optional(v.number()),
+    per_project_per_minute_units: v.optional(v.number()),
+    per_user_per_100_seconds_units: v.optional(v.number()),
+    // Metadata
+    is_active: v.optional(v.boolean()),
+    updated_at: v.number(),
+    created_at: v.number(),
+  })
+    .index("by_provider_and_kind", ["provider", "kind"]) // list provider-level caps
+    .index("by_provider_and_method", ["provider", "method"]) // find a specific method
+    .index("by_provider_and_updated_at", ["provider", "updated_at"]),
+
+  email_api_usages: defineTable({
+    user_id: v.id("users"),
+    provider: v.string(), // e.g., "gmail"
+    method: v.string(),
+    date_key: v.string(), // YYYY-MM-DD
+    unit_count: v.number(), // total units consumed that day for this method
+    request_count: v.number(), // number of calls
+    last_request_at: v.number(),
+    // Optional windowing hints to enable simple per-minute checks without a separate table
+    minute_window_start: v.optional(v.number()), // epoch ms (start of minute)
+    minute_unit_count: v.optional(v.number()),
+    created_at: v.number(),
+    updated_at: v.number(),
+  })
+    .index("by_user_and_date", ["user_id", "date_key"]) // aggregate per user per day
+    .index("by_user_date_provider_method", ["user_id", "date_key", "provider", "method"]) // fast lookup
+    .index("by_provider_and_date", ["provider", "date_key"]) // aggregate per provider per day
+    .index("by_user_and_updated_at", ["user_id", "updated_at"]),
+
+  // AI API USAGE TRACKING - LLM provider/model limits and per-user token usage
+  ai_api_limits: defineTable({
+    kind: v.union(v.literal("provider"), v.literal("model")),
+    provider: v.string(), // e.g., "openai" | "anthropic" | "google" | "custom"
+    model: v.optional(v.string()), // present when kind === "model"
+    // Provider/model caps in tokens
+    tokens_per_user_per_minute: v.optional(v.number()),
+    tokens_per_project_per_minute: v.optional(v.number()),
+    tokens_per_user_per_day: v.optional(v.number()),
+    request_max_tokens: v.optional(v.number()),
+    // Metadata
+    is_active: v.optional(v.boolean()),
+    updated_at: v.number(),
+    created_at: v.number(),
+  })
+    .index("by_provider_and_kind", ["provider", "kind"]) // list provider-level caps
+    .index("by_provider_and_model", ["provider", "model"]) // find a specific model
+    .index("by_provider_and_updated_at", ["provider", "updated_at"]),
+
+  ai_api_usages: defineTable({
+    user_id: v.id("users"),
+    provider: v.string(),
+    model: v.string(),
+    date_key: v.string(), // YYYY-MM-DD
+    // Token counters
+    prompt_token_count: v.number(),
+    completion_token_count: v.number(),
+    total_token_count: v.number(),
+    request_count: v.number(),
+    last_request_at: v.number(),
+    // Minute window to enforce per-minute caps without separate table
+    minute_window_start: v.optional(v.number()),
+    minute_token_count: v.optional(v.number()),
+    created_at: v.number(),
+    updated_at: v.number(),
+  })
+    .index("by_user_and_date", ["user_id", "date_key"]) // aggregate per user per day
+    .index("by_user_date_provider_model", ["user_id", "date_key", "provider", "model"]) // fast lookup
+    .index("by_provider_and_date", ["provider", "date_key"]) // aggregate per provider per day
+    .index("by_user_and_updated_at", ["user_id", "updated_at"]),
 });

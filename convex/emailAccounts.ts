@@ -851,6 +851,22 @@ export const sendEmail = action({
       if (args.bcc && args.bcc.length > 0)
         headers.push({ name: "Bcc", value: args.bcc.join(", ") });
 
+      // Increment Gmail API usage when using Gmail provider
+      if (account.provider === "gmail") {
+        try {
+          await ctx.runMutation(api.apiUsage.incrementEmailApiUsage as any, {
+            provider: "gmail",
+            method: "messages.send",
+            user_id: resolvedUserId || account.user_id,
+            enforce: true,
+          });
+        } catch (e) {
+          throw new Error(
+            `Gmail rate/usage limit reached: ${e instanceof Error ? e.message : String(e)}`
+          );
+        }
+      }
+
       const emailId: unknown = await resend.sendEmail(
         ctx as any,
         {

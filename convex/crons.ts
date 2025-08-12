@@ -49,3 +49,11 @@ crons.interval(
   { minutes: 5 },
   internal.workflows.resumeStuckRuns
 );
+
+// Drive due time scheduler tasks periodically as a safety net.
+// [Explanation], basically in case a deploy interrupted a scheduled runAfter, we re-check due tasks.
+crons.interval(
+  "Drive due time schedules",
+  { minutes: 2 },
+  internal.scheduleTime.fireDueSchedules
+);
