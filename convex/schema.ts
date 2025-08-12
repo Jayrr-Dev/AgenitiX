@@ -169,32 +169,6 @@ export default defineSchema({
     .index("by_created_at", ["created_at"])
     .index("by_user_and_strategy", ["user_id", "reply_strategy"]),
 
-  // Workflow Domain
-  workflow_runs: defineTable({
-    user_id: v.id("users"),
-    workflow_name: v.string(),
-    status: v.union(
-      v.literal("running"),
-      v.literal("completed"),
-      v.literal("failed"),
-      v.literal("cancelled")
-    ),
-    nodes_executed: v.number(),
-    total_nodes: v.number(),
-    started_at: v.number(),
-    completed_at: v.optional(v.number()),
-    error_message: v.optional(v.string()),
-    execution_data: v.optional(v.any()), // Workflow state and results
-    // Runner control and resilience fields
-    step_cursor: v.optional(v.number()), // [Explanation], basically pointer to current step/state
-    attempt: v.optional(v.number()), // [Explanation], basically retry counter for the last failure
-    lease_until: v.optional(v.number()), // [Explanation], basically soft lock to avoid double-processing
-    cancelled: v.optional(v.boolean()), // [Explanation], basically cooperative cancellation flag
-    next_run_at: v.optional(v.number()), // [Explanation], basically hint for delayed scheduling
-  })
-    .index("by_user_id", ["user_id"])
-    .index("by_status", ["status"])
-    .index("by_started_at", ["started_at"]),
 
   flow_nodes: defineTable({
     user_id: v.id("users"),
