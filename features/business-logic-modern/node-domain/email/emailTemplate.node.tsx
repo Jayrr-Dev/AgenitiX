@@ -330,9 +330,9 @@ export const spec: NodeSpec = createDynamicSpec({
 // -----------------------------------------------------------------------------
 
 const EmailTemplateNode = memo(
-  ({ id, spec }: NodeProps & { spec: NodeSpec }) => {
+  ({ id, data, spec }: NodeProps & { spec: NodeSpec }) => {
     // -------------------------------------------------------------------------
-    const { nodeData, updateNodeData } = useNodeData(id, {});
+    const { nodeData, updateNodeData } = useNodeData(id, data);
     const { user } = useAuth();
 
     // -------------------------------------------------------------------------
@@ -421,14 +421,14 @@ const EmailTemplateNode = memo(
 
     /** Compile template with preview data */
     const compileTemplate = useCallback(() => {
-      let compiledSubject = subject;
-      let compiledHtml = htmlContent;
-      let compiledText = textContent;
+      let compiledSubject = subject || "";
+      let compiledHtml = htmlContent || "";
+      let compiledText = textContent || "";
 
       // Replace variables with preview data
-      variables.forEach((variable) => {
+      (variables || []).forEach((variable) => {
         const value =
-          previewData[variable.name] ||
+          (previewData || {})[variable.name] ||
           variable.defaultValue ||
           `{{${variable.name}}}`;
         const regex = new RegExp(`\\{\\{${variable.name}\\}\\}`, "g");
@@ -444,7 +444,7 @@ const EmailTemplateNode = memo(
         text: compiledText,
         variables: previewData,
       };
-    }, [subject, htmlContent, textContent, variables, previewData]);
+    }, [subject || "", htmlContent || "", textContent || "", variables || [], previewData || {}]);
 
     /** Save template */
     const handleSaveTemplate = useCallback(async () => {
@@ -453,7 +453,7 @@ const EmailTemplateNode = memo(
         return;
       }
 
-      if (!templateName.trim()) {
+      if (!templateName || !templateName.trim()) {
         toast.error("Template name is required");
         return;
       }
@@ -463,35 +463,35 @@ const EmailTemplateNode = memo(
 
         const templateData = {
           name: templateName,
-          category: category,
-          subject_template: subject,
-          content_template: htmlContent || textContent,
-          variables: variables.map((v) => v.name),
-          description: templateDescription,
+          category: category || "general",
+          subject_template: subject || "",
+          content_template: htmlContent || textContent || "",
+          variables: (variables || []).map((v) => v.name || ""),
+          description: templateDescription || "",
         };
 
         const result = await saveTemplateMutation({
           name: templateName,
-          subject: subject,
-          body: htmlContent || textContent,
-          category: category,
-          description: templateDescription,
-          variables: variables.map((v) => v.name),
+          subject: subject || "",
+          body: htmlContent || textContent || "",
+          category: category || "general",
+          description: templateDescription || "",
+          variables: (variables || []).map((v) => v.name || ""),
         });
 
         if (result.success) {
           // Create structured output
           const formattedOutput = {
             "📄 Template Saved": {
-              "Template Name": templateName,
-              Category: category,
-              Subject: subject,
+              "Template Name": templateName || "",
+              Category: category || "general",
+              Subject: subject || "",
               Variables:
-                variables.length > 0
-                  ? variables.map((v) => v.name).join(", ")
+                (variables || []).length > 0
+                  ? (variables || []).map((v) => v.name || "").join(", ")
                   : "None",
-              "Content Type": htmlContent ? "HTML + Text" : "Text Only",
-              "Content Length": `${(htmlContent || textContent).length} characters`,
+              "Content Type": (htmlContent || textContent) ? "HTML + Text" : "Text Only",
+              "Content Length": `${(htmlContent || textContent || "").length} characters`,
               "Template ID": result.templateId,
               "✅ Status": result.isUpdate ? "Updated" : "Created",
               "⏰ Saved At": new Date().toLocaleString(),
@@ -541,7 +541,7 @@ const EmailTemplateNode = memo(
 
     /** Update output when template changes */
     useEffect(() => {
-      if (isEnabled && templateName) {
+      if (isEnabled && templateName && templateName.trim()) {
         const compiled = compileTemplate();
         updateNodeData({
           compiledTemplate: compiled,
@@ -569,8 +569,8 @@ const EmailTemplateNode = memo(
       subject,
       htmlContent,
       textContent,
-      variables,
-      previewData,
+      variables || [],
+      previewData || {},
       templateId,
       compileTemplate,
       updateNodeData,
@@ -578,15 +578,15 @@ const EmailTemplateNode = memo(
 
     /** Update structured output for viewText nodes */
     useEffect(() => {
-      if (templateName && isEnabled) {
+      if (templateName && templateName.trim() && isEnabled) {
         const formattedOutput = {
           "📄 Email Template": {
-            "Template Name": templateName,
+            "Template Name": templateName || "",
             Category: category || "general",
             Subject: subject || "(No subject)",
             Variables:
-              variables.length > 0
-                ? variables.map((v) => v.name).join(", ")
+              (variables || []).length > 0
+                ? (variables || []).map((v) => v.name).join(", ")
                 : "None",
             "Content Type": htmlContent
               ? "HTML + Text"
@@ -613,7 +613,7 @@ const EmailTemplateNode = memo(
       templateName,
       category,
       subject,
-      variables,
+      variables || [],
       htmlContent,
       textContent,
       isActive,
@@ -671,7 +671,7 @@ const EmailTemplateNode = memo(
                   <input
                     id={`template-name-${id}`}
                     type="text"
-                    value={templateName}
+                    value={templateName || ""}
                     onChange={(e) =>
                       updateNodeData({ templateName: e.target.value })
                     }
@@ -690,7 +690,7 @@ const EmailTemplateNode = memo(
                   </label>
                   <select
                     id={`template-category-${id}`}
-                    value={category}
+                    value={category || "general"}
                     onChange={(e) =>
                       updateNodeData({ category: e.target.value })
                     }
@@ -715,7 +715,7 @@ const EmailTemplateNode = memo(
                   <input
                     id={`template-subject-${id}`}
                     type="text"
-                    value={subject}
+                    value={subject || ""}
                     onChange={(e) =>
                       updateNodeData({ subject: e.target.value })
                     }
@@ -737,7 +737,7 @@ const EmailTemplateNode = memo(
                   </label>
                   <textarea
                     id={`template-html-${id}`}
-                    value={htmlContent}
+                    value={htmlContent || ""}
                     onChange={(e) =>
                       updateNodeData({ htmlContent: e.target.value })
                     }
@@ -755,7 +755,7 @@ const EmailTemplateNode = memo(
                   </label>
                   <textarea
                     id={`template-text-${id}`}
-                    value={textContent}
+                    value={textContent || ""}
                     onChange={(e) =>
                       updateNodeData({ textContent: e.target.value })
                     }
@@ -767,7 +767,7 @@ const EmailTemplateNode = memo(
               </div>
 
               {/* Preview */}
-              {showPreview && templateName && (
+              {showPreview && templateName && templateName.trim() && (
                 <div className="p-2 bg-gray-50 dark:bg-gray-800 rounded border">
                   <div className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Preview
@@ -793,7 +793,7 @@ const EmailTemplateNode = memo(
                 <button
                   onClick={handleSaveTemplate}
                   className="flex-1 px-2 py-1 text-xs bg-green-500 text-white rounded hover:bg-green-600 disabled:opacity-50"
-                  disabled={!isEnabled || isSaving || !templateName.trim()}
+                  disabled={!isEnabled || isSaving || !templateName || !templateName.trim()}
                 >
                   {isSaving ? "Saving..." : "Save Template"}
                 </button>
@@ -831,7 +831,7 @@ const EmailTemplateNode = memo(
                 Template
               </div>
               <div className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[100px]">
-                {templateName || "Untitled"}
+                {templateName?.trim() || "Untitled"}
               </div>
               {isActive && (
                 <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
@@ -853,7 +853,7 @@ EmailTemplateNode.displayName = "EmailTemplateNode";
 // -----------------------------------------------------------------------------
 
 const EmailTemplateNodeWithDynamicSpec = (props: NodeProps) => {
-  const { nodeData } = useNodeData(props.id, {});
+  const { nodeData } = useNodeData(props.id, props.data);
 
   const dynamicSpec = useMemo(
     () => createDynamicSpec(nodeData as EmailTemplateData),
@@ -875,4 +875,4 @@ const EmailTemplateNodeWithDynamicSpec = (props: NodeProps) => {
   return <ScaffoldedNode {...props} />;
 };
 
-export default EmailTemplateNodeWithDynamicSpec;
+export default EmailTemplateNodeWithDynamicS
