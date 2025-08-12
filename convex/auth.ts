@@ -23,6 +23,11 @@ if (process.env.NODE_ENV === "development") {
   // Silent environment debugging
 }
 
+// Top-level auth constants, basically single source of truth for provider config
+const RESEND_FROM_EMAIL =
+  process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev"; // [Explanation], basically default sender email for magic links
+const AUTH_RESEND_KEY = process.env.AUTH_RESEND_KEY || ""; // [Explanation], basically Resend API key used by Auth.js provider
+
 export const {
   auth,
   signIn,
@@ -34,7 +39,11 @@ export const {
     GitHub,
     Google,
     Password, // Keep for backwards compatibility
-    Resend, // Standard Auth.js email provider for magic links
+    // Configure Resend provider explicitly, basically required options to avoid 400s from /api/auth
+    Resend({
+      from: RESEND_FROM_EMAIL, // [Explanation], basically the From header for magic link emails
+      apiKey: AUTH_RESEND_KEY, // [Explanation], basically Resend API key for sending emails
+    }),
   ],
   callbacks: {
     async afterUserCreatedOrUpdated(ctx, args) {
