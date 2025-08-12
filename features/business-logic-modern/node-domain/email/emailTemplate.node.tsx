@@ -427,6 +427,7 @@ const EmailTemplateNode = memo(
 
       // Replace variables with preview data
       (variables || []).forEach((variable) => {
+        if (!variable || !variable.name) return;
         const value =
           (previewData || {})[variable.name] ||
           variable.defaultValue ||
@@ -466,7 +467,7 @@ const EmailTemplateNode = memo(
           category: category || "general",
           subject_template: subject || "",
           content_template: htmlContent || textContent || "",
-          variables: (variables || []).map((v) => v.name || ""),
+          variables: (variables || []).map((v) => v?.name || "").filter(Boolean),
           description: templateDescription || "",
         };
 
@@ -476,7 +477,7 @@ const EmailTemplateNode = memo(
           body: htmlContent || textContent || "",
           category: category || "general",
           description: templateDescription || "",
-          variables: (variables || []).map((v) => v.name || ""),
+          variables: (variables || []).map((v) => v?.name || "").filter(Boolean),
         });
 
         if (result.success) {
@@ -488,7 +489,7 @@ const EmailTemplateNode = memo(
               Subject: subject || "",
               Variables:
                 (variables || []).length > 0
-                  ? (variables || []).map((v) => v.name || "").join(", ")
+                  ? (variables || []).map((v) => v?.name || "").filter(Boolean).join(", ")
                   : "None",
               "Content Type": (htmlContent || textContent) ? "HTML + Text" : "Text Only",
               "Content Length": `${(htmlContent || textContent || "").length} characters`,
@@ -586,7 +587,7 @@ const EmailTemplateNode = memo(
             Subject: subject || "(No subject)",
             Variables:
               (variables || []).length > 0
-                ? (variables || []).map((v) => v.name).join(", ")
+                ? (variables || []).map((v) => v.name || "").join(", ")
                 : "None",
             "Content Type": htmlContent
               ? "HTML + Text"
@@ -875,4 +876,4 @@ const EmailTemplateNodeWithDynamicSpec = (props: NodeProps) => {
   return <ScaffoldedNode {...props} />;
 };
 
-export default EmailTemplateNodeWithDynamicS
+export default EmailTemplateNodeWithDynamicSpec;
