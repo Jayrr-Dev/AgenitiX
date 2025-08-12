@@ -12,7 +12,7 @@
 "use node";
 
 import { v } from "convex/values";
-import { internal } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 import { internalAction, mutation, query } from "./_generated/server";
 
 const MAX_ATTEMPTS = 5 as const;
@@ -203,32 +203,111 @@ export const resumeStuckRuns = internalAction({
 // Domain step executor (replace contents to call your AI/email nodes)
 // ----------------------------------------------------------------------------
 
-type StepResult = {
+type StepResult<
+  TExecution = unknown,
+  TCursor extends number | null = number | null,
+> = {
   done: boolean;
   updated: {
     nodes_executed: number;
     total_nodes: number;
-    execution_data: any;
-    step_cursor: any;
+    execution_data: TExecution;
+    step_cursor: TCursor;
     next_run_at?: number;
   };
 };
 
 async function performStep(
   _ctx: Parameters<typeof executeNextStep.handler>[0],
-  run: any
+  run: {
+    nodes_executed: number;
+    total_nodes: number;
+    execution_data: unknown;
+  }
 ): Promise<StepResult> {
-  // [Explanation], basically placeholder that advances once and completes
-  const nodesExecuted = (run.nodes_executed ?? 0) + 1;
-  const totalNodes = Math.max(run.total_nodes ?? 1, nodesExecuted);
+  // [Explanation], basically safely parse execution data
+  const exec = (run.execution_data as {
+    steps?: Array<
+      | { type: "ai"; prompt: string; threadId?: string; agentConfig?: any }
+      | { type: "delay"; ms: number }
+    >;
+    results?: unknown[];
+  }) || { steps: [], results: [] };
 
+  const cursor = (run as any).step_cursor ?? 0;
+  const steps = exec.steps ?? [];
+  const results = Array.isArray(exec.results) ? exec.results : [];
+
+  if (cursor >= steps.length) {
+    return {
+      done: true,
+      updated: {
+        nodes_executed: run.nodes_executed,
+        total_nodes: steps.length,
+        execution_data: { steps, results },
+        step_cursor: cursor,
+      },
+    };
+  }
+
+  const step = steps[cursor];
+
+  // Handle delay step
+  if (step && (step as any).type === "delay") {
+    const ms = Math.max(0, Number((step as any).ms) || 0);
+    return {
+      done: false,
+      updated: {
+        nodes_executed: run.nodes_executed,
+        total_nodes: steps.length,
+        execution_data: { steps, results },
+        step_cursor: cursor + 1,
+        next_run_at: Date.now() + ms,
+      },
+    };
+  }
+
+  // Handle AI step using existing action
+  if (step && (step as any).type === "ai") {
+    // Note: Use internal call to public action to preserve auth and node runtime
+    const s = step as {
+      type: "ai";
+      prompt: string;
+      threadId?: string;
+      agentConfig?: any;
+    };
+    const res = await _ctx.runAction(api.aiAgent.processUserMessage, {
+      threadId: s.threadId ?? "",
+      userInput: s.prompt,
+      agentConfig: s.agentConfig ?? {
+        selectedProvider: "openai",
+        selectedModel: "gpt-4o-mini",
+        systemPrompt: "",
+        maxSteps: 1,
+        temperature: 0.2,
+      },
+    });
+
+    const newResults = results.concat({ ai: res });
+    return {
+      done: cursor + 1 >= steps.length,
+      updated: {
+        nodes_executed: run.nodes_executed + 1,
+        total_nodes: steps.length,
+        execution_data: { steps, results: newResults },
+        step_cursor: cursor + 1,
+      },
+    };
+  }
+
+  // Fallback: skip unknown step
   return {
-    done: nodesExecuted >= totalNodes,
+    done: false,
     updated: {
-      nodes_executed: nodesExecuted,
-      total_nodes: totalNodes,
-      execution_data: run.execution_data ?? {},
-      step_cursor: null,
+      nodes_executed: run.nodes_executed + 1,
+      total_nodes: steps.length,
+      execution_data: { steps, results },
+      step_cursor: cursor + 1,
     },
   };
 }
