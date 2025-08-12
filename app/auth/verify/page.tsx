@@ -155,12 +155,12 @@ export default function VerifyMagicLinkPage() {
 	const content = getStatusContent();
 
 	return (
-		<div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12 sm:px-6 lg:px-8">
+		<div className="flex min-h-screen items-center justify-center bg-background px-4 py-12 sm:px-6 lg:px-8">
 			<div className="w-full max-w-md space-y-8">
 				{/* Logo */}
 				<div className="text-center">
-					<h1 className="mb-2 font-bold text-3xl text-gray-900">AgenitiX</h1>
-					<p className="text-gray-600">Visual Flow Automation Platform</p>
+					<h1 className="mb-2 font-bold text-3xl text-foreground">AgenitiX</h1>
+					<p className="text-muted-foreground">Visual Flow Automation Platform</p>
 				</div>
 
 				{/* Status Card */}
@@ -182,10 +182,10 @@ export default function VerifyMagicLinkPage() {
 								</Link>
 
 								<div className="space-y-2 text-center">
-									<Link href="/sign-up" className="block text-gray-600 text-sm hover:text-gray-800">
+									<Link href="/sign-up" className="block text-muted-foreground text-sm hover:text-foreground">
 										Don't have an account? Sign up
 									</Link>
-									<Link href="/" className="block text-blue-600 text-sm hover:text-blue-500">
+									<Link href="/" className="block text-primary text-sm hover:text-primary/80">
 										← Back to Home
 									</Link>
 								</div>
@@ -195,9 +195,9 @@ export default function VerifyMagicLinkPage() {
 				</Card>
 
 				{/* Help text */}
-				<div className="text-center text-gray-500 text-xs">
+				<div className="text-center text-muted-foreground text-xs">
 					Having trouble? Contact support at{" "}
-					<a href="mailto:support@agenitix.com" className="underline hover:text-gray-700">
+					<a href="mailto:support@agenitix.com" className="underline hover:text-foreground">
 						support@agenitix.com
 					</a>
 				</div>
