@@ -39,7 +39,6 @@ import {
 } from "react-icons/lu";
 import { VscJson } from "react-icons/vsc";
 import { toast } from "sonner";
-import type { JsonShapeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
 import { getNodeSpecMetadata } from "@/features/business-logic-modern/infrastructure/node-registry/nodespec-registry";
 import { useNodeToast as usePerNodeToast } from "@/hooks/useNodeToast";
 // Auto-generated at build time (can be empty in dev before first build)
@@ -943,8 +942,6 @@ const UltimateTypesafeHandle: React.FC<UltimateTypesafeHandleProps> = memo(
     handleIndex = 0,
     totalHandlesOnSide = 1,
     customTooltip,
-    jsonShape,
-    acceptAnyJson,
     jsonShape,
     acceptAnyJson,
     ...props
