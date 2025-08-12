@@ -56,7 +56,7 @@ export const TriggerWebhookDataSchema = z
         // Webhook Configuration
         httpMethod: z.enum(["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD"]).default("POST"),
         webhookPath: z.string().default(""),
-        
+
         // Authentication
         authType: z.enum(["none", "basic", "header", "jwt"]).default("none"),
         authConfig: z.object({
@@ -66,12 +66,12 @@ export const TriggerWebhookDataSchema = z
             headerValue: z.string().default(""),
             jwtSecret: z.string().default(""),
         }).default({}),
-        
+
         // Response Configuration
         respondMode: z.enum(["immediately", "lastNode", "respondNode"]).default("immediately"),
         responseCode: z.number().min(100).max(599).default(200),
         responseData: z.enum(["allEntries", "firstJSON", "firstBinary", "noBody"]).default("firstJSON"),
-        
+
         // Advanced Options
         allowedOrigins: z.string().default("*"), // CORS
         ipWhitelist: z.string().default(""), // Comma-separated IPs
@@ -79,21 +79,21 @@ export const TriggerWebhookDataSchema = z
         binaryProperty: z.string().default(""),
         rawBody: z.boolean().default(false),
         responseHeaders: z.string().default(""), // JSON string of headers
-        
+
         // Webhook State
         isActive: z.boolean().default(false),
         webhookUrl: z.string().default(""),
         lastRequestTime: z.number().nullable().default(null),
         requestCount: z.number().default(0),
         lastRequestData: z.any().nullable().default(null),
-        
+
         // Node State
         isEnabled: SafeSchemas.boolean(true),
         isExpanded: SafeSchemas.boolean(false),
         expandedSize: SafeSchemas.text("VE3"),
         collapsedSize: SafeSchemas.text("C2"),
         label: z.string().optional(),
-        
+
         // Legacy fields for compatibility
         store: SafeSchemas.text(""),
         inputs: SafeSchemas.optionalText().nullable().default(null),
@@ -341,10 +341,10 @@ const TriggerWebhookNode = memo(
         const [localIpWhitelist, setLocalIpWhitelist] = useState(ipWhitelist);
         const [localBinaryProperty, setLocalBinaryProperty] = useState(binaryProperty);
         const [localResponseHeaders, setLocalResponseHeaders] = useState(responseHeaders);
-        
+
         // Auth config local state
         const [localAuthConfig, setLocalAuthConfig] = useState(authConfig);
-        
+
         // Ref to track if we're currently editing
         const isEditingRef = useRef(false);
 
@@ -368,24 +368,24 @@ const TriggerWebhookNode = memo(
                     body: JSON.stringify({
                         config: {
                             httpMethod: method,
-                            authType,
-                            authConfig,
-                            allowedOrigins,
-                            ipWhitelist,
-                            ignoreBots,
-                            respondMode,
-                            responseCode,
-                            responseData,
-                            responseHeaders,
+                            authType: authType || "none",
+                            authConfig: authConfig || {},
+                            allowedOrigins: allowedOrigins || "*",
+                            ipWhitelist: ipWhitelist || "",
+                            ignoreBots: ignoreBots || false,
+                            respondMode: respondMode || "immediately",
+                            responseCode: responseCode || 200,
+                            responseData: responseData || "firstJSON",
+                            responseHeaders: responseHeaders || "",
                             nodeId: id,
                         },
                     }),
                 });
-                
+
                 if (!response.ok) {
                     throw new Error(`Failed to register webhook: ${response.statusText}`);
                 }
-                
+
                 console.log('✅ Webhook registered with backend');
                 return true;
             } catch (error) {
@@ -405,11 +405,11 @@ const TriggerWebhookNode = memo(
                         config: { httpMethod: method },
                     }),
                 });
-                
+
                 if (!response.ok) {
                     throw new Error(`Failed to unregister webhook: ${response.statusText}`);
                 }
-                
+
                 console.log('✅ Webhook unregistered from backend');
                 return true;
             } catch (error) {
@@ -424,11 +424,11 @@ const TriggerWebhookNode = memo(
                 const response = await fetch(`/api/webhook${path}?action=getStats&method=${method}`, {
                     method: 'PATCH',
                 });
-                
+
                 if (!response.ok) {
                     throw new Error(`Failed to get stats: ${response.statusText}`);
                 }
-                
+
                 const data = await response.json();
                 if (data.success && data.stats) {
                     updateNodeData({
@@ -454,14 +454,14 @@ const TriggerWebhookNode = memo(
         const generateUrl = useCallback(() => {
             const newPath = generateRandomPath();
             const newUrl = generateWebhookUrl(newPath);
-            
+
             // Update both local state and node data immediately
             setLocalWebhookPath(newPath);
             updateNodeData({
                 webhookPath: newPath,
                 webhookUrl: newUrl,
             });
-            
+
             toast.success("New webhook URL generated!");
         }, [updateNodeData]);
 
@@ -472,13 +472,13 @@ const TriggerWebhookNode = memo(
                 pathToUse = generateRandomPath();
                 setLocalWebhookPath(pathToUse);
             }
-            
+
             // Ensure we have a valid HTTP method
             const methodToUse = httpMethod || "POST";
-            
+
             // Register with backend first
             const success = await registerWebhookWithBackend(pathToUse, methodToUse);
-            
+
             if (success) {
                 updateNodeData({
                     isActive: true,
@@ -486,7 +486,7 @@ const TriggerWebhookNode = memo(
                     webhookUrl: generateWebhookUrl(pathToUse),
                     httpMethod: methodToUse, // Ensure method is set
                 });
-                
+
                 toast.success(`Webhook activated! Listening on ${methodToUse} ${pathToUse}`);
             } else {
                 toast.error("Failed to activate webhook");
@@ -497,11 +497,11 @@ const TriggerWebhookNode = memo(
         const deactivateWebhook = useCallback(async () => {
             // Unregister from backend first
             const success = await unregisterWebhookFromBackend(webhookPath, httpMethod);
-            
+
             updateNodeData({
                 isActive: false,
             });
-            
+
             if (success) {
                 toast.info("Webhook deactivated");
             } else {
@@ -517,13 +517,13 @@ const TriggerWebhookNode = memo(
                 lastRequestTime: null,
                 lastRequestData: null,
             });
-            
+
             // If webhook is active, re-register to reset backend stats
             if (isActive && webhookPath) {
                 await unregisterWebhookFromBackend(webhookPath, httpMethod);
                 await registerWebhookWithBackend(webhookPath, httpMethod);
             }
-            
+
             toast.success("Webhook statistics cleared");
         }, [isActive, webhookPath, httpMethod, updateNodeData, unregisterWebhookFromBackend, registerWebhookWithBackend]);
 
@@ -610,8 +610,8 @@ const TriggerWebhookNode = memo(
             "TriggerWebhook",
             validation.data,
             id,
-        );        
-// -------------------------------------------------------------------------
+        );
+        // -------------------------------------------------------------------------
         // 4.8  Feature flag conditional rendering
         // -------------------------------------------------------------------------
 
@@ -649,7 +649,7 @@ const TriggerWebhookNode = memo(
         // 4.9  Computed display values
         // -------------------------------------------------------------------------
         const displayUrl = webhookUrl || generateWebhookUrl(webhookPath || "/webhook");
-        const lastRequestDisplay = lastRequestTime 
+        const lastRequestDisplay = lastRequestTime
             ? new Date(lastRequestTime).toLocaleString()
             : "Never";
 
@@ -917,14 +917,14 @@ const TriggerWebhookNode = memo(
                                             </span>
                                         </div>
                                     </div>
-                                    
+
                                     <div className="flex items-center justify-between">
                                         <span className="text-[8px] font-medium text-purple-600 dark:text-purple-400">Requests:</span>
                                         <span className="text-[8px] font-medium text-slate-600 dark:text-slate-300">
                                             {formatRequestCount(requestCount)}
                                         </span>
                                     </div>
-                                    
+
                                     <div className="flex items-center justify-between">
                                         <span className="text-[8px] font-medium text-purple-600 dark:text-purple-400">Last Request:</span>
                                         <span className="text-[8px] font-medium text-slate-600 dark:text-slate-300">
@@ -943,7 +943,7 @@ const TriggerWebhookNode = memo(
                                 >
                                     {isActive ? "Deactivate" : "Activate"}
                                 </button>
-                                
+
                                 <button
                                     className={CONTENT.buttonSecondary}
                                     onClick={clearStats}
@@ -951,7 +951,7 @@ const TriggerWebhookNode = memo(
                                 >
                                     Clear Stats
                                 </button>
-                                
+
                                 {isActive && (
                                     <button
                                         className={CONTENT.buttonSecondary}
@@ -960,11 +960,11 @@ const TriggerWebhookNode = memo(
                                                 const response = await fetch(displayUrl, {
                                                     method: httpMethod,
                                                     headers: { 'Content-Type': 'application/json' },
-                                                    body: httpMethod !== 'GET' && httpMethod !== 'HEAD' 
+                                                    body: httpMethod !== 'GET' && httpMethod !== 'HEAD'
                                                         ? JSON.stringify({ test: true, timestamp: new Date().toISOString() })
                                                         : undefined,
                                                 });
-                                                
+
                                                 if (response.ok) {
                                                     toast.success("Test request sent successfully!");
                                                 } else {

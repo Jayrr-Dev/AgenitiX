@@ -20,8 +20,8 @@ const corsHeaders = {
 };
 
 // Helper to validate IP whitelist
-function isIpAllowed(clientIp: string, whitelist: string): boolean {
-    if (!whitelist.trim()) return true; // Empty whitelist allows all
+function isIpAllowed(clientIp: string, whitelist: string | undefined): boolean {
+    if (!whitelist || !whitelist.trim()) return true; // Empty whitelist allows all
 
     const allowedIps = whitelist.split(',').map(ip => ip.trim());
     return allowedIps.includes('*') || allowedIps.includes(clientIp);
@@ -34,6 +34,8 @@ function validateAuth(request: NextRequest, authType: string, authConfig: any): 
             return true;
 
         case 'basic':
+            if (!authConfig || !authConfig.username || !authConfig.password) return false;
+            
             const authHeader = request.headers.get('authorization');
             if (!authHeader?.startsWith('Basic ')) return false;
 
@@ -43,10 +45,14 @@ function validateAuth(request: NextRequest, authType: string, authConfig: any): 
             return username === authConfig.username && password === authConfig.password;
 
         case 'header':
+            if (!authConfig || !authConfig.headerName || !authConfig.headerValue) return false;
+            
             const headerValue = request.headers.get(authConfig.headerName);
             return headerValue === authConfig.headerValue;
 
         case 'jwt':
+            if (!authConfig || !authConfig.jwtSecret) return false;
+            
             // Simplified JWT validation - in production use proper JWT library
             const jwtHeader = request.headers.get('authorization');
             return jwtHeader?.includes(authConfig.jwtSecret) || false;
