@@ -23,7 +23,9 @@ import { z } from "zod";
 
 import { ExpandCollapseButton } from "@/components/nodes/ExpandCollapseButton";
 import LabelNode from "@/components/nodes/labelNode";
+import { findEdgesByHandle } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/edgeUtils";
 import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
+import { normalizeHandleId } from "@/features/business-logic-modern/infrastructure/node-core/handleOutputUtils";
 import {
   SafeSchemas,
   createSafeInitialData,
@@ -40,10 +42,12 @@ import {
   EXPANDED_SIZES,
 } from "@/features/business-logic-modern/infrastructure/theming/sizing";
 import { useNodeData } from "@/hooks/useNodeData";
-import { useStore } from "@xyflow/react";
+import { useReactFlow, useStore } from "@xyflow/react";
+import { getEmailReaderMessagesForNode } from "./stores/use-email-reader-outputs";
 
-import { useAuthContext } from "@/components/auth/AuthProvider";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { api } from "@/convex/_generated/api";
+import { useFlowMetadataOptional } from "@/features/business-logic-modern/infrastructure/flow-engine/contexts/flow-metadata-context";
 // Convex integration
 import { useQuery } from "convex/react";
 import { toast } from "sonner";
@@ -185,6 +189,18 @@ function createDynamicSpec(data: EmailReplierData): NodeSpec {
     COLLAPSED_SIZES[data.collapsedSize as keyof typeof COLLAPSED_SIZES] ??
     COLLAPSED_SIZES.C2;
 
+  /**
+   * HANDLE_TOOLTIPS – ultra‑concise labels for handles
+   * [Explanation], basically 1–3 word hints shown before dynamic value/type
+   */
+  const HANDLE_TOOLTIPS = {
+    MESSAGES_IN: "Messages",
+    TEMPLATE_IN: "Template",
+    MESSAGE_OUT: "Message",
+    STATUS_OUT: "Status",
+    OUTPUTS_OUT: "Outputs",
+  } as const;
+
   return {
     kind: "emailReplier",
     displayName: "Email Replier",
@@ -198,6 +214,7 @@ function createDynamicSpec(data: EmailReplierData): NodeSpec {
         position: "top",
         type: "target",
         dataType: "Array",
+        tooltip: HANDLE_TOOLTIPS.MESSAGES_IN,
       },
       {
         id: "template-input",
@@ -205,6 +222,7 @@ function createDynamicSpec(data: EmailReplierData): NodeSpec {
         position: "left",
         type: "target",
         dataType: "String",
+        tooltip: HANDLE_TOOLTIPS.TEMPLATE_IN,
       },
       {
         id: "message-output",
@@ -212,6 +230,7 @@ function createDynamicSpec(data: EmailReplierData): NodeSpec {
         position: "right",
         type: "source",
         dataType: "JSON",
+        tooltip: HANDLE_TOOLTIPS.MESSAGE_OUT,
       },
       {
         id: "status-output",
@@ -219,6 +238,7 @@ function createDynamicSpec(data: EmailReplierData): NodeSpec {
         position: "bottom",
         type: "source",
         dataType: "Boolean",
+        tooltip: HANDLE_TOOLTIPS.STATUS_OUT,
       },
       {
         id: "outputs",
@@ -226,6 +246,7 @@ function createDynamicSpec(data: EmailReplierData): NodeSpec {
         position: "right",
         type: "source",
         dataType: "String",
+        tooltip: HANDLE_TOOLTIPS.OUTPUTS_OUT,
       },
     ],
     inspector: { key: "EmailReplierInspector" },
@@ -357,7 +378,9 @@ const EmailReplierNode = memo(
   ({ id, spec }: NodeProps & { spec: NodeSpec }) => {
     // -------------------------------------------------------------------------
     const { nodeData, updateNodeData } = useNodeData(id, {});
-    const { token } = useAuthContext();
+    const { authToken: token } = useAuth();
+    const flowMetadata = useFlowMetadataOptional();
+    const flowId = String(flowMetadata?.flow?.id ?? "");
 
     // -------------------------------------------------------------------------
     // STATE MANAGEMENT (grouped for clarity)
@@ -400,9 +423,18 @@ const EmailReplierNode = memo(
 
     const categoryStyles = CATEGORY_TEXT.EMAIL;
 
-    // Global React‑Flow store (nodes & edges) – triggers re‑render on change
-    const _nodes = useStore((s) => s.nodes);
-    const _edges = useStore((s) => s.edges);
+    // Global React‑Flow store – subscribe only to edges relevant to this node
+    const _edges = useStore(
+      (s) => s.edges.filter((e) => e.source === id || e.target === id),
+      (a, b) => {
+        if (a === b) return true;
+        if (a.length !== b.length) return false;
+        const aIds = a.map((e) => e.id).join("|");
+        const bIds = b.map((e) => e.id).join("|");
+        return aIds === bIds;
+      }
+    );
+    const { getNodes } = useReactFlow();
 
     // Keep last emitted output to avoid redundant writes
     const _lastOutputRef = useRef<string | null>(null);
@@ -410,7 +442,10 @@ const EmailReplierNode = memo(
     // -------------------------------------------------------------------------
     // 4.3  Convex integration
     // -------------------------------------------------------------------------
-    const emailTemplates = useQuery(api.emailAccounts.getEmailReplyTemplates);
+    const emailTemplates = useQuery(
+      api.emailAccounts.getEmailReplyTemplates,
+      {}
+    );
 
     // -------------------------------------------------------------------------
     // 4.4  Available templates for selection
@@ -437,29 +472,55 @@ const EmailReplierNode = memo(
       updateNodeData({ isExpanded: !isExpanded });
     }, [isExpanded, updateNodeData]);
 
-    // Detect connection with emailReader and update inputEmails
+    // Detect connection with emailReader and update inputEmails using handle-based outputs
+    const lastEmailsJsonRef = useRef<string>("[]");
     useEffect(() => {
-      const connectedEdges = _edges.filter(
-        (edge) => edge.target === id && edge.targetHandle === "messages-input__m"
-      );
-
-      if (connectedEdges.length > 0) {
-        const sourceEdge = connectedEdges[0];
-        const sourceNode = _nodes.find((node) => node.id === sourceEdge.source);
-
-        if (sourceNode && sourceNode.data?.messages) {
-          // Update inputEmails with data from connected emailReader
-          updateNodeData({ inputEmails: sourceNode.data.messages as any[] });
-
-          // Extract the first email content for processing
-          const firstEmail = sourceNode.data.messages[0];
-          if (firstEmail) {
-            const emailContent = firstEmail?.body || firstEmail?.content || firstEmail?.text || "";
-            updateNodeData({ inputEmail: emailContent });
-          }
+      const incoming = findEdgesByHandle(_edges as any, id, "messages-input");
+      if (!incoming || incoming.length === 0) {
+        if (lastEmailsJsonRef.current !== "[]") {
+          lastEmailsJsonRef.current = "[]";
+          updateNodeData({ inputEmails: [], inputEmail: "" });
         }
+        return;
       }
-    }, [_nodes, _edges, id, updateNodeData]);
+      // Prefer first connected source for now
+      const edge = incoming[0];
+      const sourceNode = (getNodes() as any[]).find(
+        (n) => n.id === edge.source
+      );
+      // Prefer ephemeral outputs store from EmailReader (current flow scope)
+      let next = getEmailReaderMessagesForNode(flowId, edge.source);
+      // Fallback: legacy data paths if any
+      if (!Array.isArray(next) || next.length === 0) {
+        const data = (sourceNode?.data ?? {}) as Record<string, unknown>;
+        let emails: unknown = [];
+        const output = (data.output ?? {}) as Record<string, unknown>;
+        if (edge.sourceHandle) {
+          const h = normalizeHandleId(edge.sourceHandle);
+          emails = output[h] ?? emails;
+        }
+        if (!Array.isArray(emails))
+          emails = output["messages-output"] ?? emails;
+        if (!Array.isArray(emails)) emails = (data as any).messages;
+        if (
+          !Array.isArray(emails) &&
+          typeof (data as any).emailsOutput === "string"
+        ) {
+          try {
+            const parsed = JSON.parse((data as any).emailsOutput as string);
+            if (Array.isArray(parsed)) emails = parsed;
+          } catch {}
+        }
+        next = Array.isArray(emails) ? (emails as any[]) : [];
+      }
+      const nextJson = JSON.stringify(next);
+      if (nextJson !== lastEmailsJsonRef.current) {
+        lastEmailsJsonRef.current = nextJson;
+        const first = next[0] as any;
+        const body = first?.body ?? first?.content ?? first?.text ?? "";
+        updateNodeData({ inputEmails: next as any[], inputEmail: body });
+      }
+    }, [_edges, id, getNodes, updateNodeData]);
 
     /** Handle strategy change */
     const handleStrategyChange = useCallback(
@@ -556,8 +617,8 @@ const EmailReplierNode = memo(
           // Generate structured output
           const outputData = {
             "📧 Email Reply Generated": {
-              "Strategy": replyStrategy || "auto",
-              "Tone": "professional",
+              Strategy: replyStrategy || "auto",
+              Tone: "professional",
               "Reply Length": `${mockReply.length} characters`,
               "✅ Features Applied": {
                 "Reply to All": replyToAll ? "✅" : "❌",
@@ -566,11 +627,12 @@ const EmailReplierNode = memo(
                 "Auto Reply": enableAutoReply ? "✅" : "❌",
               },
               "📊 Processing": {
-                "Input Source": inputEmails?.length > 0 ? "EmailReader" : "Manual",
+                "Input Source":
+                  inputEmails?.length > 0 ? "EmailReader" : "Manual",
                 "Generated At": new Date().toLocaleString(),
-                "Status": "✅ Success (Simulated)",
-              }
-            }
+                Status: "✅ Success (Simulated)",
+              },
+            },
           };
 
           updateNodeData({
@@ -602,24 +664,51 @@ const EmailReplierNode = memo(
           description: error instanceof Error ? error.message : "Unknown error",
         });
       }
-    }, [token, replyStrategy, processedCount, retryCount, replyToAll, includeOriginal, addSignature, enableAutoReply, inputEmails]); // CIRCULAR REFERENCE FIX: Removed updateNodeData from dependencies
+    }, [
+      token,
+      replyStrategy,
+      processedCount,
+      retryCount,
+      replyToAll,
+      includeOriginal,
+      addSignature,
+      enableAutoReply,
+      inputEmails,
+      updateNodeData,
+    ]);
 
     // -------------------------------------------------------------------------
     // 4.6  Effects
     // -------------------------------------------------------------------------
 
-    /** Update output when reply state changes */
+    /** Update output map when reply state changes */
+    const lastOutputRef = useRef<string>("{}");
     useEffect(() => {
-      if (isEnabled && generatedReply) {
-        updateNodeData({
-          isActive: true,
-        });
+      if (
+        isEnabled &&
+        typeof generatedReply === "string" &&
+        generatedReply.length > 0
+      ) {
+        const payload = {
+          reply: generatedReply,
+          metadata: replyMetadata ?? null,
+        };
+        const outputObj: Record<string, unknown> = {
+          "message-output": payload,
+          "status-output": true,
+        };
+        const json = JSON.stringify(outputObj);
+        if (json !== lastOutputRef.current) {
+          lastOutputRef.current = json;
+          updateNodeData({ output: outputObj, isActive: true });
+        }
       } else {
-        updateNodeData({
-          isActive: false,
-        });
+        if (lastOutputRef.current !== "{}") {
+          lastOutputRef.current = "{}";
+          updateNodeData({ output: {}, isActive: false });
+        }
       }
-    }, [isEnabled, generatedReply]); // CIRCULAR REFERENCE FIX: Removed updateNodeData from dependencies
+    }, [isEnabled, generatedReply, replyMetadata, updateNodeData]);
 
     // -------------------------------------------------------------------------
     // 4.7  Validation
@@ -745,46 +834,46 @@ const EmailReplierNode = memo(
               {/* AI Configuration */}
               {(replyStrategy === "ai-generated" ||
                 replyStrategy === "hybrid") && (
-                  <div className="space-y-2">
-                    <div>
-                      <label
-                        htmlFor="ai-model-select"
-                        className="mb-1 block text-gray-600 text-xs"
-                      >
-                        AI Model:
-                      </label>
-                      <select
-                        id="ai-model-select"
-                        value={aiModel}
-                        onChange={handleAIModelChange}
-                        className="w-full rounded border border-gray-300 p-2 text-xs"
-                        disabled={!isEnabled || isProcessing}
-                      >
-                        <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
-                        <option value="gpt-4">GPT-4</option>
-                        <option value="claude-3">Claude 3</option>
-                        <option value="local">Local Model</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label
-                        htmlFor="ai-prompt-textarea"
-                        className="mb-1 block text-gray-600 text-xs"
-                      >
-                        AI Prompt:
-                      </label>
-                      <textarea
-                        id="ai-prompt-textarea"
-                        value={aiPrompt}
-                        onChange={handleAIPromptChange}
-                        placeholder="Enter AI prompt for reply generation..."
-                        className="w-full rounded border border-gray-300 p-2 text-xs resize-none"
-                        rows={2}
-                        disabled={!isEnabled || isProcessing}
-                      />
-                    </div>
+                <div className="space-y-2">
+                  <div>
+                    <label
+                      htmlFor="ai-model-select"
+                      className="mb-1 block text-gray-600 text-xs"
+                    >
+                      AI Model:
+                    </label>
+                    <select
+                      id="ai-model-select"
+                      value={aiModel}
+                      onChange={handleAIModelChange}
+                      className="w-full rounded border border-gray-300 p-2 text-xs"
+                      disabled={!isEnabled || isProcessing}
+                    >
+                      <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+                      <option value="gpt-4">GPT-4</option>
+                      <option value="claude-3">Claude 3</option>
+                      <option value="local">Local Model</option>
+                    </select>
                   </div>
-                )}
+                  <div>
+                    <label
+                      htmlFor="ai-prompt-textarea"
+                      className="mb-1 block text-gray-600 text-xs"
+                    >
+                      AI Prompt:
+                    </label>
+                    <textarea
+                      id="ai-prompt-textarea"
+                      value={aiPrompt}
+                      onChange={handleAIPromptChange}
+                      placeholder="Enter AI prompt for reply generation..."
+                      className="w-full rounded border border-gray-300 p-2 text-xs resize-none"
+                      rows={2}
+                      disabled={!isEnabled || isProcessing}
+                    />
+                  </div>
+                </div>
+              )}
 
               {/* Reply Settings */}
               <div className="flex flex-col gap-2">
@@ -944,12 +1033,14 @@ const EmailReplierNodeWithDynamicSpec = (props: NodeProps) => {
   const { nodeData } = useNodeData(props.id, props.data);
 
   // Recompute spec only when the size keys change
+  const { expandedSize, collapsedSize } = nodeData as EmailReplierData;
   const dynamicSpec = useMemo(
-    () => createDynamicSpec(nodeData as EmailReplierData),
-    [
-      (nodeData as EmailReplierData).expandedSize,
-      (nodeData as EmailReplierData).collapsedSize,
-    ]
+    () =>
+      createDynamicSpec({
+        expandedSize,
+        collapsedSize,
+      } as EmailReplierData),
+    [expandedSize, collapsedSize]
   );
 
   // Memoise the scaffolded component to keep focus

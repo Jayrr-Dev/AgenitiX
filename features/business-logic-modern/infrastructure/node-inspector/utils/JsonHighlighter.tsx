@@ -71,7 +71,7 @@ const JsonValue: React.FC<JsonValueProps> = ({ value, depth, maxDepth }) => {
         <button
           type="button"
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className="text-gray-600 hover:text-gray-800 focus:outline-none dark:text-gray-400 dark:hover:text-gray-200"
+          className="text-gray-600 cursor-row-resize hover:text-gray-800 focus:outline-none dark:text-gray-400 dark:hover:text-gray-200"
         >
           <span className="text-gray-600 dark:text-gray-400">[</span>
           {isCollapsed && (
@@ -112,13 +112,14 @@ const JsonValue: React.FC<JsonValueProps> = ({ value, depth, maxDepth }) => {
       <div className="inline-block">
         <button
           type="button"
+  
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className="text-gray-600 hover:text-gray-800 focus:outline-none dark:text-gray-400 dark:hover:text-gray-200"
+          className="text-gray-600  hover:text-gray-800 cursor-row-resize focus:outline-none dark:text-gray-400 dark:hover:text-gray-200"
         >
           <span className="text-gray-600 dark:text-gray-400">{"{"}</span>
           {isCollapsed && (
-            <span className="ml-1 text-gray-500 dark:text-gray-500">
-              ... {keys.length} properties
+            <span className=" text-gray-500 dark:text-gray-500">
+              ..{keys.length} props
             </span>
           )}
         </button>
@@ -163,7 +164,7 @@ export const JsonHighlighter: React.FC<JsonHighlighterProps> = ({
   className = "",
 }) => {
   return (
-    <div className={`font-mono text-xs leading-relaxed ${className}`}>
+    <div className={`font-mono text-xs leading-2.5 ${className}`}>
       <JsonValue value={data} depth={0} maxDepth={maxDepth} />
     </div>
   );

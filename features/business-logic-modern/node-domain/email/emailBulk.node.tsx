@@ -35,7 +35,7 @@ import {
 import { useNodeData } from "@/hooks/useNodeData";
 import { useStore } from "@xyflow/react";
 
-import { useAuthContext } from "@/components/auth/AuthProvider";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { toast } from "sonner";
 
 // -----------------------------------------------------------------------------
@@ -177,6 +177,17 @@ function createDynamicSpec(data: EmailBulkData): NodeSpec {
     COLLAPSED_SIZES[data.collapsedSize as keyof typeof COLLAPSED_SIZES] ??
     COLLAPSED_SIZES.C2;
 
+  /**
+   * HANDLE_TOOLTIPS – ultra‑concise labels for handles
+   * [Explanation], basically 1–3 word hints shown before dynamic value/type
+   */
+  const HANDLE_TOOLTIPS = {
+    TEMPLATE_IN: "Template",
+    RECIPIENTS_IN: "Recipients",
+    CAMPAIGN_OUT: "Campaign",
+    SUCCESS_OUT: "Success",
+  } as const;
+
   return {
     kind: "emailBulk",
     displayName: "Email Bulk",
@@ -190,6 +201,7 @@ function createDynamicSpec(data: EmailBulkData): NodeSpec {
         position: "left",
         type: "target",
         dataType: "JSON",
+        tooltip: HANDLE_TOOLTIPS.TEMPLATE_IN,
       },
       {
         id: "recipients-input",
@@ -197,6 +209,7 @@ function createDynamicSpec(data: EmailBulkData): NodeSpec {
         position: "top",
         type: "target",
         dataType: "Array",
+        tooltip: HANDLE_TOOLTIPS.RECIPIENTS_IN,
       },
       {
         id: "campaign-output",
@@ -204,6 +217,7 @@ function createDynamicSpec(data: EmailBulkData): NodeSpec {
         position: "right",
         type: "source",
         dataType: "JSON",
+        tooltip: HANDLE_TOOLTIPS.CAMPAIGN_OUT,
       },
       {
         id: "success-output",
@@ -211,6 +225,7 @@ function createDynamicSpec(data: EmailBulkData): NodeSpec {
         position: "bottom",
         type: "source",
         dataType: "Boolean",
+        tooltip: HANDLE_TOOLTIPS.SUCCESS_OUT,
       },
     ],
     inspector: { key: "EmailBulkInspector" },
@@ -340,7 +355,7 @@ export const spec: NodeSpec = createDynamicSpec({
 const EmailBulkNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
   // -------------------------------------------------------------------------
   const { nodeData, updateNodeData } = useNodeData(id, {});
-  const { token } = useAuthContext();
+  const { authToken: token } = useAuth();
 
   // -------------------------------------------------------------------------
   // STATE MANAGEMENT (grouped for clarity)

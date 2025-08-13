@@ -13,7 +13,7 @@
  */
 
 import type { NodeProps } from "@xyflow/react";
-import {
+import React, {
   type ChangeEvent,
   memo,
   useCallback,
@@ -34,6 +34,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/convex/_generated/api";
 import { findEdgeByHandle } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/edgeUtils";
 import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
+import { normalizeHandleId } from "@/features/business-logic-modern/infrastructure/node-core/handleOutputUtils";
 import { renderLucideIcon } from "@/features/business-logic-modern/infrastructure/node-core/iconUtils";
 import { createSafeInitialData } from "@/features/business-logic-modern/infrastructure/node-core/schema-helpers";
 import { useNodeFeatureFlag } from "@/features/business-logic-modern/infrastructure/node-core/useNodeFeatureFlag";
@@ -366,7 +367,7 @@ const extractCleanText = (value: unknown): string => {
     }
 
     // Last resort: stringify the object but only if it contains useful data
-    const hasUsefulData = Object.keys(obj).some(
+    const hasUsefulData = Object.keys(obj || {}).some(
       (key) => typeof obj[key] === "string" || typeof obj[key] === "number"
     );
 
@@ -408,6 +409,14 @@ const CONTENT = {
  * Builds a NodeSpec whose size keys can change at runtime via node data.
  */
 function createDynamicSpec(data: AiAgentData): NodeSpec {
+  // Debug dynamic spec creation to track maximum depth errors
+  if (process.env.NODE_ENV === "development") {
+    console.log("🔧 createDynamicSpec called for AiAgent:", {
+      expandedSize: data.expandedSize,
+      collapsedSize: data.collapsedSize,
+      isExpanded: data.isExpanded,
+    });
+  }
   const expanded =
     EXPANDED_SIZES[data.expandedSize as keyof typeof EXPANDED_SIZES] ??
     EXPANDED_SIZES.FE3;
@@ -467,6 +476,9 @@ function createDynamicSpec(data: AiAgentData): NodeSpec {
       threadId: null,
       output: null,
       store: null,
+      isEnabled: true, // Enable node by default
+      isActive: false, // Will become active when enabled
+      isExpanded: false, // Default to collapsed
     }),
     dataSchema: AiAgentDataSchema,
     controls: {
@@ -809,7 +821,10 @@ const AiAgentNode = memo(
       ]
     );
 
-    /** Compute the latest text input from connected text-input handle */
+    /**
+     * Compute the latest text input from connected text-input handle.
+     * [Use unified handle-based reading first] , basically read `source.data.output[cleanHandleId]` before legacy fallbacks
+     */
     const computeTextInput = useCallback((): string | null => {
       const textEdge = findEdgeByHandle(edges, id, "text-input");
       if (!textEdge) {
@@ -821,25 +836,54 @@ const AiAgentNode = memo(
         return null;
       }
 
-      // priority: output ➜ store ➜ whole data
-      const rawInput = src.data?.output ?? src.data?.store ?? src.data;
+      // 1) New propagation system: handle-based output object
+      const sourceData = src.data as Record<string, unknown> | undefined;
+      let inputValue: unknown = undefined;
 
-      // If upstream node output an object with a `text` field (e.g. Create-Text),
-      // extract that for a cleaner prompt.
       if (
-        typeof rawInput === "object" &&
-        rawInput !== null &&
-        "text" in rawInput
+        sourceData &&
+        typeof sourceData.output === "object" &&
+        sourceData.output !== null
       ) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return String((rawInput as any).text ?? "");
+        const outputObj = sourceData.output as Record<string, unknown>;
+        const cleanId = textEdge.sourceHandle
+          ? normalizeHandleId(textEdge.sourceHandle)
+          : "output";
+
+        if (outputObj[cleanId] !== undefined) {
+          inputValue = outputObj[cleanId];
+        } else if (outputObj.output !== undefined) {
+          inputValue = outputObj.output;
+        } else {
+          const first = Object.values(outputObj)[0];
+          inputValue = first;
+        }
       }
 
-      return typeof rawInput === "string" ? rawInput : String(rawInput ?? "");
+      // 2) Legacy fallbacks for compatibility
+      if (inputValue === undefined || inputValue === null) {
+        const legacyRaw =
+          (sourceData?.output as unknown) ?? sourceData?.store ?? src.data;
+        inputValue = legacyRaw;
+      }
+
+      // 3) Convenience: if upstream provided a `{ text: string }` shape
+      if (
+        typeof inputValue === "object" &&
+        inputValue !== null &&
+        "text" in (inputValue as Record<string, unknown>)
+      ) {
+        return String((inputValue as Record<string, unknown>).text ?? "");
+      }
+
+      return typeof inputValue === "string"
+        ? inputValue
+        : String(inputValue ?? "");
     }, [edges, nodes, id]);
 
     /**
      * Compute the latest trigger boolean from the connected handle.
+     * [Use unified handle-based reading first] , basically read `source.data.output[cleanHandleId]` before legacy fallbacks
      *
      * Returns null when no trigger is connected, allowing the node to distinguish
      * between "no trigger wired" vs "trigger is false".
@@ -858,10 +902,40 @@ const AiAgentNode = memo(
         return false;
       }
 
-      // Derive boolean value from upstream node
-      const triggerValue =
-        src.data?.output ?? src.data?.store ?? src.data?.isActive ?? false;
-      return Boolean(triggerValue);
+      const sourceData = src.data as Record<string, unknown> | undefined;
+      let value: unknown = undefined;
+
+      // 1) New propagation system: handle-based output object (supports Pulse node)
+      if (
+        sourceData &&
+        typeof sourceData.output === "object" &&
+        sourceData.output !== null
+      ) {
+        const outputObj = sourceData.output as Record<string, unknown>;
+        const cleanId = triggerEdge.sourceHandle
+          ? normalizeHandleId(triggerEdge.sourceHandle)
+          : "output";
+
+        if (outputObj[cleanId] !== undefined) {
+          value = outputObj[cleanId];
+        } else if (outputObj.output !== undefined) {
+          value = outputObj.output;
+        } else {
+          const first = Object.values(outputObj)[0];
+          value = first;
+        }
+      }
+
+      // 2) Legacy fallbacks for compatibility (Toggle node etc.)
+      if (value === undefined || value === null) {
+        value =
+          (sourceData?.output as unknown) ??
+          sourceData?.store ??
+          (sourceData as any)?.isActive ??
+          false;
+      }
+
+      return value === true || value === "true" || value === 1 || value === "1";
     }, [edges, nodes, id]);
 
     /** Compute the latest tools configuration from connected tools-input handle */
@@ -1654,7 +1728,7 @@ const AiAgentNode = memo(
         {!isExpanded &&
         spec.size.collapsed.width === 60 &&
         spec.size.collapsed.height === 60 ? (
-          <div className="absolute inset-0 flex justify-center text-lg p-1 text-foreground/80">
+          <div className="absolute inset-0 flex justify-center text-lg p-0 text-foreground/80">
             {spec.icon && renderLucideIcon(spec.icon, "", 16)}
           </div>
         ) : (
@@ -2044,6 +2118,22 @@ const AiAgentNode = memo(
 const AiAgentNodeWithDynamicSpec = memo(
   (props: NodeProps) => {
     const { nodeData } = useNodeData(props.id, props.data);
+
+    // Debug node data changes
+    const prevNodeDataRef = React.useRef(nodeData);
+    React.useEffect(() => {
+      if (process.env.NODE_ENV === "development") {
+        console.log("📊 AiAgent node data changed:", {
+          nodeId: props.id,
+          prevData: prevNodeDataRef.current,
+          newData: nodeData,
+          changedKeys: Object.keys(nodeData || {}).filter(
+            (key) => nodeData[key] !== prevNodeDataRef.current?.[key]
+          ),
+        });
+      }
+      prevNodeDataRef.current = nodeData;
+    }, [nodeData, props.id]);
 
     // Recompute spec only when the size keys change
     const dynamicSpec = useMemo(

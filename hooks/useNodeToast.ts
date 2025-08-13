@@ -21,7 +21,7 @@
  * });
  */
 
-import { useCallback } from 'react';
+import { useCallback, useRef } from 'react';
 import { useReactFlow } from '@xyflow/react';
 
 export interface ToastConfig {
@@ -39,6 +39,10 @@ export interface ToastConfig {
 export const useNodeToast = (nodeId?: string) => {
   const { getNode } = useReactFlow();
   
+  // Debounce configuration
+  const TOAST_DEBOUNCE_MS = 800; // Prevent duplicate toasts within this window
+  const lastToastRef = useRef<{ key: string; timestamp: number } | null>(null);
+  
   // Try to get node ID from context if not provided
   const resolvedNodeId = nodeId || (() => {
     // This is a fallback - in practice, nodes should pass their ID
@@ -47,6 +51,20 @@ export const useNodeToast = (nodeId?: string) => {
   })();
 
   const showToast = useCallback((config: ToastConfig) => {
+    const now = Date.now();
+    const key = `${config.type}:${config.message}:${config.description ?? ''}`;
+
+    // Debounce identical messages within TOAST_DEBOUNCE_MS
+    if (
+      lastToastRef.current &&
+      lastToastRef.current.key === key &&
+      now - lastToastRef.current.timestamp < TOAST_DEBOUNCE_MS
+    ) {
+      return;
+    }
+
+    lastToastRef.current = { key, timestamp: now };
+
     const event = new CustomEvent(`node-toast-show-${resolvedNodeId}`, {
       detail: config,
     });

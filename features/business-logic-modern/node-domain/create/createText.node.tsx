@@ -26,10 +26,7 @@ import LabelNode from "@/components/nodes/labelNode";
 import { Textarea } from "@/components/ui/textarea";
 import { findEdgeByHandle } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/edgeUtils";
 import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
-import {
-  generateoutputField,
-  normalizeHandleId,
-} from "@/features/business-logic-modern/infrastructure/node-core/handleOutputUtils";
+import { normalizeHandleId } from "@/features/business-logic-modern/infrastructure/node-core/handleOutputUtils";
 import { renderLucideIcon } from "@/features/business-logic-modern/infrastructure/node-core/iconUtils";
 import {
   SafeSchemas,
@@ -55,7 +52,7 @@ import { useStore } from "@xyflow/react";
 
 export const CreateTextDataSchema = z
   .object({
-    store: z.string().default("Default text"),
+    store: z.string().default(""),
     isEnabled: SafeSchemas.boolean(true),
     isActive: SafeSchemas.boolean(false),
     isExpanded: SafeSchemas.boolean(false),
@@ -147,9 +144,12 @@ const createDynamicSpec = (() => {
       version: 1,
       runtime: { execute: "createText_execute_v1" },
       initialData: createSafeInitialData(CreateTextDataSchema, {
-        store: "Default text",
+        store: "",
         inputs: null,
         output: {}, // handle-based output object
+        isEnabled: true, // Enable node by default
+        isActive: false, // Will become active when enabled
+        isExpanded: false, // Default to collapsed
       }),
       dataSchema: CreateTextDataSchema,
       controls: {
@@ -224,7 +224,7 @@ const CreateTextNode = memo(
     const edges = useStore((s) => s.edges);
 
     // keep last emitted output to avoid redundant writes
-    const lastGeneralOutputRef = useRef<any>(null);
+    const lastGeneralOutputRef = useRef<string | undefined>(undefined);
 
     // Ref for collapsed textarea to keep scroll at top
     const collapsedTextareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -316,43 +316,16 @@ const CreateTextNode = memo(
     /* 🔄 Handle-based output field generation for multi-handle compatibility */
     useEffect(() => {
       try {
-        // Create a data object with proper handle field mapping, basically map store to output handle
-        const mappedData = {
-          ...nodeData,
-          output: nodeData.store, // Map store field to output handle
-        };
-
-        // Generate Map-based output with error handling
-        const outputValue = generateoutputField(spec, mappedData as any);
-
-        // Validate the result
-        if (!(outputValue instanceof Map)) {
-          console.error(
-            `CreateText ${id}: generateoutputField did not return a Map`,
-            outputValue
-          );
-          return;
-        }
-
-        // Convert Map to plain object for Convex compatibility, basically serialize for storage
-        const outputObject = Object.fromEntries(outputValue.entries());
+        // Direct output mapping - store the actual text value, not an object
+        const textValue =
+          typeof nodeData.store === "string" ? nodeData.store : "";
 
         // Only update if changed
-        const currentoutput = lastGeneralOutputRef.current;
-        let hasChanged = true;
-
-        if (currentoutput instanceof Map && outputValue instanceof Map) {
-          // Compare Map contents
-          hasChanged =
-            currentoutput.size !== outputValue.size ||
-            !Array.from(outputValue.entries()).every(
-              ([key, value]) => currentoutput.get(key) === value
-            );
-        }
+        const hasChanged = lastGeneralOutputRef.current !== textValue;
 
         if (hasChanged) {
-          lastGeneralOutputRef.current = outputValue;
-          updateNodeData({ output: outputObject });
+          lastGeneralOutputRef.current = textValue;
+          updateNodeData({ output: textValue });
         }
       } catch (error) {
         console.error(`CreateText ${id}: Error generating output`, error, {
@@ -360,13 +333,21 @@ const CreateTextNode = memo(
           nodeDataKeys: Object.keys(nodeData || {}),
         });
 
-        // Fallback: set empty object to prevent crashes, basically empty state for storage
-        if (lastGeneralOutputRef.current !== null) {
-          lastGeneralOutputRef.current = new Map();
-          updateNodeData({ output: {} });
+        // Fallback: set empty string to prevent crashes
+        if (lastGeneralOutputRef.current !== undefined) {
+          lastGeneralOutputRef.current = "";
+          updateNodeData({ output: "" });
         }
       }
-    }, [spec.handles, nodeData, updateNodeData, id]);
+    }, [
+      spec.handles,
+      nodeData.isActive,
+      nodeData.isEnabled,
+      nodeData.store,
+      nodeData.inputs,
+      updateNodeData,
+      id,
+    ]);
 
     /* 🔄 Whenever nodes/edges change, recompute inputs. */
     useEffect(() => {
@@ -376,15 +357,16 @@ const CreateTextNode = memo(
       }
     }, [computeInput, nodeData, updateNodeData]);
 
-    /* 🔄 Make isEnabled dependent on input value only when there are connections. */
+    /* 🔄 Auto-enable when there is a connected, non-empty input. Never auto-disable. */
     useEffect(() => {
-      const hasInput = (nodeData as CreateTextData).inputs;
-      // Only auto-control isEnabled when there are connections (inputs !== null)
-      // When inputs is null (no connections), let user manually control isEnabled
-      if (hasInput !== null) {
-        const nextEnabled = hasInput && hasInput.trim().length > 0;
-        if (nextEnabled !== isEnabled) {
-          updateNodeData({ isEnabled: nextEnabled });
+      const incoming = (nodeData as CreateTextData).inputs;
+      if (incoming !== null) {
+        const hasValue =
+          typeof incoming === "string"
+            ? incoming.trim().length > 0
+            : Boolean(incoming as any);
+        if (hasValue && !isEnabled) {
+          updateNodeData({ isEnabled: true });
         }
       }
     }, [nodeData, isEnabled, updateNodeData]);
@@ -392,8 +374,7 @@ const CreateTextNode = memo(
     // Monitor store content and update active state
     useEffect(() => {
       const currentStore = store ?? "";
-      const hasValidStore =
-        currentStore.trim().length > 0 && currentStore !== "Default text";
+      const hasValidStore = currentStore.trim().length > 0;
 
       // If disabled, always set isActive to false
       if (isEnabled) {
@@ -438,7 +419,7 @@ const CreateTextNode = memo(
         <Textarea
           key={`collapsed-${id}`}
           ref={collapsedTextareaRef}
-          value={store === "Default text" ? "" : (store ?? "")}
+          value={store ?? ""}
           onChange={handleStoreChange}
           variant="barebones"
           placeholder="..."
@@ -455,7 +436,7 @@ const CreateTextNode = memo(
         <Textarea
           key={`expanded-${id}`}
           ref={expandedTextareaRef}
-          value={store === "Default text" ? "" : (store ?? "")}
+          value={store ?? ""}
           onChange={handleStoreChange}
           variant="barebones"
           placeholder="Enter your content here…"

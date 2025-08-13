@@ -6,7 +6,7 @@
  * • Dynamic sizing (expandedSize / collapsedSize) drives the spec.
  * • Output propagation is gated by `isActive` *and* `isEnabled` to prevent runaway loops.
  * • Uses findEdgeByHandle utility for robust React Flow edge handling.
- * • Auto-disables when all input connections are removed (handled by flow store).
+ * • Auto-enables when inputs connect; never auto-disables automatically.
  * • Code is fully commented and follows current React + TypeScript best practices.
  *
  * Keywords: ai-manager, schema-driven, type‑safe, clean‑architecture
@@ -295,15 +295,16 @@ const AiManagerNode = memo(
       }
     }, [computeInput, nodeData, updateNodeData]);
 
-    /* 🔄 Make isEnabled dependent on input value only when there are connections. */
+    /* 🔄 Auto-enable when there is a connected, non-empty input. Never auto-disable. */
     useEffect(() => {
-      const hasInput = (nodeData as AiManagerData).inputs;
-      // Only auto-control isEnabled when there are connections (inputs !== null)
-      // When inputs is null (no connections), let user manually control isEnabled
-      if (hasInput !== null) {
-        const nextEnabled = hasInput && hasInput.trim().length > 0;
-        if (nextEnabled !== isEnabled) {
-          updateNodeData({ isEnabled: nextEnabled });
+      const incoming = (nodeData as AiManagerData).inputs;
+      if (incoming !== null) {
+        const hasValue =
+          typeof incoming === "string"
+            ? incoming.trim().length > 0
+            : Boolean(incoming as any);
+        if (hasValue && !isEnabled) {
+          updateNodeData({ isEnabled: true });
         }
       }
     }, [nodeData, isEnabled, updateNodeData]);
@@ -384,7 +385,7 @@ const AiManagerNode = memo(
         {!isExpanded &&
         spec.size.collapsed.width === 60 &&
         spec.size.collapsed.height === 60 ? (
-          <div className="absolute inset-0 flex justify-center text-lg p-1 text-foreground/80">
+          <div className="absolute inset-0 flex justify-center text-lg p-0 text-foreground/80">
             {spec.icon && renderLucideIcon(spec.icon, "", 16)}
           </div>
         ) : (

@@ -70,7 +70,19 @@ function scanNodes(): DomainInfo[] {
 		: [];
 
 	// Ensure core domains are always included in preferred order
-	const coreDomains = ["create", "view", "trigger", "test", "cycle", "store", "ai"];
+	const coreDomains = [
+		"create",
+		"view",
+		"trigger",
+		"test",
+		"cycle",
+		"store",
+		"ai",
+		"email",
+		"logic",
+		"flow",
+		"time",
+	];
 	const allDomains = [...coreDomains, ...discoveredDomains.filter((d) => !coreDomains.includes(d))];
 	const domains = Array.from(new Set(allDomains)); // Remove duplicates while preserving order
 
@@ -265,6 +277,10 @@ function getDomainDescription(domain: string): string {
 		cycle: "Nodes that handle iterative operations, loops, and cycles",
 		store: "For nodes that store data",
 		ai: "Nodes that handle ai operations",
+		email: "Nodes for email communication and management",
+		logic: "Logic and conditional nodes (e.g., gates, comparisons)",
+		flow: "Flow control and orchestration nodes",
+		time: "Scheduling and time-based nodes",
 		custom: "Custom nodes with specialized functionality",
 	};
 	return descriptions[domain] || `Nodes for ${domain} operations`;
@@ -282,6 +298,10 @@ function getCategoryDescription(category: string): string {
 		cycle: "Iterative and loop-based nodes",
 		store: "For nodes that store data",
 		ai: "Nodes that handle ai operations",
+		email: "Email-related nodes",
+		logic: "Logic nodes",
+		flow: "Flow control nodes",
+		time: "Time and scheduling nodes",
 		custom: "Custom and specialized nodes",
 	};
 	return descriptions[category] || `${category} category nodes`;

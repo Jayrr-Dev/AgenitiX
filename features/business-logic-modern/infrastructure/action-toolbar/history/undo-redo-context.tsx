@@ -13,68 +13,89 @@
 "use client";
 
 import type React from "react";
-import { type ReactNode, createContext, useCallback, useContext, useRef } from "react";
+import {
+  type ReactNode,
+  createContext,
+  useCallback,
+  useContext,
+  useRef,
+} from "react";
 import type { ActionType } from "./UndoRedoManager";
 import type { HistoryNode } from "./historyGraph";
 
-interface UndoRedoManagerAPI {
-	undo: () => boolean;
-	redo: (childId?: string) => boolean;
-	recordAction: (type: ActionType, metadata?: Record<string, unknown>) => void;
-	recordActionDebounced: (type: ActionType, metadata?: Record<string, unknown>) => void;
-	clearHistory: () => void;
-	removeSelectedNode: (nodeId?: string) => boolean;
-	getHistory: () => {
-		entries: HistoryNode[];
-		currentIndex: number;
-		canUndo: boolean;
-		canRedo: boolean;
-		branchOptions?: string[];
-		graphStats?: GraphStats;
-		currentNode?: HistoryNode;
-	};
-	getBranchOptions: () => string[];
-	getFullGraph: () => {
-		nodes: Record<string, HistoryNode>;
-		root: string;
-		cursor: string;
-	};
-	redoSpecificBranch: (childId?: string) => boolean;
+export interface UndoRedoManagerAPI {
+  undo: () => boolean;
+  redo: (childId?: string) => boolean;
+  recordAction: (type: ActionType, metadata?: Record<string, unknown>) => void;
+  recordActionDebounced: (
+    type: ActionType,
+    metadata?: Record<string, unknown>
+  ) => void;
+  clearHistory: () => void;
+  removeSelectedNode: (nodeId?: string) => boolean;
+  pruneBranch?: (nodeId: string) => boolean;
+  pruneFutureFrom?: (nodeId?: string) => boolean;
+  getHistory: () => {
+    entries: HistoryNode[];
+    currentIndex: number;
+    canUndo: boolean;
+    canRedo: boolean;
+    branchOptions?: string[];
+    graphStats?: GraphStats;
+    currentNode?: HistoryNode;
+  };
+  getBranchOptions: () => string[];
+  getFullGraph: () => {
+    nodes: Record<string, HistoryNode>;
+    root: string;
+    cursor: string;
+  };
+  redoSpecificBranch: (childId?: string) => boolean;
+  // Optional extended manager contract
+  id?: string;
+  capture?: () => unknown;
+  apply?: (state: unknown, actionType?: string) => void;
+  hash?: (state: unknown) => string | undefined;
 }
 
 // TYPES
 export interface UndoRedoContextType {
-	registerManager: (manager: UndoRedoManagerAPI) => void;
-	unregisterManager: (managerId: string) => void;
-	undo: () => boolean;
-	redo: (childId?: string) => boolean;
-	recordAction: (type: ActionType, metadata?: Record<string, unknown>) => void;
-	recordActionDebounced: (type: ActionType, metadata?: Record<string, unknown>) => void;
-	clearHistory: () => void;
-	getHistory: () => {
-		entries: HistoryNode[];
-		currentIndex: number;
-		canUndo: boolean;
-		canRedo: boolean;
-		// Additional graph-specific properties (optional for backward compatibility)
-		branchOptions?: string[];
-		graphStats?: GraphStats;
-		currentNode?: HistoryNode;
-	};
-	getFullGraph: () => {
-		nodes: Record<string, HistoryNode>;
-		root: string;
-		cursor: string;
-	} | null;
-	removeSelectedNode: (nodeId?: string) => boolean;
+  registerManager: (manager: UndoRedoManagerAPI) => void;
+  unregisterManager: (managerId: string) => void;
+  undo: () => boolean;
+  redo: (childId?: string) => boolean;
+  recordAction: (type: ActionType, metadata?: Record<string, unknown>) => void;
+  recordActionDebounced: (
+    type: ActionType,
+    metadata?: Record<string, unknown>
+  ) => void;
+  clearHistory: () => void;
+  getHistory: () => {
+    entries: HistoryNode[];
+    currentIndex: number;
+    canUndo: boolean;
+    canRedo: boolean;
+    // Additional graph-specific properties (optional for backward compatibility)
+    branchOptions?: string[];
+    graphStats?: GraphStats;
+    currentNode?: HistoryNode;
+  };
+  getFullGraph: () => {
+    nodes: Record<string, HistoryNode>;
+    root: string;
+    cursor: string;
+  } | null;
+  removeSelectedNode: (nodeId?: string) => boolean;
+  pruneBranch?: (nodeId: string) => boolean;
+  pruneFutureFrom?: (nodeId?: string) => boolean;
 }
 
 interface GraphStats {
-	totalNodes: number;
-	branches: number;
-	leafNodes: number;
-	maxDepth: number;
-	currentDepth: number;
+  totalNodes: number;
+  branches: number;
+  leafNodes: number;
+  maxDepth: number;
+  currentDepth: number;
 }
 
 // CONTEXT
@@ -82,112 +103,142 @@ const UndoRedoContext = createContext<UndoRedoContextType | null>(null);
 
 // PROVIDER COMPONENT
 interface UndoRedoProviderProps {
-	children: ReactNode;
+  children: ReactNode;
 }
 
-export const UndoRedoProvider: React.FC<UndoRedoProviderProps> = ({ children }) => {
-	// Store the actual manager functions
-	const managerRef = useRef<UndoRedoManagerAPI | null>(null);
+export const UndoRedoProvider: React.FC<UndoRedoProviderProps> = ({
+  children,
+}) => {
+  // Store the actual manager functions
+  const managerRef = useRef<UndoRedoManagerAPI | null>(null);
 
-	// Register the manager (called by UndoRedoManager)
-	const registerManager = useCallback((manager: UndoRedoManagerAPI) => {
-		managerRef.current = manager;
-	}, []);
+  // Minimal reactive snapshot for consumers that only need light updates
+  const stateRef = useRef({ canUndo: false, canRedo: false, version: 0 });
 
-	// Wrapper functions that delegate to the registered manager
-	const undo = useCallback(() => {
-		return managerRef.current?.undo() ?? false;
-	}, []);
+  // Register the manager (called by UndoRedoManager)
+  const registerManager = useCallback((manager: UndoRedoManagerAPI) => {
+    managerRef.current = manager;
+  }, []);
 
-	const redo = useCallback((childId?: string) => {
-		return managerRef.current?.redo(childId) ?? false;
-	}, []);
+  // Wrapper functions that delegate to the registered manager
+  const undo = useCallback(() => {
+    return managerRef.current?.undo() ?? false;
+  }, []);
 
-	const recordAction = useCallback((type: ActionType, metadata?: Record<string, unknown>) => {
-		managerRef.current?.recordAction(type, metadata);
-	}, []);
+  const redo = useCallback((childId?: string) => {
+    return managerRef.current?.redo(childId) ?? false;
+  }, []);
 
-	const recordActionDebounced = useCallback(
-		(type: ActionType, metadata?: Record<string, unknown>) => {
-			managerRef.current?.recordActionDebounced(type, metadata);
-		},
-		[]
-	);
+  const recordAction = useCallback(
+    (type: ActionType, metadata?: Record<string, unknown>) => {
+      managerRef.current?.recordAction(type, metadata);
+    },
+    []
+  );
 
-	const clearHistory = useCallback(() => {
-		managerRef.current?.clearHistory();
-	}, []);
+  const recordActionDebounced = useCallback(
+    (type: ActionType, metadata?: Record<string, unknown>) => {
+      managerRef.current?.recordActionDebounced(type, metadata);
+    },
+    []
+  );
 
-	const removeSelectedNode = useCallback((nodeId?: string) => {
-		return managerRef.current?.removeSelectedNode?.(nodeId) ?? false;
-	}, []);
+  const clearHistory = useCallback(() => {
+    managerRef.current?.clearHistory();
+  }, []);
 
-	const getHistory = useCallback(() => {
-		return (
-			managerRef.current?.getHistory() || {
-				entries: [],
-				currentIndex: -1,
-				canUndo: false,
-				canRedo: false,
-			}
-		);
-	}, []);
+  const removeSelectedNode = useCallback((nodeId?: string) => {
+    return managerRef.current?.removeSelectedNode?.(nodeId) ?? false;
+  }, []);
 
-	const getFullGraph = useCallback(() => {
-		return managerRef.current?.getFullGraph?.() || null;
-	}, []);
+  const pruneBranch = useCallback((nodeId: string) => {
+    return managerRef.current?.pruneBranch?.(nodeId) ?? false;
+  }, []);
 
-	const unregisterManager = useCallback((_managerId: string) => {
-		// For now, just clear the manager reference
-		managerRef.current = null;
-	}, []);
+  const pruneFutureFrom = useCallback((nodeId?: string) => {
+    return managerRef.current?.pruneFutureFrom?.(nodeId) ?? false;
+  }, []);
 
-	const contextValue: UndoRedoContextType = {
-		undo,
-		redo,
-		recordAction,
-		recordActionDebounced,
-		clearHistory,
-		removeSelectedNode,
-		getHistory,
-		getFullGraph,
-		registerManager,
-		unregisterManager,
-	};
+  const getHistory = useCallback(() => {
+    const hist = managerRef.current?.getHistory();
+    if (hist) {
+      // Update lightweight snapshot
+      stateRef.current.canUndo = !!hist.canUndo;
+      stateRef.current.canRedo = !!hist.canRedo;
+      stateRef.current.version++;
+      return hist;
+    }
+    return {
+      entries: [],
+      currentIndex: -1,
+      canUndo: false,
+      canRedo: false,
+    };
+  }, []);
 
-	return <UndoRedoContext.Provider value={contextValue}>{children}</UndoRedoContext.Provider>;
+  const getFullGraph = useCallback(() => {
+    return managerRef.current?.getFullGraph?.() || null;
+  }, []);
+
+  const unregisterManager = useCallback((_managerId: string) => {
+    // For now, just clear the manager reference
+    managerRef.current = null;
+  }, []);
+
+  const contextValue: UndoRedoContextType = {
+    undo,
+    redo,
+    recordAction,
+    recordActionDebounced,
+    clearHistory,
+    removeSelectedNode,
+    pruneBranch,
+    pruneFutureFrom,
+    getHistory,
+    getFullGraph,
+    registerManager,
+    unregisterManager,
+  };
+
+  return (
+    <UndoRedoContext.Provider value={contextValue}>
+      {children}
+    </UndoRedoContext.Provider>
+  );
 };
 
 // HOOK
 export const useUndoRedo = (): UndoRedoContextType => {
-	const context = useContext(UndoRedoContext);
+  const context = useContext(UndoRedoContext);
 
-	if (!context) {
-		// Return safe defaults if context is not available
-		return {
-			undo: () => false,
-			redo: () => false,
-			recordAction: () => {},
-			recordActionDebounced: () => {},
-			clearHistory: () => {},
-			removeSelectedNode: () => false,
-			getHistory: () => ({
-				entries: [],
-				currentIndex: -1,
-				canUndo: false,
-				canRedo: false,
-			}),
-			getFullGraph: () => null,
-			registerManager: () => {},
-			unregisterManager: () => {},
-		};
-	}
+  if (!context) {
+    // Return safe defaults if context is not available
+    return {
+      undo: () => false,
+      redo: () => false,
+      recordAction: () => {},
+      recordActionDebounced: () => {},
+      clearHistory: () => {},
+      removeSelectedNode: () => false,
+      pruneBranch: () => false,
+      pruneFutureFrom: () => false,
+      getHistory: () => ({
+        entries: [],
+        currentIndex: -1,
+        canUndo: false,
+        canRedo: false,
+      }),
+      getFullGraph: () => null,
+      registerManager: () => {},
+      unregisterManager: () => {},
+    };
+  }
 
-	return context;
+  return context;
 };
 
 // HOOK TO REGISTER MANAGER (used by UndoRedoManager)
 export const useRegisterUndoRedoManager = () => {
-	const context = useContext(UndoRedoContext) as UndoRedoContextType;
-	return context?.registerManager || (() => {});
+  const context = useContext(UndoRedoContext) as UndoRedoContextType;
+  return context?.registerManager || (() => {});
 };

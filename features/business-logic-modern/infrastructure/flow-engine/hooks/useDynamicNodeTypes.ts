@@ -1,14 +1,31 @@
 import { useMemo } from "react";
 
+// TIME nodes
+import timeDelay from '../../../node-domain/time/timeDelay.node';
+import timeInterval from '../../../node-domain/time/timeInterval.node';
+import timeThrottle from '../../../node-domain/time/timeThrottle.node';
+import timeDebounce from '../../../node-domain/time/timeDebounce.node';
+import timeStopwatch from '../../../node-domain/time/timeStopwatch.node';
+import timeTimeout from '../../../node-domain/time/timeTimeout.node';
+// EMAIL nodes
+import emailMessage from '../../../node-domain/email/emailMessage.node';
+// Add new node imports here (Plop can auto-inject these)
 import triggerPulse from '../../../node-domain/trigger/triggerPulse.node';
 import timeScheduler from '../../../node-domain/trigger/timeScheduler.node';
 import aiTools from '../../../node-domain/ai/aiTools.node';
 import storeLocal from '../../../node-domain/store/storeLocal.node';
 import aiManager from '../../../node-domain/ai/aiManager.node';
-import createObject from '../../../node-domain/create/createObject.node';
+import createJson from '../../../node-domain/create/createJson.node';
 import createMap from '../../../node-domain/create/createMap.node';
 import mergeNode from '../../../node-domain/store/mergeNode.node';
-// Add new node imports here (Plop can auto-inject these)
+import viewObject from '../../../node-domain/view/viewObject.node';
+import viewArray from '../../../node-domain/view/viewArray.node';
+import emailPreview from '../../../node-domain/email/emailPreview.node';
+import toBoolean from '../../../node-domain/convert/toBoolean.node';
+import toText from '../../../node-domain/convert/toText.node';
+import toObject from '../../../node-domain/convert/toObject.node';
+import toArray from '../../../node-domain/convert/toArray.node';
+import toAny from '../../../node-domain/convert/toAny.node';
 import aiAgent from "../../../node-domain/ai/aiAgent.node";
 import createText from "../../../node-domain/create/createText.node";
 import storeInMemory from "../../../node-domain/create/storeInMemory.node";
@@ -32,6 +49,11 @@ import flowConditional from "../../../node-domain/flow/flowConditional.node";
 import triggerToggle from "../../../node-domain/trigger/triggerToggle.node";
 import viewBoolean from "../../../node-domain/view/viewBoolean.node";
 import viewText from "../../../node-domain/view/viewText.node";
+import logicAnd from "../../../node-domain/logic/logicAnd.node";
+import logicOr from "../../../node-domain/logic/logicOr.node";
+import logicNot from "../../../node-domain/logic/logicNot.node";
+import logicXor from "../../../node-domain/logic/logicXor.node";
+import logicXnor from "../../../node-domain/logic/logicXnor.node";
 
 /**
  * Hook that provides nodeTypes for React Flow
@@ -43,6 +65,16 @@ import viewText from "../../../node-domain/view/viewText.node";
 export function useDynamicNodeTypes() {
 	const nodeTypes = useMemo(
 		() => ({
+			// TIME nodes
+			timeDelay,
+			timeInterval,
+			timeThrottle,
+			timeDebounce,
+			timeStopwatch,
+			timeTimeout,
+			// EMAIL nodes
+			emailMessage,
+			// Add new node types here
 			flowConditional,
 			viewBoolean,
 			triggerPulse,
@@ -50,10 +82,18 @@ export function useDynamicNodeTypes() {
 			aiTools,
 			storeLocal,
 			aiManager,
-			createObject,
+			createJson,
 			createMap,
 			mergeNode,
 			// Add new node types here
+			viewObject,
+			viewArray,
+			emailPreview,
+			toBoolean,
+			toText,
+			toObject,
+			toArray,
+			toAny,
 			aiAgent,
 			testNode,
 			testToast,
@@ -73,6 +113,11 @@ export function useDynamicNodeTypes() {
 			emailList,
 			emailUpdater,
 			viewText,
+			logicAnd,
+			logicOr,
+			logicNot,
+			logicXor,
+			logicXnor,
 		}),
 		[]
 	);

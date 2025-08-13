@@ -160,6 +160,11 @@ function getNodeSpecificStyling(
 					color: theme.text.primary,
 					icon: metadata.icon || "EMAIL",
 				};
+			case "convert":
+				return {
+					color: theme.text.primary,
+					icon: metadata.icon || "CONVERT",
+				};
 			default:
 				return {
 					color: theme.text.muted,

@@ -1,5 +1,16 @@
 "use client";
 
+/**
+Route: features/business-logic-modern/infrastructure/flow-engine/FlowEditor.tsx
+ * FLOW EDITOR - Main canvas UI and behavior for building flows
+ *
+ * • Keyboard shortcuts, undo/redo integration, and node interactions
+ * • Debounced backup now uses sessionStorage with TTL and size guard (dev-only)
+ * • Cleans up legacy localStorage backups to prevent bloat
+ *
+ * Keywords: flow-editor, sessionStorage-backup, undo-redo, reactflow, cleanup
+ */
+
 import { useFlowStore } from "@/features/business-logic-modern/infrastructure/flow-engine/stores/flowStore";
 import type {
   AgenEdge,
@@ -16,6 +27,7 @@ import {
 } from "@xyflow/react";
 import React, { useCallback, useEffect, useRef } from "react";
 import { type FlowMetadata, FlowProvider } from "./contexts/flow-context";
+import { useFlowMetadataOptional } from "./contexts/flow-metadata-context";
 
 import ActionToolbar from "@/features/business-logic-modern/infrastructure/action-toolbar/ActionToolbar";
 import Sidebar from "@/features/business-logic-modern/infrastructure/sidebar/Sidebar";
@@ -29,22 +41,31 @@ import { useNodeStyleStore } from "../theming/stores/nodeStyleStore";
 import { FlowCanvas } from "./components/FlowCanvas";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 import { useMultiSelectionCopyPaste } from "./hooks/useMultiSelectionCopyPaste";
+import { usePieMenuIntegration } from "./hooks/usePieMenuIntegration";
 
 // Import the new NodeSpec registry
 import { getNodeSpecMetadata } from "@/features/business-logic-modern/infrastructure/node-registry/nodespec-registry";
 
-// Helper function to get node spec from the new NodeSpec registry system
+// Simple in-memory cache for node specs to avoid repeated lookups
+const __specCache = new Map<string, any>();
+
+// Helper function to get node spec from the new NodeSpec registry system (cached)
 const getNodeSpecForType = (nodeType: string) => {
   try {
+    if (__specCache.has(nodeType)) {
+      return __specCache.get(nodeType);
+    }
     // 1. Check the new NodeSpec registry first
     const registeredSpec = getNodeSpecMetadata(nodeType);
     if (registeredSpec) {
-      return {
+      const spec = {
         kind: registeredSpec.kind,
         displayName: registeredSpec.displayName,
         category: registeredSpec.category,
         initialData: registeredSpec.initialData,
       };
+      __specCache.set(nodeType, spec);
+      return spec;
     }
 
     // 2. Check the legacy NODESPECS for backward compatibility
@@ -52,18 +73,30 @@ const getNodeSpecForType = (nodeType: string) => {
     // The original code had NODESPECS defined elsewhere, but it's not imported here.
     // For now, we'll just return null if no registered spec is found.
 
-    console.warn(
-      `[getNodeSpecForType] No spec found for node type: ${nodeType}`
-    );
+    if (process.env.NODE_ENV !== "production") {
+      console.warn(
+        `[getNodeSpecForType] No spec found for node type: ${nodeType}`
+      );
+    }
     return null;
   } catch (error) {
-    console.error(
-      `[getNodeSpecForType] Error getting spec for ${nodeType}:`,
-      error
-    );
+    if (process.env.NODE_ENV !== "production") {
+      console.error(
+        `[getNodeSpecForType] Error getting spec for ${nodeType}:`,
+        error
+      );
+    }
     return null;
   }
 };
+
+// Local storage keys (verb-first)
+const SERVER_LOAD_MARK_PREFIX = "flow-server-loaded:"; // [Explanation], basically marks that the current flow was loaded from server
+
+// Backup controls (verb-first)
+const ENABLE_FLOW_BACKUP = process.env.NODE_ENV !== "production"; // [Explanation], basically restrict backups to development only
+const FLOW_BACKUP_TTL_MS = 60 * 60 * 1000; // [Explanation], basically expire backups after 1 hour
+const FLOW_BACKUP_MAX_CHARS = 300_000; // [Explanation], basically guard against oversized snapshots (~300KB)
 
 /* -------------------------------------------------------------------------- */
 /*  DESIGN CONSTANTS (verb-first names)                                        */
@@ -163,6 +196,11 @@ class FlowEditorErrorBoundary extends React.Component<
 const FlowEditorInternal = () => {
   const flowWrapperRef = useRef<HTMLDivElement>(null);
   const { screenToFlowPosition } = useReactFlow();
+  const { flow: _flowMeta } = useFlowMetadataOptional() || { flow: null };
+
+  // Determine if user can edit - defaults to true for owners or when no flow data
+  const canEdit = _flowMeta?.canEdit ?? true;
+  const isReadOnly = !canEdit;
 
   // Canvas loading is now handled at page level to prevent double loading screens
 
@@ -173,36 +211,36 @@ const FlowEditorInternal = () => {
       const store = useNodeStyleStore.getState();
       store.enableCategoryTheming();
     } catch (error) {
-      console.error("❌ Theme initialization failed:", error);
+      if (process.env.NODE_ENV !== "production") {
+        console.error("❌ Theme initialization failed:", error);
+      }
     }
   }, []);
 
-  const {
-    nodes,
-    edges,
-    onNodesChange,
-    onEdgesChange: storeOnEdgesChange,
-    onConnect,
-    addNode,
-    // Pull all other necessary props from the store
-    selectedNodeId,
-    selectedEdgeId,
-    nodeErrors,
-    showHistoryPanel,
-    inspectorLocked,
-    inspectorViewMode,
-    updateNodeData,
-    updateNodeId,
-    logNodeError,
-    clearNodeErrors,
-    toggleHistoryPanel,
-    setInspectorLocked,
-    removeNode,
-    removeEdge,
-    selectNode,
-    selectEdge,
-    clearSelection,
-  } = useFlowStore();
+  // Select only the slices we actually need to minimize re-renders
+  const nodes = useFlowStore((s) => s.nodes);
+  const edges = useFlowStore((s) => s.edges);
+  const onNodesChange = useFlowStore((s) => s.onNodesChange);
+  const storeOnEdgesChange = useFlowStore((s) => s.onEdgesChange);
+  const onConnect = useFlowStore((s) => s.onConnect);
+  const addNode = useFlowStore((s) => s.addNode);
+  const selectedNodeId = useFlowStore((s) => s.selectedNodeId);
+  const selectedEdgeId = useFlowStore((s) => s.selectedEdgeId);
+  const nodeErrors = useFlowStore((s) => s.nodeErrors);
+  const showHistoryPanel = useFlowStore((s) => s.showHistoryPanel);
+  const inspectorLocked = useFlowStore((s) => s.inspectorLocked);
+  const inspectorViewMode = useFlowStore((s) => s.inspectorViewMode);
+  const updateNodeData = useFlowStore((s) => s.updateNodeData);
+  const updateNodeId = useFlowStore((s) => s.updateNodeId);
+  const logNodeError = useFlowStore((s) => s.logNodeError);
+  const clearNodeErrors = useFlowStore((s) => s.clearNodeErrors);
+  const toggleHistoryPanel = useFlowStore((s) => s.toggleHistoryPanel);
+  const setInspectorLocked = useFlowStore((s) => s.setInspectorLocked);
+  const removeNode = useFlowStore((s) => s.removeNode);
+  const removeEdge = useFlowStore((s) => s.removeEdge);
+  const selectNode = useFlowStore((s) => s.selectNode);
+  const selectEdge = useFlowStore((s) => s.selectEdge);
+  const clearSelection = useFlowStore((s) => s.clearSelection);
 
   // ============================================================================
   // COPY/PASTE FUNCTIONALITY WITH MOUSE TRACKING
@@ -223,32 +261,37 @@ const FlowEditorInternal = () => {
   const { undo, redo, recordAction } = useUndoRedo();
 
   const handleUndo = useCallback(() => {
+    if (isReadOnly) return; // Disable in read-only mode
     const _success = undo();
-  }, [undo]);
+  }, [undo, isReadOnly]);
 
   const handleRedo = useCallback(() => {
+    if (isReadOnly) return; // Disable in read-only mode
     const _success = redo();
-  }, [redo]);
+  }, [redo, isReadOnly]);
 
   // ============================================================================
   // KEYBOARD SHORTCUTS INTEGRATION
   // ============================================================================
 
   const handleSelectAllNodes = useCallback(() => {
+    if (isReadOnly) return; // Disable in read-only mode
     // Select all nodes in the canvas
     const updatedNodes = nodes.map((node) => ({ ...node, selected: true }));
     useFlowStore.setState((state) => ({ ...state, nodes: updatedNodes }));
-  }, [nodes]);
+  }, [nodes, isReadOnly]);
 
   const handleClearSelection = useCallback(() => {
     clearSelection();
   }, [clearSelection]);
 
   const handleCopy = useCallback(() => {
+    // Copy is allowed in read-only mode - users can copy but not paste
     copySelectedElements();
   }, [copySelectedElements]);
 
   const handlePaste = useCallback(() => {
+    if (isReadOnly) return; // Disable in read-only mode
     const { copiedNodes } = useFlowStore.getState();
     pasteElements();
 
@@ -259,9 +302,10 @@ const FlowEditorInternal = () => {
         nodeTypes: copiedNodes.map((n) => n.type),
       });
     }
-  }, [pasteElements, recordAction]);
+  }, [pasteElements, recordAction, isReadOnly]);
 
   const handleMultiDelete = useCallback(() => {
+    if (isReadOnly) return; // Disable in read-only mode
     // Find selected nodes and edges
     const selectedNodes = nodes.filter((node) => node.selected);
     const selectedEdges = edges.filter((edge) => edge.selected);
@@ -293,18 +337,25 @@ const FlowEditorInternal = () => {
     for (const edge of selectedEdges) {
       removeEdge(edge.id);
     }
-  }, [nodes, edges, removeNode, removeEdge, recordAction]);
+  }, [nodes, edges, removeNode, removeEdge, recordAction, isReadOnly]);
 
   // Initialize keyboard shortcuts
+  // Pie Menu Integration, basically handle G key activation with full system
+  const { handleKeyboardActivation: handlePieMenuActivation } =
+    usePieMenuIntegration({
+      enabled: true,
+      includeDebugActions: process.env.NODE_ENV === "development",
+    });
+
   useKeyboardShortcuts({
     onCopy: handleCopy,
-    onPaste: handlePaste,
-    onUndo: handleUndo,
-    onRedo: handleRedo,
+    onPaste: isReadOnly ? () => {} : handlePaste, // Disable paste in read-only mode
+    onUndo: isReadOnly ? () => {} : handleUndo, // Disable undo in read-only mode
+    onRedo: isReadOnly ? () => {} : handleRedo, // Disable redo in read-only mode
     onToggleHistory: toggleHistoryPanel,
-    onSelectAll: handleSelectAllNodes,
-    onClearSelection: handleClearSelection,
-    onDelete: handleMultiDelete,
+    onSelectAll: isReadOnly ? () => {} : handleSelectAllNodes, // Disable select all in read-only mode
+    onClearSelection: handleClearSelection, // Allow clearing selection in read-only mode
+    onDelete: isReadOnly ? () => {} : handleMultiDelete, // Disable delete in read-only mode
     onToggleVibeMode: () => {
       // Vibe mode toggle - not implemented yet
     },
@@ -317,20 +368,37 @@ const FlowEditorInternal = () => {
     onToggleSidebar: () => {
       // Sidebar toggle - not implemented yet
     },
+    onPieMenu: isReadOnly ? () => {} : handlePieMenuActivation, // Disable pie menu in read-only mode
   });
 
-  const onDragOver = useCallback((event: React.DragEvent) => {
-    event.preventDefault();
-    event.dataTransfer.dropEffect = "move";
-  }, []);
+  const onDragOver = useCallback(
+    (event: React.DragEvent) => {
+      if (isReadOnly) {
+        event.dataTransfer.dropEffect = "none";
+        return;
+      }
+      event.preventDefault();
+      event.dataTransfer.dropEffect = "move";
+    },
+    [isReadOnly]
+  );
 
   const onDrop = useCallback(
     async (event: React.DragEvent) => {
       event.preventDefault();
 
+      if (isReadOnly) {
+        if (process.env.NODE_ENV !== "production") {
+          console.log("Drop disabled in read-only mode");
+        }
+        return;
+      }
+
       const nodeType = event.dataTransfer.getData("application/reactflow");
       if (!nodeType) {
-        console.warn("No node type found in drag data");
+        if (process.env.NODE_ENV !== "production") {
+          console.warn("No node type found in drag data");
+        }
         return;
       }
 
@@ -344,7 +412,9 @@ const FlowEditorInternal = () => {
         // Get node spec from the new NodeSpec system
         const spec = await getNodeSpecForType(nodeType);
         if (!spec) {
-          console.error(`Invalid node type dropped: ${nodeType}`);
+          if (process.env.NODE_ENV !== "production") {
+            console.error(`Invalid node type dropped: ${nodeType}`);
+          }
           return;
         }
 
@@ -371,11 +441,64 @@ const FlowEditorInternal = () => {
           position: position,
         });
       } catch (error) {
-        console.error("❌ Failed to create node from drop:", error);
+        if (process.env.NODE_ENV !== "production") {
+          console.error("❌ Failed to create node from drop:", error);
+        }
       }
     },
-    [screenToFlowPosition, addNode, recordAction]
+    [screenToFlowPosition, addNode, recordAction, isReadOnly]
   );
+
+  // Handle direct node creation from pie menu sub-menu
+  React.useEffect(() => {
+    const handleCreateNodeDirect = (event: CustomEvent) => {
+      if (isReadOnly) {
+        if (process.env.NODE_ENV !== "production") {
+          console.log("Direct node creation disabled in read-only mode");
+        }
+        return;
+      }
+
+      const { node } = event.detail;
+      if (process.env.NODE_ENV !== "production") {
+        console.log(
+          "🎯 FlowEditor: Creating node directly from pie menu",
+          node
+        );
+      }
+
+      try {
+        addNode(node);
+
+        // Record node creation for undo/redo
+        recordAction("node_add", {
+          nodeType: node.type,
+          nodeId: node.id,
+          position: node.position,
+        });
+
+        if (process.env.NODE_ENV !== "production") {
+          console.log("✅ FlowEditor: Node created successfully");
+        }
+      } catch (error) {
+        if (process.env.NODE_ENV !== "production") {
+          console.error("❌ Failed to create node directly:", error);
+        }
+      }
+    };
+
+    window.addEventListener(
+      "create-node-direct",
+      handleCreateNodeDirect as EventListener
+    );
+
+    return () => {
+      window.removeEventListener(
+        "create-node-direct",
+        handleCreateNodeDirect as EventListener
+      );
+    };
+  }, [addNode, recordAction, isReadOnly]);
 
   const selectedNode = React.useMemo(
     () => nodes.find((n) => n.id === selectedNodeId) || null,
@@ -386,26 +509,190 @@ const FlowEditorInternal = () => {
     [edges, selectedEdgeId]
   );
 
+  // ---------------------------------------------------------------------------
+  // BACKUP/RESTORE: preserve graph across Fast Refresh hiccups
+  // ---------------------------------------------------------------------------
+  const { flow } = useFlowMetadataOptional() || { flow: null };
+  const setNodes = useFlowStore((s) => s.setNodes);
+  const setEdges = useFlowStore((s) => s.setEdges);
+  const hasHydrated = useFlowStore((s) => s._hasHydrated);
+  const restoreAttemptedRef = React.useRef(false);
+
+  // Cleanup legacy localStorage backups to prevent permanent bloat
+  React.useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      // [Explanation], basically remove any old flow-editor-backup:* entries from localStorage
+      for (let i = window.localStorage.length - 1; i >= 0; i -= 1) {
+        const key = window.localStorage.key(i);
+        if (!key) continue;
+        if (key.startsWith("flow-editor-backup:")) {
+          window.localStorage.removeItem(key);
+        }
+      }
+    } catch {}
+  }, []);
+
+  React.useEffect(() => {
+    if (!ENABLE_FLOW_BACKUP) return; // [Explanation], basically disable backup/restore in production
+    if (!flow?.id || !hasHydrated) return;
+    const BACKUP_KEY = `flow-editor-backup:${flow.id}`;
+    const SERVER_MARK_KEY = `${SERVER_LOAD_MARK_PREFIX}${flow.id}`;
+
+    // Skip restore when server has just authoritatively loaded this flow
+    try {
+      if (typeof window !== "undefined") {
+        const serverLoaded = window.localStorage.getItem(SERVER_MARK_KEY);
+        if (serverLoaded) {
+          restoreAttemptedRef.current = true;
+          return;
+        }
+      }
+    } catch {}
+
+    // Restore if nodes are empty but backup has data
+    if (!restoreAttemptedRef.current && nodes.length === 0) {
+      try {
+        const raw = window.sessionStorage.getItem(BACKUP_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw) as {
+            nodes?: any[];
+            edges?: any[];
+            ts?: number;
+          };
+          const isFresh =
+            typeof parsed?.ts === "number" &&
+            Date.now() - parsed.ts < FLOW_BACKUP_TTL_MS;
+          if (
+            isFresh &&
+            Array.isArray(parsed.nodes) &&
+            parsed.nodes.length > 0
+          ) {
+            setNodes(parsed.nodes as any);
+            setEdges(Array.isArray(parsed.edges) ? (parsed.edges as any) : []);
+          } else {
+            // Expired or invalid -> clear
+            try {
+              window.sessionStorage.removeItem(BACKUP_KEY);
+            } catch {}
+          }
+        }
+      } catch {}
+      restoreAttemptedRef.current = true;
+    }
+  }, [flow?.id, hasHydrated, nodes.length, setNodes, setEdges]);
+
+  React.useEffect(() => {
+    // [Explanation], basically debounce backup writes and run them in idle time to avoid blocking pointer events
+    if (!ENABLE_FLOW_BACKUP) return; // dev-only
+    if (!flow?.id) return;
+    const BACKUP_KEY = `flow-editor-backup:${flow.id}`;
+
+    const BACKUP_IDLE_DEBOUNCE_MS = 1200; // Wait for inactivity before writing backup
+
+    // Keep one timer per effect run
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+    // Schedule the actual write during idle time (or next tick fallback)
+    const scheduleIdle = (fn: () => void) => {
+      const ric: unknown = (globalThis as any).requestIdleCallback;
+      if (typeof ric === "function") {
+        (ric as (cb: () => void) => void)(fn);
+      } else {
+        setTimeout(fn, 0);
+      }
+    };
+
+    if (nodes.length > 0) {
+      // Clear any previous timer then set a fresh one
+      if (debounceTimer) {
+        clearTimeout(debounceTimer);
+        debounceTimer = null;
+      }
+      debounceTimer = setTimeout(() => {
+        scheduleIdle(() => {
+          try {
+            const snapshot = JSON.stringify({ nodes, edges, ts: Date.now() });
+            // Guard against oversized snapshots
+            if (snapshot.length <= FLOW_BACKUP_MAX_CHARS) {
+              window.sessionStorage.setItem(BACKUP_KEY, snapshot);
+            }
+          } catch {}
+        });
+      }, BACKUP_IDLE_DEBOUNCE_MS);
+    }
+
+    // Cleanup pending timer if dependencies change rapidly
+    return () => {
+      if (debounceTimer) {
+        clearTimeout(debounceTimer);
+      }
+    };
+  }, [flow?.id, nodes, edges]);
+
+  // DEV DIAGNOSTICS: trace node clearing and storage mutations when enabled
+  React.useEffect(() => {
+    if (process.env.NODE_ENV !== "development") return;
+    const debugEnabled =
+      typeof window !== "undefined" &&
+      window.localStorage.getItem("DEBUG_FLOW_CLEAR") === "1";
+    if (!debugEnabled) return;
+
+    // Log when nodes length drops to 0
+    if (nodes.length === 0) {
+      // eslint-disable-next-line no-console
+      console.log("[FlowDebug] nodes length is 0 in FlowEditor render");
+      // eslint-disable-next-line no-console
+      console.trace("[FlowDebug] FlowEditor zero-nodes stack");
+    }
+
+    // Listen to storage changes for the persisted store key
+    const onStorage = (ev: StorageEvent) => {
+      if (!ev.key) return;
+      if (ev.key.includes("flow-editor-storage")) {
+        // eslint-disable-next-line no-console
+        console.log("[FlowDebug] storage change:", {
+          key: ev.key,
+          oldLen: ev.oldValue?.length ?? 0,
+          newLen: ev.newValue?.length ?? 0,
+        });
+        // eslint-disable-next-line no-console
+        console.trace("[FlowDebug] storage change stack");
+      }
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, [nodes.length]);
+
   const edgeReconnectSuccessful = React.useRef(true);
 
-  const handleReconnectStart = () => {
+  const handleReconnectStart = useCallback(() => {
     edgeReconnectSuccessful.current = false;
-  };
+  }, []);
 
-  const handleReconnect = (oldEdge: AgenEdge, newConnection: Connection) => {
-    edgeReconnectSuccessful.current = true;
-    // Update edges array via store util
-    removeEdge(oldEdge.id);
-    onConnect(newConnection);
-  };
+  const handleReconnect = useCallback(
+    (oldEdge: AgenEdge, newConnection: Connection) => {
+      if (isReadOnly) return; // Disable in read-only mode
+      edgeReconnectSuccessful.current = true;
+      removeEdge(oldEdge.id);
+      onConnect(newConnection);
+    },
+    [isReadOnly, removeEdge, onConnect]
+  );
 
-  const handleReconnectEnd = (_: MouseEvent | TouchEvent, edge: AgenEdge) => {
-    if (!edgeReconnectSuccessful.current) {
-      removeEdge(edge.id);
-    }
-    edgeReconnectSuccessful.current = true;
-  };
+  const handleReconnectEnd = useCallback(
+    (_: MouseEvent | TouchEvent, edge: AgenEdge) => {
+      if (isReadOnly) return; // Disable in read-only mode
+      if (!edgeReconnectSuccessful.current) {
+        removeEdge(edge.id);
+      }
+      edgeReconnectSuccessful.current = true;
+    },
+    [isReadOnly, removeEdge]
+  );
 
+  const prevSelNodeRef = React.useRef<string | null>(null);
+  const prevSelEdgeRef = React.useRef<string | null>(null);
   const handleSelectionChange = useCallback(
     ({
       nodes: selectedNodes,
@@ -416,12 +703,18 @@ const FlowEditorInternal = () => {
     }) => {
       // Handle node selection first
       const nodeId = selectedNodes.length > 0 ? selectedNodes[0].id : null;
-      selectNode(nodeId);
+      if (prevSelNodeRef.current !== nodeId) {
+        prevSelNodeRef.current = nodeId;
+        selectNode(nodeId);
+      }
 
       // Only handle edge selection if NO nodes are selected
       if (selectedNodes.length === 0) {
         const edgeId = selectedEdges.length > 0 ? selectedEdges[0].id : null;
-        selectEdge(edgeId);
+        if (prevSelEdgeRef.current !== edgeId) {
+          prevSelEdgeRef.current = edgeId;
+          selectEdge(edgeId);
+        }
       }
     },
     [selectNode, selectEdge]
@@ -447,18 +740,12 @@ const FlowEditorInternal = () => {
         nodes={nodes}
         edges={edges}
         onNodesChange={(newNodes: ReactFlowNode[]) => {
-          // Actually update the flow state during undo/redo operations
-          useFlowStore.setState((state) => ({
-            ...state,
-            nodes: newNodes as AgenNode[],
-          }));
+          // During undo/redo, update only the changed slice
+          useFlowStore.setState({ nodes: newNodes as AgenNode[] });
         }}
         onEdgesChange={(newEdges: ReactFlowEdge[]) => {
-          // Actually update the flow state during undo/redo operations
-          useFlowStore.setState((state) => ({
-            ...state,
-            edges: newEdges as AgenEdge[],
-          }));
+          // During undo/redo, update only the changed slice
+          useFlowStore.setState({ edges: newEdges as AgenEdge[] });
         }}
         config={{
           maxHistorySize: 100,
@@ -494,8 +781,8 @@ const FlowEditorInternal = () => {
         nodeErrors={nodeErrors}
         showHistoryPanel={showHistoryPanel}
         wrapperRef={flowWrapperRef}
-        updateNodeData={updateNodeData}
-        updateNodeId={updateNodeId}
+        updateNodeData={isReadOnly ? () => {} : updateNodeData}
+        updateNodeId={isReadOnly ? () => {} : updateNodeId}
         logNodeError={
           logNodeError as (
             nodeId: string,
@@ -506,22 +793,39 @@ const FlowEditorInternal = () => {
         }
         clearNodeErrors={clearNodeErrors}
         onToggleHistory={toggleHistoryPanel}
-        onDeleteNode={removeNode}
+        onDeleteNode={isReadOnly ? () => {} : removeNode}
         onDuplicateNode={() => {}}
-        onDeleteEdge={removeEdge}
+        onDeleteEdge={isReadOnly ? () => {} : removeEdge}
         inspectorLocked={inspectorLocked}
         inspectorViewMode={inspectorViewMode}
         setInspectorLocked={setInspectorLocked}
-        reactFlowHandlers={{
-          onNodesChange: onNodesChange as (changes: unknown[]) => void,
-          onEdgesChange: onEdgesChange as (changes: unknown[]) => void,
+        reactFlowHandlers={React.useMemo(() => {
+          const noop = () => {};
+          return {
+            onNodesChange: isReadOnly
+              ? noop
+              : (onNodesChange as (changes: unknown[]) => void),
+            onEdgesChange: isReadOnly
+              ? noop
+              : (onEdgesChange as (changes: unknown[]) => void),
+            onConnect: isReadOnly ? noop : onConnect,
+            onInit: noop,
+            onSelectionChange: handleSelectionChange,
+            onReconnect: handleReconnect,
+            onReconnectStart: handleReconnectStart,
+            onReconnectEnd: handleReconnectEnd,
+          };
+        }, [
+          isReadOnly,
+          onNodesChange,
+          onEdgesChange,
           onConnect,
-          onInit: () => {},
-          onSelectionChange: handleSelectionChange,
-          onReconnect: handleReconnect,
-          onReconnectStart: handleReconnectStart,
-          onReconnectEnd: handleReconnectEnd,
-        }}
+          handleSelectionChange,
+          handleReconnect,
+          handleReconnectStart,
+          handleReconnectEnd,
+        ])}
+        isReadOnly={isReadOnly}
       />
       <Sidebar className="z-50" enableDebug={true} />
     </div>

@@ -18,7 +18,7 @@ import {
   TAB_CONFIG_B,
   TAB_CONFIG_C,
   TAB_CONFIG_D,
-  TAB_CONFIG_E,
+  // TAB_CONFIG_E,
   type VariantConfig,
 } from "./types";
 
@@ -260,7 +260,9 @@ export const VARIANT_CONFIG: VariantConfig = {
       TEST: createStencilsByCategory("TEST", "variant-b"),
       CYCLE: createStencilsByCategory("CYCLE", "variant-b"),
       STORE: createStencilsByCategory("STORE", "variant-b"),
+      CONVERT: createStencilsByCategory("CONVERT", "variant-b"),
       EMAIL: createStencilsByCategory("EMAIL", "variant-b"),
+      LOGIC: createStencilsByCategory("LOGIC", "variant-b"),
       FLOW: createStencilsByCategory("FLOW", "variant-b"),
       TIME: createStencilsByCategory("TIME", "variant-b"),
       AI: createStencilsByCategory("AI", "variant-b"),
@@ -277,15 +279,17 @@ export const VARIANT_CONFIG: VariantConfig = {
   D: {
     tabs: TAB_CONFIG_D,
     stencils: {
-      TOP_NODES: createStencilsByFilter({}, "variant-d"),
+      EMAIL: createStencilsByCategory("EMAIL", "variant-d"),
+      AI: createStencilsByCategory("AI", "variant-d"),
+      FLOW: createStencilsByCategory("FLOW", "variant-d"),
     },
   },
-  E: {
-    tabs: TAB_CONFIG_E,
-    stencils: {
-      ESSENTIALS: createStencilsByCategory("CYCLE", "variant-e"),
-    },
-  },
+  // E: {
+  //   tabs: TAB_CONFIG_E,
+  //   stencils: {
+  //     ESSENTIALS: createStencilsByCategory("CYCLE", "variant-e"),
+  //   },
+  // },
 };
 
 // ============================================================================
@@ -398,6 +402,12 @@ export function refreshStencils(): typeof VARIANT_CONFIG {
         TEST: createStencilsByCategory("TEST", "variant-b"),
         CYCLE: createStencilsByCategory("CYCLE", "variant-b"),
         STORE: createStencilsByCategory("STORE", "variant-b"),
+        CONVERT: createStencilsByCategory("CONVERT", "variant-b"),
+        LOGIC: createStencilsByCategory("LOGIC", "variant-b"),
+        EMAIL: createStencilsByCategory("EMAIL", "variant-b"),
+        FLOW: createStencilsByCategory("FLOW", "variant-b"),
+        TIME: createStencilsByCategory("TIME", "variant-b"),
+        AI: createStencilsByCategory("AI", "variant-b"),
       },
     },
     C: {
@@ -414,12 +424,12 @@ export function refreshStencils(): typeof VARIANT_CONFIG {
         TOP_NODES: createStencilsByFilter({}, "variant-d"),
       },
     },
-    E: {
-      tabs: TAB_CONFIG_E,
-      stencils: {
-        ESSENTIALS: createStencilsByCategory("CYCLE", "variant-e"),
-      },
-    },
+    // E: {
+    //   tabs: TAB_CONFIG_E,
+    //   stencils: {
+    //     ESSENTIALS: createStencilsByCategory("CYCLE", "variant-e"),
+    //   },
+    // },
   };
 }
 

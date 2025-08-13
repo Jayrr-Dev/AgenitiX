@@ -14,6 +14,8 @@ const badgeVariants = cva(
 				destructive:
 					"border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
 				outline: "text-foreground",
+				//perfect circle icon
+				icon: "text-foreground rounded-full border border-border p-2 w-5 h-5 flex items-center justify-center",
 			},
 		},
 		defaultVariants: {

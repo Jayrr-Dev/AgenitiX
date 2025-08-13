@@ -38,6 +38,7 @@ import {
   EXPANDED_SIZES,
 } from "@/features/business-logic-modern/infrastructure/theming/sizing";
 import { useNodeData } from "@/hooks/useNodeData";
+import { trackNodeUpdate } from "@/lib/debug-node-updates";
 import { useStore } from "@xyflow/react";
 
 // -----------------------------------------------------------------------------
@@ -153,6 +154,9 @@ function createDynamicSpec(data: ViewBooleanData): NodeSpec {
       inputs: null,
       output: null,
       connectionStates: null,
+      isEnabled: true, // Enable node by default
+      isActive: false, // Will become active when enabled
+      isExpanded: false, // Default to collapsed
     }),
     dataSchema: ViewBooleanDataSchema,
     controls: {
@@ -256,9 +260,30 @@ const ViewBooleanNode = memo(
       connectionStates,
     } = nodeData as ViewBooleanData;
 
-    // Global React‑Flow store (nodes & edges) – triggers re‑render on change
-    const nodes = useStore((s) => s.nodes);
-    const edges = useStore((s) => s.edges);
+    // Global store – subscribe only to edges touching this node
+    const edges = useStore(
+      (s) => s.edges.filter((e) => e.source === id || e.target === id),
+      (a, b) => {
+        if (a === b) return true;
+        if (a.length !== b.length) return false;
+        const aIds = a.map((e) => e.id).join("|");
+        const bIds = b.map((e) => e.id).join("|");
+        return aIds === bIds;
+      }
+    );
+
+    // Subscribe to connected nodes data changes
+    const connectedNodes = useStore(
+      useCallback(
+        (s) => {
+          const inputEdges = edges.filter((e) => e.target === id);
+          return s.nodes.filter((n) => 
+            inputEdges.some((e) => e.source === n.id)
+          );
+        },
+        [edges, id]
+      )
+    );
 
     // Keep last emitted output to avoid redundant writes
     const lastOutputRef = useRef<boolean | null>(null);
@@ -272,17 +297,17 @@ const ViewBooleanNode = memo(
       updateNodeData({ isExpanded: !isExpanded });
     }, [isExpanded, updateNodeData]);
 
-    /** Propagate boolean output ONLY when node is active AND enabled */
+    /** Propagate boolean output when node is enabled (false should still propagate) */
     const propagate = useCallback(
       (value: boolean | null) => {
-        const shouldSend = isActive && isEnabled;
+        const shouldSend = isEnabled;
         const out = shouldSend ? value : null;
         if (out !== lastOutputRef.current) {
           lastOutputRef.current = out;
           updateNodeData({ output: out });
         }
       },
-      [isActive, isEnabled, updateNodeData]
+      [isEnabled, updateNodeData]
     );
 
     /**
@@ -303,8 +328,10 @@ const ViewBooleanNode = memo(
       const values: boolean[] = [];
 
       for (const edge of connectedEdges) {
-        // Get the source node data
-        const sourceNode = nodes.find((n) => n.id === edge.source);
+        // Get the source node data from connected nodes
+        const sourceNode = connectedNodes.find(
+          (n) => n.id === edge.source
+        );
         if (!sourceNode?.data) continue;
 
         // New unified handle-based input reading system
@@ -383,7 +410,7 @@ const ViewBooleanNode = memo(
         values.length > 0 ? values.some((v) => v === true) : null;
 
       return { connectionStates, primaryValue };
-    }, [id, edges, nodes]);
+    }, [id, edges, connectedNodes]);
 
     // -------------------------------------------------------------------------
     // 5.4  Effects
@@ -405,38 +432,51 @@ const ViewBooleanNode = memo(
         booleanValue: primaryValue,
         connectionStates: newConnectionStates,
       });
-    }, [nodes, edges, computeConnectionStates, updateNodeData]);
+    }, [computeConnectionStates, updateNodeData]);
 
-    /* 🔄 Auto-manage isEnabled based on input connections */
+    /* 🔄 Batch state updates to reduce render cascades */
     useEffect(() => {
+      const updates: Partial<ViewBooleanData> = {};
+      let hasUpdates = false;
+
+      // Auto-manage isEnabled based on input connections
       const hasConnection =
-        connectionStates !== null && Object.keys(connectionStates).length > 0;
+        connectionStates !== null &&
+        Object.keys(connectionStates || {}).length > 0;
       if (hasConnection !== isEnabled) {
-        updateNodeData({ isEnabled: hasConnection });
+        updates.isEnabled = hasConnection;
+        hasUpdates = true;
       }
-    }, [connectionStates, isEnabled, updateNodeData]);
 
-    /* 🔄 Update active state based on having valid input and being enabled */
-    useEffect(() => {
-      const hasValidInput = booleanValue !== null;
-
+      // Update active state: active only when enabled and booleanValue is strictly true
+      const isTrue = booleanValue === true; // null treated as false
       if (isEnabled) {
-        // If enabled, active when we have valid input
-        if (isActive !== hasValidInput) {
-          updateNodeData({ isActive: hasValidInput });
+        if (isActive !== isTrue) {
+          updates.isActive = isTrue;
+          hasUpdates = true;
         }
-      } else {
-        // If disabled, always set isActive to false
-        if (isActive) {
-          updateNodeData({ isActive: false });
-        }
+      } else if (isActive) {
+        updates.isActive = false;
+        hasUpdates = true;
       }
-    }, [booleanValue, isEnabled, isActive, updateNodeData]);
+
+      if (hasUpdates) {
+        trackNodeUpdate(id, "boolean-state-batch");
+        updateNodeData(updates);
+      }
+    }, [
+      connectionStates,
+      isEnabled,
+      booleanValue,
+      isActive,
+      updateNodeData,
+      id,
+    ]);
 
     /* 🔄 Propagate output when state changes */
     useEffect(() => {
       propagate(booleanValue as boolean | null);
-    }, [isActive, isEnabled, booleanValue, propagate]);
+    }, [booleanValue, propagate]);
 
     // -------------------------------------------------------------------------
     // 5.5  Validation
@@ -460,9 +500,10 @@ const ViewBooleanNode = memo(
     // 5.6  Visual state computation
     // -------------------------------------------------------------------------
     const hasConnection =
-      connectionStates !== null && Object.keys(connectionStates).length > 0;
+      connectionStates !== null &&
+      Object.keys(connectionStates || {}).length > 0;
     const connectionCount = connectionStates
-      ? Object.keys(connectionStates).length
+      ? Object.keys(connectionStates || {}).length
       : 0;
     const display = getBooleanDisplay(
       booleanValue as boolean | null,
@@ -601,12 +642,10 @@ const ViewBooleanNodeWithDynamicSpec = (props: NodeProps) => {
   const { nodeData } = useNodeData(props.id, props.data);
 
   // Recompute spec only when the size keys change
+  const { expandedSize, collapsedSize } = nodeData as ViewBooleanData;
   const dynamicSpec = useMemo(
-    () => createDynamicSpec(nodeData as ViewBooleanData),
-    [
-      (nodeData as ViewBooleanData).expandedSize,
-      (nodeData as ViewBooleanData).collapsedSize,
-    ]
+    () => createDynamicSpec({ expandedSize, collapsedSize } as ViewBooleanData),
+    [expandedSize, collapsedSize]
   );
 
   // Memoize the scaffolded component for stable identity

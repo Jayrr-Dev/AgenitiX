@@ -1,12 +1,20 @@
 import { api } from "@/convex/_generated/api";
-import type { Id } from "@/convex/_generated/dataModel";
-import type { AuthResult } from "@/convex/auth";
 import { useMutation, useQuery } from "convex/react";
 import { useCallback, useEffect, useState } from "react";
 
 interface AuthError extends Error {
 	code?: string;
 	retryAfter?: number;
+}
+
+interface AuthResult<T> {
+	success: boolean;
+	data?: T;
+	error?: {
+		code: string;
+		message: string;
+		retryAfter?: number;
+	};
 }
 
 // Simple token management (in production, use secure storage)
@@ -23,15 +31,16 @@ export const useAuth = () => {
 		}
 	}, []);
 
-	// Get current user
-	const user = useQuery(api.auth.getCurrentUser, token ? { token_hash: token } : "skip");
+  // Legacy hook now deprecated; prefer components/auth/AuthProvider
+  const user = undefined as unknown as any;
 
 	// Authentication mutations
-	const signUpMutation = useMutation(api.auth.signUp);
-	const sendMagicLinkMutation = useMutation(api.auth.sendMagicLink);
-	const verifyMagicLinkMutation = useMutation(api.auth.verifyMagicLink);
-	const signOutMutation = useMutation(api.auth.signOut);
-	const updateProfileMutation = useMutation(api.auth.updateProfile);
+  // Deprecated legacy mutations kept as placeholders to prevent runtime imports
+  const signUpMutation = (() => { throw new Error("Legacy auth removed"); }) as unknown as ReturnType<typeof useMutation>;
+  const sendMagicLinkMutation = (() => { throw new Error("Legacy auth removed"); }) as unknown as ReturnType<typeof useMutation>;
+  const verifyMagicLinkMutation = (() => { throw new Error("Legacy auth removed"); }) as unknown as ReturnType<typeof useMutation>;
+  const signOutMutation = (() => { throw new Error("Legacy auth removed"); }) as unknown as ReturnType<typeof useMutation>;
+  const updateProfileMutation = (() => { throw new Error("Legacy auth removed"); }) as unknown as ReturnType<typeof useMutation>;
 
 	// Sign up function with Magic Link
 	const signUp = useCallback(
@@ -51,9 +60,9 @@ export const useAuth = () => {
 
 			// Handle Convex errors
 			if (!result.success) {
-				const error = new Error(result.error.message);
-				(error as AuthError).code = result.error.code;
-				(error as AuthError).retryAfter = result.error.retryAfter;
+				const error = new Error(result.error?.message || "Authentication failed");
+				(error as AuthError).code = result.error?.code;
+				(error as AuthError).retryAfter = result.error?.retryAfter;
 				throw error;
 			}
 
@@ -65,7 +74,7 @@ export const useAuth = () => {
 					body: JSON.stringify({
 						email: data.email,
 						name: data.name,
-						magicToken: result.data.magicToken,
+						magicToken: result.data?.magicToken,
 						type: "verification",
 					}),
 				});
@@ -94,14 +103,14 @@ export const useAuth = () => {
 			// Request magic link from Convex
 			const result = (await sendMagicLinkMutation({
 				email: data.email,
-				type: "verification",
+				type: "login", // Changed from "verification" to "login" for sign in
 			})) as AuthResult<{ magicToken: string }>;
 
 			// Handle Convex errors
 			if (!result.success) {
-				const error = new Error(result.error.message);
-				(error as AuthError).code = result.error.code;
-				(error as AuthError).retryAfter = result.error.retryAfter;
+				const error = new Error(result.error?.message || "Authentication failed");
+				(error as AuthError).code = result.error?.code;
+				(error as AuthError).retryAfter = result.error?.retryAfter;
 				throw error;
 			}
 
@@ -113,7 +122,7 @@ export const useAuth = () => {
 					body: JSON.stringify({
 						email: data.email,
 						name: data.email.split("@")[0], // Use email prefix as fallback name
-						magicToken: result.data.magicToken,
+						magicToken: result.data?.magicToken,
 						type: "login",
 					}),
 				});
@@ -167,15 +176,17 @@ export const useAuth = () => {
 
 			// Handle Convex errors
 			if (!result.success) {
-				const error = new Error(result.error.message);
-				(error as AuthError).code = result.error.code;
+				const error = new Error(result.error?.message || "Verification failed");
+				(error as AuthError).code = result.error?.code || "VERIFICATION_ERROR";
 				throw error;
 			}
 
 			// Set session token
-			const sessionToken = result.data.sessionToken;
-			setToken(sessionToken);
-			localStorage.setItem(TOKEN_KEY, sessionToken);
+			const sessionToken = result.data?.sessionToken;
+			if (sessionToken) {
+				setToken(sessionToken);
+				localStorage.setItem(TOKEN_KEY, sessionToken);
+			}
 
 			return result.data;
 		},
@@ -236,32 +247,11 @@ export const useUserSessions = () => {
 		}
 	}, []);
 
-	const sessions = useQuery(api.auth.getUserSessions, token ? { token_hash: token } : "skip");
-
-	const revokeSessionMutation = useMutation(api.auth.revokeSession);
-
-	const revokeSession = useCallback(
-		async (sessionId: Id<"auth_sessions">) => {
-			if (!token) {
-				throw new Error("Not authenticated");
-			}
-
-			try {
-				return await revokeSessionMutation({
-					token_hash: token,
-					session_id: sessionId,
-				});
-			} catch (error) {
-				console.error("Revoke session error:", error);
-				throw error;
-			}
-		},
-		[revokeSessionMutation, token]
-	);
+	// Session management is now handled through Convex Auth
 
 	return {
-		sessions,
-		isLoading: sessions === undefined && token !== null,
-		revokeSession,
+		// Session management now handled by Convex Auth
+		sessions: [], // Deprecated
+		isLoading: false, // Simplified for now
 	};
 };

@@ -5,5 +5,6 @@
 	"files.associations": {
 		"*.css": "tailwindcss"
 	},
-	"tailwindCSS.hovers": true
+	"tailwindCSS.hovers": true,
+	"typescript.autoClosingTags": false
 }

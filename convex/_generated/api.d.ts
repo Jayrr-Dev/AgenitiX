@@ -10,9 +10,17 @@
 
 import type * as aiAgent from "../aiAgent.js";
 import type * as auth from "../auth.js";
+import type * as authFunctions from "../authFunctions.js";
+import type * as authHelpers from "../authHelpers.js";
 import type * as devHelpers from "../devHelpers.js";
 import type * as emailAccounts from "../emailAccounts.js";
+import type * as flowHistory from "../flowHistory.js";
 import type * as flows from "../flows.js";
+import type * as http from "../http.js";
+import type * as manageFlowOps from "../manageFlowOps.js";
+import type * as sendEmails from "../sendEmails.js";
+import type * as starterTemplates from "../starterTemplates.js";
+import type * as users from "../users.js";
 
 import type {
   ApiFromModules,
@@ -31,9 +39,17 @@ import type {
 declare const fullApi: ApiFromModules<{
   aiAgent: typeof aiAgent;
   auth: typeof auth;
+  authFunctions: typeof authFunctions;
+  authHelpers: typeof authHelpers;
   devHelpers: typeof devHelpers;
   emailAccounts: typeof emailAccounts;
+  flowHistory: typeof flowHistory;
   flows: typeof flows;
+  http: typeof http;
+  manageFlowOps: typeof manageFlowOps;
+  sendEmails: typeof sendEmails;
+  starterTemplates: typeof starterTemplates;
+  users: typeof users;
 }>;
 declare const fullApiWithMounts: typeof fullApi;
 
@@ -1954,6 +1970,104 @@ export declare const components: {
           null
         >;
       };
+    };
+  };
+  resend: {
+    lib: {
+      cancelEmail: FunctionReference<
+        "mutation",
+        "internal",
+        { emailId: string },
+        null
+      >;
+      cleanupAbandonedEmails: FunctionReference<
+        "mutation",
+        "internal",
+        { olderThan?: number },
+        null
+      >;
+      cleanupOldEmails: FunctionReference<
+        "mutation",
+        "internal",
+        { olderThan?: number },
+        null
+      >;
+      get: FunctionReference<
+        "query",
+        "internal",
+        { emailId: string },
+        {
+          complained: boolean;
+          createdAt: number;
+          errorMessage?: string;
+          finalizedAt: number;
+          from: string;
+          headers?: Array<{ name: string; value: string }>;
+          html?: string;
+          opened: boolean;
+          replyTo: Array<string>;
+          resendId?: string;
+          segment: number;
+          status:
+            | "waiting"
+            | "queued"
+            | "cancelled"
+            | "sent"
+            | "delivered"
+            | "delivery_delayed"
+            | "bounced"
+            | "failed";
+          subject: string;
+          text?: string;
+          to: string;
+        } | null
+      >;
+      getStatus: FunctionReference<
+        "query",
+        "internal",
+        { emailId: string },
+        {
+          complained: boolean;
+          errorMessage: string | null;
+          opened: boolean;
+          status:
+            | "waiting"
+            | "queued"
+            | "cancelled"
+            | "sent"
+            | "delivered"
+            | "delivery_delayed"
+            | "bounced"
+            | "failed";
+        } | null
+      >;
+      handleEmailEvent: FunctionReference<
+        "mutation",
+        "internal",
+        { event: any },
+        null
+      >;
+      sendEmail: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          from: string;
+          headers?: Array<{ name: string; value: string }>;
+          html?: string;
+          options: {
+            apiKey: string;
+            initialBackoffMs: number;
+            onEmailEvent?: { fnHandle: string };
+            retryAttempts: number;
+            testMode: boolean;
+          };
+          replyTo?: Array<string>;
+          subject: string;
+          text?: string;
+          to: string;
+        },
+        string
+      >;
     };
   };
 };

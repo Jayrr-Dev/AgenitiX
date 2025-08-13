@@ -5,10 +5,12 @@ export { default as timeScheduler } from "./trigger/timeScheduler.node";
 export { default as aiTools } from "./ai/aiTools.node";
 export { default as storeLocal } from "./store/storeLocal.node";
 export { default as aiManager } from "./ai/aiManager.node";
-export { default as createObject } from "./create/createObject.node";
+export { default as createJson } from "./create/createJson.node";
 export { default as createMap } from "./create/createMap.node";
 export { default as mergeNode } from "./store/mergeNode.node";
-// Node exports will be added here automatically by Plop
+export { default as viewObject } from "./view/viewObject.node";
+export { default as viewArray } from "./view/viewArray.node";
+export { default as emailPreview } from "./email/emailPreview.node";
 export { default as createText } from "./create/createText.node";
 export { default as aiAgent } from "./ai/aiAgent.node";
 export { default as storeInMemory } from "./create/storeInMemory.node";
@@ -24,7 +26,20 @@ export { default as emailBulk } from "./email/emailBulk.node";
 export { default as emailData } from "./email/emailData.node";
 export { default as emailList } from "./email/emailList.node";
 export { default as emailUpdater } from "./email/emailUpdater.node";
+export { default as emailMessenger } from "./email/emailMessenger.node";
 export { default as testNode } from "./test/testNode.node";
 export { default as testToast } from "./test/testToast.node";
 export { default as triggerToggle } from "./trigger/triggerToggle.node";
 export { default as viewText } from "./view/viewText.node";
+export { default as logicAnd } from "./logic/logicAnd.node";
+export { default as logicOr } from "./logic/logicOr.node";
+export { default as logicNot } from "./logic/logicNot.node";
+export { default as logicXor } from "./logic/logicXor.node";
+export { default as logicXnor } from "./logic/logicXnor.node";
+
+// Convert domain exports (will be added as nodes are created)
+export { default as toBoolean } from "./convert/toBoolean.node";
+export { default as toText } from "./convert/toText.node";
+export { default as toObject } from "./convert/toObject.node";
+export { default as toArray } from "./convert/toArray.node";
+export { default as toAny } from "./convert/toAny.node";

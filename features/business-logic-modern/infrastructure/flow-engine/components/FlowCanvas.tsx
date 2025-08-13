@@ -17,30 +17,32 @@
  */
 
 import {
-	Background,
-	type ColorMode,
-	type Connection,
-	ConnectionMode,
-	PanOnScrollMode,
-	Panel,
-	ReactFlow,
-	SelectionMode,
+  Background,
+  type ColorMode,
+  type Connection,
+  ConnectionMode,
+  type EdgeTypes,
+  PanOnScrollMode,
+  Panel,
+  ReactFlow,
+  SelectionMode,
 } from "@xyflow/react";
 import { useTheme } from "next-themes";
 import type React from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { AgenEdge, AgenNode } from "../types/nodeData";
 
 // Import other components - Using clean aliases
 import HistoryPanel from "@/features/business-logic-modern/infrastructure/action-toolbar/history/HistoryPanel";
 import NodeInspector from "@/features/business-logic-modern/infrastructure/node-inspector/NodeInspector";
 import {
-	ThemedControls,
-	ThemedMiniMap,
-	nodeInspectorStyles,
+  ThemedControls,
+  ThemedMiniMap,
+  nodeInspectorStyles,
 } from "@/features/business-logic-modern/infrastructure/theming/components";
 import { WorkflowManager } from "@/features/business-logic-modern/infrastructure/workflow-manager";
 import { NodeDisplayProvider } from "../contexts/node-display-context";
+import { AnimateMarchingAntsEdge } from "./edges/AnimateMarchingAntsEdge";
 
 // Node components are now loaded via useDynamicNodeTypes hook
 // No need for direct imports here
@@ -52,46 +54,56 @@ import { useDynamicNodeTypes } from "../hooks/useDynamicNodeTypes";
 
 // Debug tool for clearing local storage in dev mode
 import ClearLocalStorage from "@/features/business-logic-modern/infrastructure/components/ClearLocalStorage";
+import { useFlowMetadataOptional } from "../contexts/flow-metadata-context";
 
 interface NodeError {
-	message: string;
-	type?: string;
-	source?: string;
-	timestamp: number;
+  message: string;
+  type?: string;
+  source?: string;
+  timestamp: number;
 }
 
 interface FlowCanvasProps {
-	nodes: AgenNode[];
-	edges: AgenEdge[];
-	selectedNode: AgenNode | null;
-	selectedEdge: AgenEdge | null;
-	selectedOutput: string | null;
-	nodeErrors: Record<string, NodeError[]>;
-	showHistoryPanel: boolean;
-	wrapperRef: React.RefObject<HTMLDivElement | null>;
-	updateNodeData: (id: string, patch: Record<string, unknown>) => void;
-	updateNodeId?: (oldId: string, newId: string) => void;
-	logNodeError: (nodeId: string, message: string, type?: string, source?: string) => void;
-	clearNodeErrors: (nodeId: string) => void;
-	onToggleHistory: () => void;
-	onDragOver: (e: React.DragEvent) => void;
-	onDrop: (e: React.DragEvent) => void;
-	onDeleteNode?: (nodeId: string) => void;
-	onDuplicateNode?: (nodeId: string) => void;
-	onDeleteEdge?: (edgeId: string) => void;
-	inspectorLocked: boolean;
-	inspectorViewMode: "bottom" | "side";
-	setInspectorLocked: (locked: boolean) => void;
-	reactFlowHandlers: {
-		onReconnectStart: () => void;
-		onReconnect: (oldEdge: AgenEdge, newConn: Connection) => void;
-		onReconnectEnd: (event: MouseEvent | TouchEvent, edge: AgenEdge) => void;
-		onConnect: (connection: Connection) => void;
-		onNodesChange: (changes: unknown[]) => void;
-		onEdgesChange: (changes: unknown[]) => void;
-		onSelectionChange: (selection: { nodes: AgenNode[]; edges: AgenEdge[] }) => void;
-		onInit: (instance: unknown) => void;
-	};
+  nodes: AgenNode[];
+  edges: AgenEdge[];
+  selectedNode: AgenNode | null;
+  selectedEdge: AgenEdge | null;
+  selectedOutput: string | null;
+  nodeErrors: Record<string, NodeError[]>;
+  showHistoryPanel: boolean;
+  wrapperRef: React.RefObject<HTMLDivElement | null>;
+  updateNodeData: (id: string, patch: Record<string, unknown>) => void;
+  updateNodeId?: (oldId: string, newId: string) => void;
+  logNodeError: (
+    nodeId: string,
+    message: string,
+    type?: string,
+    source?: string
+  ) => void;
+  clearNodeErrors: (nodeId: string) => void;
+  onToggleHistory: () => void;
+  onDragOver: (e: React.DragEvent) => void;
+  onDrop: (e: React.DragEvent) => void;
+  onDeleteNode?: (nodeId: string) => void;
+  onDuplicateNode?: (nodeId: string) => void;
+  onDeleteEdge?: (edgeId: string) => void;
+  inspectorLocked: boolean;
+  inspectorViewMode: "bottom" | "side";
+  setInspectorLocked: (locked: boolean) => void;
+  isReadOnly?: boolean; // New prop for read-only mode
+  reactFlowHandlers: {
+    onReconnectStart: () => void;
+    onReconnect: (oldEdge: AgenEdge, newConn: Connection) => void;
+    onReconnectEnd: (event: MouseEvent | TouchEvent, edge: AgenEdge) => void;
+    onConnect: (connection: Connection) => void;
+    onNodesChange: (changes: unknown[]) => void;
+    onEdgesChange: (changes: unknown[]) => void;
+    onSelectionChange: (selection: {
+      nodes: AgenNode[];
+      edges: AgenEdge[];
+    }) => void;
+    onInit: (instance: unknown) => void;
+  };
 }
 
 /**
@@ -123,355 +135,482 @@ const BACKGROUND_DOT_SIZE = 1;
  * Edge styling configuration using design system tokens
  */
 const EDGE_STYLES = {
-	strokeWidth: 2,
-	stroke: "var(--infra-canvas-edge)",
+  strokeWidth: 2,
+  stroke: "var(--infra-canvas-edge)",
 } as const;
 
 /**
  * Mobile delete button styling using design system tokens
  */
 const MOBILE_DELETE_BUTTON_STYLES = {
-	base: "bg-[var(--core-status-node-delete-bg)] hover:bg-[var(--core-status-node-delete-bg-light)] text-[var(--core-status-node-delete-border)] p-1 rounded-full shadow-lg transition-colors",
-	icon: "w-5 h-5",
+  base: "bg-[var(--core-status-node-delete-bg)] hover:bg-[var(--core-status-node-delete-bg-light)] text-[var(--core-status-node-delete-border)] p-1 rounded-full shadow-lg transition-colors",
+  icon: "w-5 h-5",
 } as const;
 
 /**
  * Panel positioning and styling constants
  */
 const PANEL_STYLES = {
-	margin: "m-2",
-	historyPanel: "mr-2",
-	historyPanelTop: "70px",
-	mobileDeleteTop: "100px",
-	mobileDeleteRight: "14px",
+  margin: "m-2",
+  historyPanel: "mr-2",
+  historyPanelTop: "70px",
+  mobileDeleteTop: "100px",
+  mobileDeleteRight: "14px",
 } as const;
 
+/**
+ * Stable key codes passed to ReactFlow
+ */
+const DELETE_KEY_CODES: string[] = ["Delete"];
+
+/**
+ * Stable container style for the outer canvas wrapper
+ */
+const CANVAS_CONTAINER_STYLE: React.CSSProperties = {
+  // Let the browser handle panning/scrolling gestures natively for better INP
+  touchAction: "pan-x pan-y",
+  width: "100%",
+  height: "100%",
+  minHeight: "100vh",
+  minWidth: "100vw",
+};
+
 export const FlowCanvas: React.FC<FlowCanvasProps> = ({
-	nodes,
-	edges,
-	selectedNode,
-	selectedEdge,
-	// selectedOutput,
-	// nodeErrors,
-	showHistoryPanel,
-	wrapperRef,
-	// updateNodeData,
-	// updateNodeId,
-	// logNodeError,
-	// clearNodeErrors,
-	// onToggleHistory,
-	onDragOver,
-	onDrop,
-	onDeleteNode,
-	// onDuplicateNode,
-	onDeleteEdge,
-	inspectorLocked,
-	inspectorViewMode,
-	// setInspectorLocked,
-	reactFlowHandlers,
+  nodes,
+  edges,
+  selectedNode,
+  selectedEdge,
+  // selectedOutput,
+  // nodeErrors,
+  showHistoryPanel,
+  wrapperRef,
+  // updateNodeData,
+  // updateNodeId,
+  // logNodeError,
+  // clearNodeErrors,
+  // onToggleHistory,
+  onDragOver,
+  onDrop,
+  onDeleteNode,
+  // onDuplicateNode,
+  onDeleteEdge,
+  inspectorLocked,
+  inspectorViewMode,
+  // setInspectorLocked,
+  reactFlowHandlers,
 }) => {
-	const _componentName = "FlowCanvas";
+  const _componentName = "FlowCanvas";
 
-	// Theme integration
-	const { resolvedTheme } = useTheme();
-	const [_mounted, setMounted] = useState(false);
+  // Theme integration
+  const { resolvedTheme } = useTheme();
+  const [_mounted, setMounted] = useState(false);
 
-	useEffect(() => {
-		setMounted(true);
-	}, []);
+  // Get flow metadata for permission checking
+  const flowMetadata = useFlowMetadataOptional();
+  const canEdit = flowMetadata?.flow?.canEdit ?? true; // Default to true for backward compatibility
 
-	const colorMode = (resolvedTheme || "dark") as ColorMode;
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
-	// ============================================================================
-	// ULTIMATE TYPESAFE HANDLE SYSTEM - Connection prevention
-	// ============================================================================
+  const colorMode = (resolvedTheme || "dark") as ColorMode;
 
-	const { isValidConnection } = useUltimateFlowConnectionPrevention();
+  // ============================================================================
+  // ULTIMATE TYPESAFE HANDLE SYSTEM - Connection prevention
+  // ============================================================================
 
-	// ============================================================================
-	// STATE FOR MOBILE RESPONSIVENESS & ERROR TRACKING
-	// ============================================================================
+  const { isValidConnection } = useUltimateFlowConnectionPrevention();
 
-	const [isMobile, setIsMobile] = useState(false);
-	const [_hasFilteredNodes, setHasFilteredNodes] = useState(false);
+  // Ensure a stable callback reference for ReactFlow
+  const handleIsValidConnection: (
+    edgeOrConnection: AgenEdge | Connection
+  ) => boolean = useCallback(
+    (edgeOrConnection: AgenEdge | Connection) => {
+      // Normalize to Connection shape if an edge is provided
+      const normalized: Connection = {
+        source: edgeOrConnection.source,
+        target: edgeOrConnection.target,
+        sourceHandle:
+          (edgeOrConnection as AgenEdge).sourceHandle ??
+          (edgeOrConnection as Connection).sourceHandle ??
+          null,
+        targetHandle:
+          (edgeOrConnection as AgenEdge).targetHandle ??
+          (edgeOrConnection as Connection).targetHandle ??
+          null,
+      };
+      return isValidConnection(normalized);
+    },
+    [isValidConnection]
+  );
 
-	// Get themed classes for components
-	// const nodeInspectorTheme = useComponentTheme("nodeInspector");
-	// Removed useComponentTheme - now using semantic tokens directly
+  // ============================================================================
+  // STATE FOR MOBILE RESPONSIVENESS & ERROR TRACKING
+  // ============================================================================
 
-	useEffect(() => {
-		const checkScreenSize = () => {
-			setIsMobile(window.innerWidth < 768); // md breakpoint
-		};
+  const [isMobile, setIsMobile] = useState(false);
+  const [_hasFilteredNodes, setHasFilteredNodes] = useState(false);
 
-		// Check on mount
-		checkScreenSize();
+  // Get themed classes for components
+  // const nodeInspectorTheme = useComponentTheme("nodeInspector");
+  // Removed useComponentTheme - now using semantic tokens directly
 
-		// Listen for resize events
-		window.addEventListener("resize", checkScreenSize);
-		return () => window.removeEventListener("resize", checkScreenSize);
-	}, []);
+  useEffect(() => {
+    const checkScreenSize = () => {
+      setIsMobile(window.innerWidth < 768); // md breakpoint
+    };
 
-	// ============================================================================
-	// DEFENSIVE FILTERING - PREVENT UNDEFINED POSITION ERRORS
-	// ============================================================================
+    // Check on mount
+    checkScreenSize();
 
-	const safeNodes = useMemo(() => {
-		const filteredNodes = nodes.filter((node) => {
-			// Check if node is valid and has proper position
-			if (!node || typeof node !== "object") {
-				console.warn("🔍 [FlowCanvas] Filtered out invalid node:", node);
-				return false;
-			}
+    // Listen for resize events
+    window.addEventListener("resize", checkScreenSize);
+    return () => window.removeEventListener("resize", checkScreenSize);
+  }, []);
 
-			if (
-				!node.position ||
-				typeof node.position.x !== "number" ||
-				typeof node.position.y !== "number"
-			) {
-				console.warn("🔍 [FlowCanvas] Filtered out node with invalid position:", node);
-				return false;
-			}
+  // ============================================================================
+  // DEFENSIVE FILTERING - PREVENT UNDEFINED POSITION ERRORS
+  // ============================================================================
 
-			if (!(node.id && node.type)) {
-				console.warn("🔍 [FlowCanvas] Filtered out node missing id or type:", node);
-				return false;
-			}
+  const safeNodes = useMemo(() => {
+    const filteredNodes = nodes.filter((node) => {
+      // Check if node is valid and has proper position
+      if (!node || typeof node !== "object") {
+        console.warn("🔍 [FlowCanvas] Filtered out invalid node:", node);
+        return false;
+      }
 
-			return true;
-		});
+      if (
+        !node.position ||
+        typeof node.position.x !== "number" ||
+        typeof node.position.y !== "number"
+      ) {
+        console.warn(
+          "🔍 [FlowCanvas] Filtered out node with invalid position:",
+          node
+        );
+        return false;
+      }
 
-		return filteredNodes;
-	}, [nodes]);
+      if (!(node.id && node.type)) {
+        console.warn(
+          "🔍 [FlowCanvas] Filtered out node missing id or type:",
+          node
+        );
+        return false;
+      }
 
-	// Track filtering results separately to avoid infinite re-renders
-	useEffect(() => {
-		if (safeNodes.length !== nodes.length) {
-			const filteredCount = nodes.length - safeNodes.length;
-			console.warn(
-				`🔍 [FlowCanvas] Filtered ${filteredCount} invalid nodes. Kept ${safeNodes.length} valid nodes.`
-			);
-			console.warn("💡 If this error persists, you may need to reset your workspace.");
-			setHasFilteredNodes(true);
-		} else {
-			setHasFilteredNodes(false);
-		}
-	}, [nodes.length, safeNodes.length]);
+      return true;
+    });
 
-	// ============================================================================
-	// DYNAMIC POSITIONING VARIABLES
-	// ============================================================================
+    return filteredNodes;
+  }, [nodes]);
 
-	const controlsPosition = isMobile ? "center-right" : "top-left";
-	const controlsClassName = isMobile ? " translate-y-1/2 translate-x-1" : "";
-	const deleteButtonPosition = isMobile ? "center-right" : "top-right";
-	const deleteButtonStyle = isMobile
-		? {
-				marginTop: PANEL_STYLES.mobileDeleteTop,
-				marginRight: PANEL_STYLES.mobileDeleteRight,
-			}
-		: { marginTop: PANEL_STYLES.historyPanelTop };
+  // Track filtering results separately to avoid infinite re-renders
+  useEffect(() => {
+    if (safeNodes.length !== nodes.length) {
+      const filteredCount = nodes.length - safeNodes.length;
+      console.warn(
+        `🔍 [FlowCanvas] Filtered ${filteredCount} invalid nodes. Kept ${safeNodes.length} valid nodes.`
+      );
+      console.warn(
+        "💡 If this error persists, you may need to reset your workspace."
+      );
+      setHasFilteredNodes(true);
+    } else {
+      setHasFilteredNodes(false);
+    }
+  }, [nodes.length, safeNodes.length]);
 
-	// ============================================================================
-	// NODE TYPES REGISTRY (INLINE) - A temporary, hardcoded manifest
-	// ============================================================================
+  // ============================================================================
+  // DYNAMIC POSITIONING VARIABLES
+  // ============================================================================
 
-	const nodeTypes = useDynamicNodeTypes();
+  const controlsPosition = isMobile ? "center-right" : "top-left";
+  const controlsClassName = isMobile ? " translate-y-1/2 translate-x-1" : "";
+  const deleteButtonPosition = isMobile ? "center-right" : "top-right";
+  const deleteButtonStyle = isMobile
+    ? {
+        marginTop: PANEL_STYLES.mobileDeleteTop,
+        marginRight: PANEL_STYLES.mobileDeleteRight,
+      }
+    : { marginTop: PANEL_STYLES.historyPanelTop };
 
-	const edgeTypes = useMemo(() => ({}), []);
+  // ============================================================================
+  // NODE TYPES REGISTRY (INLINE) - A temporary, hardcoded manifest
+  // ============================================================================
 
-	// ============================================================================
-	// PLATFORM-SPECIFIC MULTI-SELECTION CONFIGURATION
-	// ============================================================================
+  const nodeTypes = useDynamicNodeTypes();
 
-	const isMac = useMemo(() => {
-		if (typeof navigator === "undefined") {
-			return false;
-		}
-		return navigator.platform.toUpperCase().includes("MAC");
-	}, []);
+  // Install custom edge types
+  const edgeTypes = useMemo(
+    () => ({ marchingAnts: AnimateMarchingAntsEdge }),
+    []
+  );
 
-	// Configure selection keys based on ReactFlow documentation
-	const selectionKeys = useMemo(
-		() => ({
-			// Allow drawing selection box with Shift key
-			selectionKeyCode: "Shift",
-			// Platform-specific multi-selection: Meta (Cmd) on Mac, Control on others
-			// Also support Shift as alternative for both platforms
-			multiSelectionKeyCode: [isMac ? "Meta" : "Control", "Shift"],
-		}),
-		[isMac]
-	);
+  // Compute displayed edges: animate only edges connected to the selected node
+  const displayedEdges = useMemo(() => {
+    if (!selectedNode) return edges;
+    const selectedId = selectedNode.id;
+    return edges.map((edge) => {
+      const isConnected =
+        edge.source === selectedId || edge.target === selectedId;
+      if (!isConnected) return edge;
+      // Always animate along the edge orientation (source → target), basically input → output
+      return {
+        ...edge,
+        type: "marchingAnts",
+        data: {
+          ...(edge.data as Record<string, unknown> | undefined),
+          reverse: false,
+        },
+      } as AgenEdge;
+    });
+  }, [edges, selectedNode]);
 
-	// ============================================================================
-	// RENDER
-	// ============================================================================
+  // ============================================================================
+  // PLATFORM-SPECIFIC MULTI-SELECTION CONFIGURATION
+  // ============================================================================
 
-	return (
-		<div
-			ref={wrapperRef}
-			className="relative h-full w-full flex-1"
-			onDragOver={onDragOver}
-			onDrop={onDrop}
-			style={{
-				touchAction: "none",
-				width: "100%",
-				height: "100%",
-				minHeight: "100vh",
-				minWidth: "100vw",
-			}}
-		>
-			<ReactFlow
-				// Core Data
-				nodes={safeNodes}
-				edges={edges}
-				nodeTypes={nodeTypes}
-				edgeTypes={edgeTypes}
-				// Explicit dimensions to fix sizing issue
-				style={{ width: "100%", height: "100%" }}
-				// Connection Handling
-				isValidConnection={isValidConnection}
-				connectionMode={ConnectionMode.Loose}
-				onConnect={reactFlowHandlers.onConnect}
-				onReconnect={reactFlowHandlers.onReconnect}
-				onReconnectStart={reactFlowHandlers.onReconnectStart}
-				onReconnectEnd={reactFlowHandlers.onReconnectEnd}
-				// Change Handlers
-				onNodesChange={reactFlowHandlers.onNodesChange}
-				onEdgesChange={reactFlowHandlers.onEdgesChange}
-				onSelectionChange={reactFlowHandlers.onSelectionChange}
-				onInit={reactFlowHandlers.onInit}
-				// Selection Configuration
-				selectionMode={SelectionMode.Partial}
-				selectionKeyCode={selectionKeys.selectionKeyCode}
-				multiSelectionKeyCode={selectionKeys.multiSelectionKeyCode}
-				deleteKeyCode={["Delete"]}
-				// Interaction Settings
-				snapToGrid={true}
-				snapGrid={SNAP_GRID}
-				panOnDrag={true}
-				panOnScroll={true}
-				panOnScrollMode={PanOnScrollMode.Free}
-				zoomOnScroll={true}
-				zoomOnPinch={true}
-				zoomOnDoubleClick={false}
-				// Node/Edge Behavior
-				nodesDraggable={true}
-				nodesConnectable={true}
-				elementsSelectable={true}
-				edgesReconnectable={true}
-				// Visual Settings
-				fitView={true}
-				colorMode={colorMode}
-				proOptions={{ hideAttribution: true }}
-				defaultEdgeOptions={{
-					type: "default",
-					deletable: true,
-					focusable: true,
-					style: EDGE_STYLES,
-				}}
-			>
-				{/* NODE INSPECTOR PANEL */}
-				<Panel
-					position={inspectorViewMode === "bottom" ? "bottom-center" : "top-right"}
-					className={`hidden rounded shadow-sm md:block ${
-						inspectorViewMode === "bottom"
-							? "max-h-[280px] max-w-4xl"
-							: inspectorLocked || !selectedNode
-								? "h-[50px] w-[50px] rounded-lg border border-border bg-card shadow-lg"
-								: "max-h-[calc(100vh-370px)] w-[450px]"
-					} overflow-y-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${nodeInspectorStyles.getContainer()}`}
-				>
-					<NodeDisplayProvider>
-						<NodeInspector viewMode={inspectorViewMode} />
-					</NodeDisplayProvider>
-				</Panel>
+  const isMac = useMemo(() => {
+    if (typeof navigator === "undefined") {
+      return false;
+    }
+    return navigator.platform.toUpperCase().includes("MAC");
+  }, []);
 
-				{/* MINIMAP */}
-				<ThemedMiniMap position="bottom-left" className="hidden md:block" />
+  // Configure selection keys based on ReactFlow documentation
+  const selectionKeys = useMemo(
+    () => ({
+      // Allow drawing selection box with Shift key
+      selectionKeyCode: "Shift",
+      // Platform-specific multi-selection: Meta (Cmd) on Mac, Control on others
+      // Also support Shift as alternative for both platforms
+      multiSelectionKeyCode: [isMac ? "Meta" : "Control", "Shift"],
+    }),
+    [isMac]
+  );
 
-				{/* CONTROLS */}
-				<ThemedControls
-					position={controlsPosition}
-					showInteractive={false}
-					className={controlsClassName}
-				/>
+  // Stable wrappers for ReactFlow event handlers
+  const handleOnConnect = useCallback(
+    (connection: Connection) => reactFlowHandlers.onConnect(connection),
+    [reactFlowHandlers.onConnect]
+  );
+  const handleOnReconnect = useCallback(
+    (oldEdge: AgenEdge, newConn: Connection) =>
+      reactFlowHandlers.onReconnect(oldEdge, newConn),
+    [reactFlowHandlers.onReconnect]
+  );
+  const handleOnReconnectStart = useCallback(
+    () => reactFlowHandlers.onReconnectStart(),
+    [reactFlowHandlers.onReconnectStart]
+  );
+  const handleOnReconnectEnd = useCallback(
+    (event: MouseEvent | TouchEvent, edge: AgenEdge) =>
+      reactFlowHandlers.onReconnectEnd(event, edge),
+    [reactFlowHandlers.onReconnectEnd]
+  );
+  const handleOnNodesChange = useCallback(
+    (changes: unknown[]) => reactFlowHandlers.onNodesChange(changes),
+    [reactFlowHandlers.onNodesChange]
+  );
+  const handleOnEdgesChange = useCallback(
+    (changes: unknown[]) => reactFlowHandlers.onEdgesChange(changes),
+    [reactFlowHandlers.onEdgesChange]
+  );
+  const handleOnSelectionChange = useCallback(
+    (selection: { nodes: AgenNode[]; edges: AgenEdge[] }) =>
+      reactFlowHandlers.onSelectionChange(selection),
+    [reactFlowHandlers.onSelectionChange]
+  );
+  const handleOnInit = useCallback(
+    (instance: unknown) => reactFlowHandlers.onInit(instance),
+    [reactFlowHandlers.onInit]
+  );
 
-				{/* BACKGROUND */}
-				<Background
-					gap={BACKGROUND_DOT_GAP}
-					size={BACKGROUND_DOT_SIZE}
-					color="var(--infra-canvas-dot)"
-				/>
+  // Memoized objects passed to ReactFlow to keep references stable
+  const reactFlowStyle = useMemo(() => ({ width: "100%", height: "100%" }), []);
 
-				{/* WORKFLOW MANAGER */}
-				<Panel position="top-center" className="z-50">
-					<WorkflowManager />
-				</Panel>
+  const proOptions = useMemo(() => ({ hideAttribution: true }), []);
 
-				{/* DEBUG TOOL - Clears local storage (development utility) */}
-				<ClearLocalStorage className={PANEL_STYLES.margin} />
+  const defaultEdgeOptions = useMemo(
+    () => ({
+      type: "default" as const,
+      deletable: true,
+      focusable: true,
+      style: EDGE_STYLES,
+    }),
+    []
+  );
 
-				{/* MOBILE DELETE BUTTON - Only visible on mobile when node or edge is selected */}
-				{(selectedNode || selectedEdge) && (
-					<Panel
-						position={deleteButtonPosition}
-						className={`md:hidden ${controlsClassName}`}
-						style={deleteButtonStyle}
-					>
-						<button
-							onClick={() => {
-								if (selectedNode) {
-									onDeleteNode?.(selectedNode.id);
-								} else if (selectedEdge) {
-									onDeleteEdge?.(selectedEdge.id);
-								}
-							}}
-							className={MOBILE_DELETE_BUTTON_STYLES.base}
-							title={
-								selectedNode
-									? `Delete ${selectedNode.data?.label || selectedNode.type} node`
-									: selectedEdge
-										? "Delete connection"
-										: "Delete"
-							}
-							type="button"
-						>
-							<svg
-								className={MOBILE_DELETE_BUTTON_STYLES.icon}
-								fill="none"
-								stroke="currentColor"
-								viewBox="0 0 24 24"
-								role="img"
-								aria-labelledby="delete-icon-title"
-							>
-								<title id="delete-icon-title">Delete Icon</title>
-								<path
-									strokeLinecap="round"
-									strokeLinejoin="round"
-									strokeWidth={2}
-									d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-								/>
-							</svg>
-						</button>
-					</Panel>
-				)}
+  // ============================================================================
+  // RENDER
+  // ============================================================================
 
-				{/* FLOATING HISTORY PANEL */}
-				{showHistoryPanel && (
-					<Panel
-						position={inspectorViewMode === "side" ? "bottom-center" : "top-right"}
-						className={`${
-							inspectorViewMode === "side" ? "-translate-y-[50px] mb-4" : PANEL_STYLES.historyPanel
-						}`}
-						style={inspectorViewMode === "side" ? {} : { marginTop: PANEL_STYLES.historyPanelTop }}
-					>
-						<div className="max-h-96 w-80">
-							<HistoryPanel className="shadow-lg" />
-						</div>
-					</Panel>
-				)}
-			</ReactFlow>
-		</div>
-	);
+  return (
+    <div
+      ref={wrapperRef}
+      className="relative h-full w-full flex-1"
+      onDragOver={onDragOver}
+      onDrop={onDrop}
+      style={CANVAS_CONTAINER_STYLE}
+    >
+      <ReactFlow
+        // Core Data
+        nodes={safeNodes}
+        edges={displayedEdges}
+        nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes as EdgeTypes}
+        // Explicit dimensions to fix sizing issue
+        style={reactFlowStyle}
+        // Connection Handling
+        isValidConnection={handleIsValidConnection}
+        connectionMode={ConnectionMode.Loose}
+        onConnect={handleOnConnect}
+        onReconnect={handleOnReconnect}
+        onReconnectStart={handleOnReconnectStart}
+        onReconnectEnd={handleOnReconnectEnd}
+        // Change Handlers
+        onNodesChange={handleOnNodesChange}
+        onEdgesChange={handleOnEdgesChange}
+        onSelectionChange={handleOnSelectionChange}
+        onInit={handleOnInit}
+        // Selection Configuration
+        selectionMode={SelectionMode.Partial}
+        selectionKeyCode={selectionKeys.selectionKeyCode}
+        multiSelectionKeyCode={selectionKeys.multiSelectionKeyCode}
+        deleteKeyCode={DELETE_KEY_CODES}
+        // Interaction Settings
+        snapToGrid={true}
+        snapGrid={SNAP_GRID}
+        panOnDrag={true}
+        panOnScroll={true}
+        panOnScrollMode={PanOnScrollMode.Free}
+        zoomOnScroll={true}
+        zoomOnPinch={true}
+        zoomOnDoubleClick={false}
+        // Node/Edge Behavior
+        nodesDraggable={true}
+        nodesConnectable={true}
+        elementsSelectable={true}
+        edgesReconnectable={true}
+        // Visual Settings
+        fitView={true}
+        colorMode={colorMode}
+        proOptions={proOptions}
+        defaultEdgeOptions={defaultEdgeOptions}
+      >
+        {/* NODE INSPECTOR PANEL */}
+        <Panel
+          position={
+            inspectorViewMode === "bottom" ? "bottom-center" : "top-right"
+          }
+          className={`hidden rounded shadow-sm md:block ${
+            inspectorViewMode === "bottom"
+              ? "max-h-[280px] max-w-4xl"
+              : inspectorLocked || !selectedNode
+                ? "h-[50px] w-[50px] rounded-lg border border-border bg-card shadow-lg"
+                : "max-h-[calc(100vh-370px)] w-[450px]"
+          } overflow-y-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${nodeInspectorStyles.getContainer()}`}
+        >
+          <NodeDisplayProvider>
+            <NodeInspector viewMode={inspectorViewMode} />
+          </NodeDisplayProvider>
+        </Panel>
+
+        {/* MINIMAP */}
+        <ThemedMiniMap position="bottom-left" className="hidden md:block" />
+
+        {/* CONTROLS */}
+        <ThemedControls
+          position={controlsPosition}
+          showInteractive={false}
+          className={controlsClassName}
+        />
+
+        {/* BACKGROUND */}
+        <Background
+          gap={BACKGROUND_DOT_GAP}
+          size={BACKGROUND_DOT_SIZE}
+          color="var(--infra-canvas-dot)"
+        />
+
+        {/* WORKFLOW MANAGER */}
+        <Panel position="top-center" className="z-50">
+          <WorkflowManager />
+        </Panel>
+
+        {/* DEBUG TOOL - Clears local storage (development utility) */}
+        <ClearLocalStorage className={PANEL_STYLES.margin} />
+
+        {/* MOBILE DELETE BUTTON - Only visible on mobile when node or edge is selected and user can edit */}
+        {(selectedNode || selectedEdge) && canEdit && (
+          <Panel
+            position={deleteButtonPosition}
+            className={`md:hidden ${controlsClassName}`}
+            style={deleteButtonStyle}
+          >
+            <button
+              onClick={() => {
+                if (selectedNode) {
+                  onDeleteNode?.(selectedNode.id);
+                } else if (selectedEdge) {
+                  onDeleteEdge?.(selectedEdge.id);
+                }
+              }}
+              className={MOBILE_DELETE_BUTTON_STYLES.base}
+              title={
+                selectedNode
+                  ? `Delete ${selectedNode.data?.label || selectedNode.type} node`
+                  : selectedEdge
+                    ? "Delete connection"
+                    : "Delete"
+              }
+              type="button"
+            >
+              <svg
+                className={MOBILE_DELETE_BUTTON_STYLES.icon}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                role="img"
+                aria-labelledby="delete-icon-title"
+              >
+                <title id="delete-icon-title">Delete Icon</title>
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                />
+              </svg>
+            </button>
+          </Panel>
+        )}
+
+        {/* FLOATING HISTORY PANEL */}
+        {showHistoryPanel && (
+          <Panel
+            position={
+              inspectorViewMode === "side" ? "bottom-center" : "top-right"
+            }
+            className={`${
+              inspectorViewMode === "side"
+                ? "-translate-y-[50px] mb-4"
+                : PANEL_STYLES.historyPanel
+            }`}
+            style={
+              inspectorViewMode === "side"
+                ? {}
+                : { marginTop: PANEL_STYLES.historyPanelTop }
+            }
+          >
+            <div className="max-h-96 w-80">
+              <HistoryPanel className="shadow-lg" />
+            </div>
+          </Panel>
+        )}
+      </ReactFlow>
+    </div>
+  );
 };

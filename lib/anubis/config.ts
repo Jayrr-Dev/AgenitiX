@@ -50,6 +50,15 @@ const DEFAULT_CONFIG: AnubisConfig = {
 		"/api/auth/*", // Authentication routes (NextAuth, etc.)
 		"/api/webhooks/*", // Webhook endpoints
 		"/api/trpc/*", // tRPC endpoints (if used)
+		// 🔐 AUTH PAGES - Allow access to authentication flows
+		"/sign-in", // Sign in page
+		"/sign-up", // Sign up page
+		"/forgot-password", // Password reset page
+		"/auth/verify", // Email verification page
+		"/callback", // OAuth callback pages
+		"/callback/*", // All OAuth callback variations
+		// 🚀 API ROUTES - Exclude all API routes from protection
+		"/api/*", // All API routes
 	],
 	allowedUserAgents: [
 		// 🔍 SEARCH ENGINES (Always Allow)

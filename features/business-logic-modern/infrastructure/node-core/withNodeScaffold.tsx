@@ -15,6 +15,8 @@ import {
   useCategoryThemeWithSpec,
   useNodeStyleClasses,
 } from "@/features/business-logic-modern/infrastructure/theming/stores/nodeStyleStore";
+import { debugNodeData } from "@/lib/debug-node-renders";
+import { timeOperation, trackRender } from "@/lib/performance-profiler";
 import type { NodeProps, Position } from "@xyflow/react";
 import { useUpdateNodeInternals } from "@xyflow/react";
 import { useTheme } from "next-themes";
@@ -40,6 +42,10 @@ const getInjectableClasses = (cssVar: string): string => {
     .trim();
   return value || "";
 };
+
+// Simple cross-instance cache keyed by theme + var name to avoid repeated
+// getComputedStyle calls when many nodes mount in the same theme.
+const CSS_CLASS_CACHE = new Map<string, string>();
 
 /**
  * Enhanced scaffold wrapper that provides complete structural styling
@@ -83,30 +89,40 @@ const NodeScaffoldWrapper = ({
     setMounted(true);
   }, []);
 
-  // Get injectable classes for core node styling
-  const wrapperClasses = getInjectableClasses(
-    "--core-coreNode-classes-wrapper"
-  );
-  const containerClasses = getInjectableClasses(
-    "--core-coreNode-classes-container"
-  );
-  const borderClasses = getInjectableClasses("--core-coreNode-classes-border");
+  // Compute injectable classes with a small cache per theme
+  const { wrapperClasses, containerClasses, borderClasses } =
+    React.useMemo(() => {
+      const themeKey = resolvedTheme || "system";
+      const read = (cssVar: string) => {
+        const key = `${themeKey}|${cssVar}`;
+        const cached = CSS_CLASS_CACHE.get(key);
+        if (cached !== undefined) return cached;
+        const value = getInjectableClasses(cssVar);
+        CSS_CLASS_CACHE.set(key, value);
+        return value;
+      };
+      return {
+        wrapperClasses: read("--core-coreNode-classes-wrapper"),
+        containerClasses: read("--core-coreNode-classes-container"),
+        borderClasses: read("--core-coreNode-classes-border"),
+      };
+    }, [resolvedTheme]);
 
   // Build complete structural styling with modern enhancements
-  const structuralClasses = [
-    // Base structural classes with modern border radius and transitions
-    "relative rounded-[12px] transition-all duration-300 ease-out",
-    // Base shadow effect that won't conflict with glow effects
-    !isDisabled && "shadow-lg",
-    // Injectable classes from tokens
-    wrapperClasses,
-    containerClasses,
-    borderClasses,
-    // Theme classes from parent (includes selection, hover, activation glow effects)
-    className,
-  ]
-    .filter(Boolean)
-    .join(" ");
+  const structuralClasses = React.useMemo(
+    () =>
+      [
+        "relative rounded-[12px] transition-colors duration-200 ease-out",
+        !isDisabled && "shadow-lg",
+        wrapperClasses,
+        containerClasses,
+        borderClasses,
+        className,
+      ]
+        .filter(Boolean)
+        .join(" "),
+    [isDisabled, wrapperClasses, containerClasses, borderClasses, className]
+  );
 
   // Get custom theming if available
   const customTheming = spec.theming;
@@ -114,36 +130,35 @@ const NodeScaffoldWrapper = ({
   const categoryLower = spec.category.toLowerCase();
 
   // Complete style object with all structural properties including modern effects
-  const completeStyle: React.CSSProperties = {
-    ...style,
-    // Scaffold handles ALL border styling
-    borderWidth: `var(--node-${categoryLower}-border-width)`,
-    borderStyle: "solid",
-    // Enhanced border radius for modern look
-    borderRadius: "var(--node-global-modern-radius)",
-    // Use custom theming if available and in dark mode, otherwise fall back to tokens
-    borderColor:
-      isDarkMode && customTheming?.borderDark
-        ? customTheming.borderDark
-        : `var(--node-${categoryLower}-border)`,
-    // Modern gradient backgrounds - the CSS variable automatically changes in dark mode
-    background: isDisabled
-      ? `var(--node-global-disabled-gradient), var(--node-${categoryLower}-bg-gradient)`
-      : `var(--node-${categoryLower}-bg-gradient)`,
-    // Enhanced shadows for depth - dark mode gets layered shadows with inset highlights
-    // Note: boxShadow intentionally removed to allow CSS classes (selection glow) to take precedence
-    // Shadow effects are now handled entirely through CSS custom properties and classes
-    // Ensure proper layering
-    position: "relative",
-    // Modern smooth transitions for all properties
-    transition: "all 300ms cubic-bezier(0.4, 0, 0.2, 1)",
-    // Add backdrop filter for glass effect (optional) - reduced when disabled
-    backdropFilter: isDisabled ? "blur(4px)" : "blur(8px)",
-    // Reduced opacity for disabled state
-    opacity: isDisabled ? "var(--node-global-disabled-opacity)" : "1",
-    // Prevent interaction when disabled
-    pointerEvents: isDisabled ? "none" : "auto",
-  };
+  const completeStyle: React.CSSProperties = React.useMemo(
+    () => ({
+      ...style,
+      borderWidth: `var(--node-${categoryLower}-border-width, var(--node-global-border-width))`,
+      borderStyle: "solid",
+      borderRadius: "var(--node-global-modern-radius)",
+      borderColor:
+        isDarkMode && customTheming?.borderDark
+          ? customTheming.borderDark
+          : isDarkMode
+            ? `var(--node-${categoryLower}-border, hsl(240, 45%, 35%))` // Darker fallback for dark mode
+            : `var(--node-${categoryLower}-border, hsl(240, 60%, 50%))`, // Brighter fallback for light mode
+      background: isDisabled
+        ? isDarkMode
+          ? `var(--node-global-disabled-gradient), var(--node-${categoryLower}-bg-gradient, linear-gradient(135deg, hsl(240, 35%, 20%) 0%, hsl(240, 40%, 15%) 100%))`
+          : `var(--node-global-disabled-gradient), var(--node-${categoryLower}-bg-gradient, linear-gradient(135deg, hsl(240, 45%, 85%) 0%, hsl(240, 50%, 75%) 100%))`
+        : isDarkMode
+          ? `var(--node-${categoryLower}-bg-gradient, linear-gradient(135deg, hsl(240, 35%, 20%) 0%, hsl(240, 40%, 15%) 100%))` // Dark mode fallback
+          : `var(--node-${categoryLower}-bg-gradient, linear-gradient(135deg, hsl(240, 45%, 85%) 0%, hsl(240, 50%, 75%) 100%))`, // Light mode fallback
+      position: "relative",
+      // Limit to lightweight transitions to avoid jank during panning
+      transition:
+        "background 200ms ease-out, border-color 200ms ease-out, opacity 200ms ease-out, box-shadow 200ms ease-out",
+      // Remove backdrop-filter blur which is expensive during canvas transforms
+      opacity: isDisabled ? "var(--node-global-disabled-opacity)" : "1",
+      pointerEvents: isDisabled ? "none" : "auto",
+    }),
+    [style, categoryLower, isDarkMode, customTheming?.borderDark, isDisabled]
+  );
 
   // Feature flag to control hover lift effect
   const ENABLE_HOVER_LIFT = false; // Set to true to enable lift effect
@@ -193,8 +208,29 @@ export function withNodeScaffold(
   spec: NodeSpec,
   Component: React.FC<NodeProps>
 ) {
+  // Debug the spec creation to track maximum depth errors
+  // Avoid dev console spam during drags
+  // if (process.env.NODE_ENV === "development") {
+  //   console.debug("withNodeScaffold(spec)", spec.kind);
+  // }
+
   // The returned component is what React Flow will render.
   const WrappedComponent = (props: NodeProps) => {
+    // Track scaffold render performance
+    const endRenderTracking = trackRender("NodeScaffold", {
+      kind: spec.kind,
+      id: props.id,
+      handleCount: spec.handles?.length || 0,
+    });
+
+    // Debug node data changes
+    const prevDataRef = React.useRef(props.data);
+    React.useEffect(() => {
+      if (process.env.NODE_ENV !== "production") {
+        debugNodeData(props.id, props.data, prevDataRef.current);
+      }
+      prevDataRef.current = props.data;
+    }, [props.data, props.id]);
     // Get ReactFlow's updateNodeInternals hook
     const updateNodeInternals = useUpdateNodeInternals();
 
@@ -209,11 +245,12 @@ export function withNodeScaffold(
 
     // Update ReactFlow's internal handle positions when overrides change
     React.useEffect(() => {
+      void handleKey; // ensure dependency reflects handleOverrides changes
       // Always update when handleOverrides changes (including when it becomes empty or undefined)
       // This ensures handles revert to original positions when overrides are removed
       updateNodeInternals(props.id);
       // Handle position debug info available: {overrideCount, overrides}
-    }, [handleOverrides, props.id, updateNodeInternals]);
+    }, [props.id, updateNodeInternals, handleKey]);
     // Extract React Flow state for theming
     const isSelected = props.selected;
     const isError = false; // TODO: Extract from node data or validation state
@@ -274,29 +311,31 @@ export function withNodeScaffold(
 
     // Calculate handle positioning for multiple handles on same side with dynamic overrides
     const handlesByPosition = React.useMemo(() => {
-      const grouped: Record<string, typeof spec.handles> = {};
-      const allHandles = spec.handles || [];
+      return timeOperation(`handlePositioning-${props.id}`, () => {
+        const grouped: Record<string, typeof spec.handles> = {};
+        const allHandles = spec.handles || [];
 
-      // Create map for quick override lookup, basically a fast position finder
-      const overrideMap = new Map<string, string>();
-      if (handleOverrides) {
-        handleOverrides.forEach(
-          (override: { handleId: string; position: string }) => {
-            overrideMap.set(override.handleId, override.position);
-          }
-        );
-      }
-
-      allHandles.forEach((handle) => {
-        // Use override position if available, otherwise use default, basically the actual position to use
-        const pos = overrideMap.get(handle.id) || handle.position;
-        if (!grouped[pos]) {
-          grouped[pos] = [];
+        // Create map for quick override lookup, basically a fast position finder
+        const overrideMap = new Map<string, string>();
+        if (handleOverrides) {
+          handleOverrides.forEach(
+            (override: { handleId: string; position: string }) => {
+              overrideMap.set(override.handleId, override.position);
+            }
+          );
         }
-        grouped[pos].push(handle);
+
+        allHandles.forEach((handle) => {
+          // Use override position if available, otherwise use default, basically the actual position to use
+          const pos = overrideMap.get(handle.id) || handle.position;
+          if (!grouped[pos]) {
+            grouped[pos] = [];
+          }
+          grouped[pos].push(handle);
+        });
+        return grouped;
       });
-      return grouped;
-    }, [spec.handles, handleOverrides]); // Only depend on handleOverrides, not entire props.data
+    }, [spec.handles, handleOverrides, props.id]); // Only depend on handleOverrides, not entire props.data
 
     // Inner component to throw inside ErrorBoundary, not outside
     const MaybeError: React.FC = () => {
@@ -324,7 +363,7 @@ export function withNodeScaffold(
           globalNodeMemoryManager.destroy(props.id);
         }
       };
-    }, [props.id]);
+    }, [props.id, spec.memory]);
 
     // side-effect: run server actions once
     React.useEffect(() => {
@@ -346,7 +385,12 @@ export function withNodeScaffold(
           // Could trigger success UI state here
         },
       });
-    }, []);
+    }, [props.id, props.data, spec.kind]);
+
+    // End render tracking
+    React.useLayoutEffect(() => {
+      endRenderTracking?.();
+    });
 
     return (
       <NodeScaffoldWrapper
@@ -407,10 +451,10 @@ export function withNodeScaffold(
             );
             const totalHandlesOnSide = handlesOnSameSide.length;
 
-            return (
+              return (
               <TypeSafeHandle
                 key={`${handle.id}-${handleKey}-${actualPosition}`}
-                id={`${handle.id}__${handle.code ?? handle.dataType ?? "x"}`}
+                  id={`${handle.id}__${handle.code ?? handle.dataType ?? "x"}`}
                 type={handle.type}
                 position={actualPosition as Position}
                 dataType={handle.dataType || "any"}
@@ -420,6 +464,9 @@ export function withNodeScaffold(
                 handleIndex={handleIndex}
                 totalHandlesOnSide={totalHandlesOnSide}
                 customTooltip={handle.tooltip}
+                  // Shape enforcement props (optional)
+                  jsonShape={(handle as any).jsonShape}
+                  acceptAnyJson={(handle as any).acceptAnyJson}
               />
             );
           });

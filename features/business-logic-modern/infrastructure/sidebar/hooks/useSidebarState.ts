@@ -20,12 +20,12 @@ import {
 	TAB_CONFIG_B,
 	TAB_CONFIG_C,
 	TAB_CONFIG_D,
-	TAB_CONFIG_E,
+	// TAB_CONFIG_E,
 	type TabKeyA,
 	type TabKeyB,
 	type TabKeyC,
 	type TabKeyD,
-	type TabKeyE,
+	// type TabKeyE,
 } from "../types";
 
 // ============================================================================
@@ -46,7 +46,7 @@ const DEFAULT_TABS = {
 	B: "EMAIL" as TabKeyB,
 	C: "ALL" as TabKeyC,
 	D: "TOP_NODES" as TabKeyD,
-	E: "ESSENTIALS" as TabKeyE,
+	// E: "ESSENTIALS" as TabKeyE,
 };
 const DEFAULT_CUSTOM_NODES: NodeStencil[] = [];
 
@@ -109,7 +109,7 @@ const saveToStorage = <T>(key: string, value: T): void => {
  */
 const validateAndNormalizeVariant = (variant: string): SidebarVariant => {
 	const normalizedVariant = variant.toUpperCase();
-	const validVariants = ["A", "B", "C", "D", "E"];
+	const validVariants = ["A", "B", "C", "D"];
 
 	if (validVariants.includes(normalizedVariant)) {
 		return normalizedVariant as SidebarVariant;
@@ -131,10 +131,10 @@ const validateAndFixTabKey = (variant: SidebarVariant, tabKey: string): AnyTabKe
 		B: TAB_CONFIG_B.map((tab) => tab.key),
 		C: TAB_CONFIG_C.map((tab) => tab.key),
 		D: TAB_CONFIG_D.map((tab) => tab.key),
-		E: TAB_CONFIG_E.map((tab) => tab.key),
+		// E: TAB_CONFIG_E.map((tab) => tab.key),
 	};
 
-	const validTabsForVariant = validTabs[variant];
+	const validTabsForVariant = validTabs[variant] || [];
 
 	if (validTabsForVariant.includes(tabKey)) {
 		return tabKey as AnyTabKey;

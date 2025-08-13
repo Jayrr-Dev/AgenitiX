@@ -20,8 +20,9 @@ import { History, Maximize, Minimize, RotateCcw, RotateCw, Copy, Trash2 } from "
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useComponentButtonClasses, useComponentClasses } from "../theming/components";
 import { useUndoRedo } from "./history/undo-redo-context";
-import { useSelectedNodeId, useSelectedNode, useAddNode, useRemoveNode, useSelectNode } from "../flow-engine/stores/flowStore";
+import { useFlowStore, useSelectedNodeId, useAddNode, useRemoveNode, useSelectNode } from "../flow-engine/stores/flowStore";
 import type { AgenNode } from "../flow-engine/types/nodeData";
+import { useFlowMetadataOptional } from "../flow-engine/contexts/flow-metadata-context";
 
 interface ActionToolbarProps {
 	showHistoryPanel: boolean;
@@ -70,8 +71,13 @@ const ActionToolbar: React.FC<ActionToolbarProps> = ({
 	const addNode = useAddNode();
 	const selectNode = useSelectNode();
 	
-	// Use optimized selector for selected node, basically prevents unnecessary re-renders
-	const selectedNode = useSelectedNode();
+  // Avoid re-renders on node drag by not subscribing to the full selected node object.
+  // We'll fetch it on demand when duplicating.
+  const getStoreState = useFlowStore;
+
+	// Get flow metadata for permission checking
+	const flowMetadata = useFlowMetadataOptional();
+	const canEdit = flowMetadata?.flow?.canEdit ?? true; // Default to true for backward compatibility
 
 	// Optimize themed classes with better memoization, basically cache class strings
 	const containerClasses = useMemo(
@@ -95,28 +101,29 @@ const ActionToolbar: React.FC<ActionToolbarProps> = ({
 		}
 	}, [selectedNodeId, removeNode]);
 
-	const handleDuplicateNode = useCallback(() => {
-		if (!selectedNode) return;
+  const handleDuplicateNode = useCallback(() => {
+    const state = getStoreState.getState();
+    const currentId = state.selectedNodeId;
+    if (!currentId) return;
+    const selectedNode = state.nodes.find((n) => n.id === currentId);
+    if (!selectedNode) return;
 
-		// Optimized node duplication with stable ID generation, basically prevents ID collisions
-		const newId = `${selectedNode.id}-copy-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-		
-		// Create new node with proper type preservation and minimal spread
-		const newNode = {
-			...selectedNode,
-			id: newId,
-			position: {
-				x: selectedNode.position.x + 40,
-				y: selectedNode.position.y + 40,
-			},
-			selected: false,
-			data: { ...selectedNode.data },
-		} as AgenNode;
+    const newId = `${selectedNode.id}-copy-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
-		// Batch operations to prevent multiple store updates
-		addNode(newNode);
-		selectNode(newId);
-	}, [selectedNode, addNode, selectNode]);
+    const newNode = {
+      ...selectedNode,
+      id: newId,
+      position: {
+        x: selectedNode.position.x + 40,
+        y: selectedNode.position.y + 40,
+      },
+      selected: false,
+      data: { ...selectedNode.data },
+    } as AgenNode;
+
+    addNode(newNode);
+    selectNode(newId);
+  }, [addNode, selectNode]);
 
 	// Optimized fullscreen state management with single useEffect, basically reduces event listeners
 	useEffect(() => {
@@ -165,8 +172,8 @@ const ActionToolbar: React.FC<ActionToolbarProps> = ({
 
 	return (
 		<div className={themedContainerClasses}>
-			{/* NODE ACTION BUTTONS - Optimized rendering with conditional display */}
-			{selectedNodeId && (
+			{/* NODE ACTION BUTTONS - Only show if user can edit */}
+			{selectedNodeId && canEdit && (
 				<>
 					<button
 						type="button"

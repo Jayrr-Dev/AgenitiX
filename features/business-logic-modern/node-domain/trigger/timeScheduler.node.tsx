@@ -7,7 +7,7 @@
  * • output trigger signals based on the schedule
  * • Supports manual trigger and automatic scheduling
  * • Uses findEdgeByHandle utility for robust React Flow edge handling
- * • Auto-disables when all input connections are removed
+ * • Auto-enables when inputs connect; never auto-disables automatically
  *
  * Keywords: time-scheduler, automation, scheduling, recurring-tasks, cron
  */
@@ -399,15 +399,16 @@ const TimeSchedulerNode = memo(
       }
     }, [computeInput, nodeData, updateNodeData]);
 
-    /* 🔄 Make isEnabled dependent on input value only when there are connections. */
+    /* 🔄 Auto-enable when there is a connected, non-empty input. Never auto-disable. */
     useEffect(() => {
-      const hasInput = (nodeData as TimeSchedulerData).inputs;
-      // Only auto-control isEnabled when there are connections (inputs !== null)
-      // When inputs is null (no connections), let user manually control isEnabled
-      if (hasInput !== null) {
-        const nextEnabled = hasInput && hasInput.trim().length > 0;
-        if (nextEnabled !== isEnabled) {
-          updateNodeData({ isEnabled: nextEnabled });
+      const incoming = (nodeData as TimeSchedulerData).inputs;
+      if (incoming !== null) {
+        const hasValue =
+          typeof incoming === "string"
+            ? incoming.trim().length > 0
+            : Boolean(incoming as any);
+        if (hasValue && !isEnabled) {
+          updateNodeData({ isEnabled: true });
         }
       }
     }, [nodeData, isEnabled, updateNodeData]);
@@ -674,7 +675,7 @@ const TimeSchedulerNode = memo(
         {!isExpanded &&
         spec.size.collapsed.width === 60 &&
         spec.size.collapsed.height === 60 ? (
-          <div className="absolute inset-0 flex justify-center text-lg p-1 text-foreground/80">
+          <div className="absolute inset-0 flex justify-center text-lg p-0 text-foreground/80">
             {spec.icon && renderLucideIcon(spec.icon, "", 16)}
           </div>
         ) : (

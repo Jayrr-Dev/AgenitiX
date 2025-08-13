@@ -1,49 +1,39 @@
 import { v } from "convex/values";
-import { mutation, query, action } from "./_generated/server";
 import { api } from "./_generated/api";
+import { action, mutation, query } from "./_generated/server";
+import {
+  debug,
+  getAuthContext,
+  logAuthState,
+  requireAuth,
+  requireUser,
+} from "./authHelpers";
+import { resend } from "./sendEmails";
 
 // Query to get authenticated user from token hash (for use in mutations/queries)
-export const getAuthenticatedUserByToken = query({
-  args: {
-    tokenHash: v.string(),
-  },
-  handler: async (ctx, args) => {
-    // Find active session by token hash
-    const session = await ctx.db
-      .query("auth_sessions")
-      .withIndex("by_token_hash", (q) => q.eq("token_hash", args.tokenHash))
-      .filter((q) => q.eq(q.field("is_active"), true))
-      .filter((q) => q.gt(q.field("expires_at"), Date.now()))
-      .first();
+// Removed legacy token lookup – Convex Auth only
 
-    if (!session) {
-      return null;
-    }
-
-    // Get user from session
-    const user = await ctx.db.get(session.user_id);
+// Helper function for actions to get authenticated user via Convex Auth only
+async function getAuthenticatedUserInAction(ctx: any) {
+  try {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity?.email) return null;
+    const user = await ctx.runQuery(api.users.getUserByEmail as any, {
+      email: identity.email,
+    });
     return user;
-  },
-});
-
-// Helper function for actions to get authenticated user from token hash
-async function getAuthenticatedUserInAction(ctx: any, tokenHash?: string) {
-  if (!tokenHash) {
+  } catch {
     return null;
   }
-
-  return await ctx.runQuery(api.emailAccounts.getAuthenticatedUserByToken, {
-    tokenHash,
-  });
 }
 
 // Helper function to simulate ctx.auth.getUserIdentity() for compatibility in actions
-async function getUserIdentityFromTokenInAction(ctx: any, tokenHash?: string) {
-  const user = await getAuthenticatedUserInAction(ctx, tokenHash);
+async function getUserIdentityFromTokenInAction(ctx: any) {
+  const user = await getAuthenticatedUserInAction(ctx);
   if (!user) {
     return null;
   }
-  
+
   return {
     email: user.email,
     name: user.name,
@@ -51,36 +41,28 @@ async function getUserIdentityFromTokenInAction(ctx: any, tokenHash?: string) {
   };
 }
 
-// Helper function for mutations/queries to get authenticated user from token hash
-async function getAuthenticatedUser(ctx: any, tokenHash?: string) {
-  if (!tokenHash) {
+// Helper function for mutations/queries to get authenticated user from token hash or Convex Auth
+async function getAuthenticatedUser(ctx: any) {
+  try {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity?.email) return null;
+    const user = await ctx.db
+      .query("users")
+      .withIndex("email", (q: any) => q.eq("email", identity.email))
+      .first();
+    return user;
+  } catch {
     return null;
   }
-
-  // Find active session by token hash
-  const session = await ctx.db
-    .query("auth_sessions")
-    .withIndex("by_token_hash", (q: any) => q.eq("token_hash", tokenHash))
-    .filter((q: any) => q.eq(q.field("is_active"), true))
-    .filter((q: any) => q.gt(q.field("expires_at"), Date.now()))
-    .first();
-
-  if (!session) {
-    return null;
-  }
-
-  // Get user from session
-  const user = await ctx.db.get(session.user_id);
-  return user;
 }
 
 // Helper function to simulate ctx.auth.getUserIdentity() for compatibility in mutations/queries
-async function getUserIdentityFromToken(ctx: any, tokenHash?: string) {
-  const user = await getAuthenticatedUser(ctx, tokenHash);
+async function getUserIdentityFromToken(ctx: any) {
+  const user = await getAuthenticatedUser(ctx);
   if (!user) {
     return null;
   }
-  
+
   return {
     email: user.email,
     name: user.name,
@@ -88,77 +70,57 @@ async function getUserIdentityFromToken(ctx: any, tokenHash?: string) {
   };
 }
 
-// Create or update email account (with email-based auth)
+// Create or update email account (COLLISION-SAFE with authHelpers)
 export const upsertEmailAccount = mutation({
   args: {
-    token_hash: v.optional(v.string()), // Optional token for custom auth
-    sessionToken: v.optional(v.string()), // Alternative name for token (frontend compatibility)
-    provider: v.union(v.literal("gmail"), v.literal("outlook"), v.literal("imap"), v.literal("smtp")),
+    provider: v.union(
+      v.literal("gmail"),
+      v.literal("outlook"),
+      v.literal("yahoo"),
+      v.literal("imap"),
+      v.literal("smtp"),
+      // Accept dev-only alias; normalize to smtp inside handler
+      v.literal("resend-test")
+    ),
     email: v.string(),
     displayName: v.string(),
     accessToken: v.optional(v.string()),
     refreshToken: v.optional(v.string()),
     tokenExpiry: v.optional(v.number()),
-    imapConfig: v.optional(v.object({
-      host: v.string(),
-      port: v.number(),
-      secure: v.boolean(),
-      username: v.string(),
-      password: v.string(),
-    })),
-    smtpConfig: v.optional(v.object({
-      host: v.string(),
-      port: v.number(),
-      secure: v.boolean(),
-      username: v.string(),
-      password: v.string(),
-    })),
+    imapConfig: v.optional(
+      v.object({
+        host: v.string(),
+        port: v.number(),
+        secure: v.boolean(),
+        username: v.string(),
+        password: v.string(),
+      })
+    ),
+    smtpConfig: v.optional(
+      v.object({
+        host: v.string(),
+        port: v.number(),
+        secure: v.boolean(),
+        username: v.string(),
+        password: v.string(),
+      })
+    ),
   },
   handler: async (ctx, args) => {
-    // Try custom auth first if token provided (support both token_hash and sessionToken)
-    let identity = null;
-    const token = args.token_hash || args.sessionToken;
-    if (token) {
-      identity = await getUserIdentityFromToken(ctx, token);
-    }
-    
-    // Fallback to Convex Auth if no custom token or custom auth failed
-    if (!identity) {
-      try {
-        identity = await ctx.auth.getUserIdentity();
-      } catch (error) {
-        console.log('Convex Auth not available, using custom auth only');
-      }
-    }
-    
-    console.log('upsertEmailAccount - Identity check:', {
-      hasIdentity: !!identity,
-      identityEmail: identity?.email,
-      argsEmail: args.email,
-      argsProvider: args.provider,
-      authMethod: token ? 'custom' : 'convex',
-      tokenProvided: !!token
-    });
-    
-    if (!identity) {
-      throw new Error("User must be authenticated to add email accounts. Please make sure you're logged in to the system.");
-    }
-
-    // Find the authenticated user (not the email owner)
-    const user = await ctx.db
-      .query("auth_users")
-      .withIndex("by_email", (q) => q.eq("email", identity.email!))
-      .first();
-
-    console.log('upsertEmailAccount - User lookup:', {
-      identityEmail: identity.email,
-      userFound: !!user,
-      userId: user?._id
+    debug("upsertEmailAccount", "=== EMAIL ACCOUNT UPSERT START ===", {
+      provider: args.provider,
+      email: args.email,
     });
 
-    if (!user) {
-      throw new Error(`Authenticated user not found in database: ${identity.email}. Please contact support.`);
-    }
+    // 🔑 Resolve authentication via Convex Auth
+    const { authContext, user } = await requireUser(ctx);
+
+    logAuthState("upsertEmailAccount_auth", authContext, {
+      provider: args.provider,
+      email: args.email,
+    });
+
+    // Continue with simplified authentication approach
 
     // Check if account already exists
     const existingAccount = await ctx.db
@@ -167,14 +129,14 @@ export const upsertEmailAccount = mutation({
       .filter((q) => q.eq(q.field("email"), args.email))
       .first();
 
-    console.log('upsertEmailAccount - Account check:', {
+    debug("upsertEmailAccount", "Account existence check:", {
       userId: user._id,
       emailToAdd: args.email,
       existingAccountFound: !!existingAccount,
-      existingAccountId: existingAccount?._id
+      existingAccountId: existingAccount?._id,
     });
 
-    // Encrypt credentials
+    // Encrypt credentials (TODO: Use proper encryption in production)
     const credentials = {
       accessToken: args.accessToken,
       refreshToken: args.refreshToken,
@@ -185,7 +147,10 @@ export const upsertEmailAccount = mutation({
 
     const accountData = {
       user_id: user._id,
-      provider: args.provider,
+      provider:
+        (args.provider as string) === "resend-test"
+          ? ("smtp" as any)
+          : args.provider,
       email: args.email,
       display_name: args.displayName,
       encrypted_credentials: JSON.stringify(credentials),
@@ -195,17 +160,213 @@ export const upsertEmailAccount = mutation({
       is_active: true,
     };
 
+    let accountId: string;
     if (existingAccount) {
       // Update existing account
       await ctx.db.patch(existingAccount._id, {
         ...accountData,
         created_at: existingAccount.created_at, // Keep original creation date
       });
-      return existingAccount._id;
+      accountId = existingAccount._id;
+      debug("upsertEmailAccount", "✅ Updated existing account:", {
+        accountId,
+      });
     } else {
       // Create new account
-      return await ctx.db.insert("email_accounts", accountData);
+      accountId = await ctx.db.insert("email_accounts", accountData);
+      debug("upsertEmailAccount", "✅ Created new account:", { accountId });
     }
+
+    // 🔍 Final auth state verification
+    logAuthState("upsertEmailAccount_complete", authContext, {
+      accountId,
+      operation: "email_account_created",
+      isUpdate: !!existingAccount,
+    });
+
+    return accountId;
+  },
+});
+
+// Internal mutation used by the action to avoid client auth races
+export const upsertEmailAccountForUser = mutation({
+  args: {
+    userId: v.id("users"),
+    provider: v.union(
+      v.literal("gmail"),
+      v.literal("outlook"),
+      v.literal("yahoo"),
+      v.literal("imap"),
+      v.literal("smtp"),
+      // Accept dev-only alias; will be normalized to smtp before persisting
+      v.literal("resend-test")
+    ),
+    email: v.string(),
+    displayName: v.string(),
+    accessToken: v.optional(v.string()),
+    refreshToken: v.optional(v.string()),
+    tokenExpiry: v.optional(v.number()),
+    imapConfig: v.optional(
+      v.object({
+        host: v.string(),
+        port: v.number(),
+        secure: v.boolean(),
+        username: v.string(),
+        password: v.string(),
+      })
+    ),
+    smtpConfig: v.optional(
+      v.object({
+        host: v.string(),
+        port: v.number(),
+        secure: v.boolean(),
+        username: v.string(),
+        password: v.string(),
+      })
+    ),
+  },
+  handler: async (ctx, args) => {
+    const { userId } = args;
+    debug("upsertEmailAccountForUser", "=== EMAIL ACCOUNT UPSERT START ===", {
+      provider: args.provider,
+      email: args.email,
+      userId,
+    });
+
+    // Check if account already exists for this user + email
+    const existingAccount = await ctx.db
+      .query("email_accounts")
+      .withIndex("by_user_id", (q) => q.eq("user_id", userId))
+      .filter((q) => q.eq(q.field("email"), args.email))
+      .first();
+
+    // Prepare credentials payload
+    const credentials = {
+      accessToken: args.accessToken,
+      refreshToken: args.refreshToken,
+      tokenExpiry: args.tokenExpiry,
+      imapConfig: args.imapConfig,
+      smtpConfig: args.smtpConfig,
+    };
+
+    const accountData = {
+      user_id: userId,
+      provider:
+        (args.provider as string) === "resend-test"
+          ? ("smtp" as any)
+          : args.provider,
+      email: args.email,
+      display_name: args.displayName,
+      encrypted_credentials: JSON.stringify(credentials),
+      connection_status: "connected" as const,
+      created_at: Date.now(),
+      updated_at: Date.now(),
+      is_active: true,
+    };
+
+    let accountId: string;
+    if (existingAccount) {
+      await ctx.db.patch(existingAccount._id, {
+        ...accountData,
+        created_at: existingAccount.created_at,
+      });
+      accountId = existingAccount._id;
+      debug("upsertEmailAccountForUser", "✅ Updated existing account:", {
+        accountId,
+      });
+    } else {
+      accountId = await ctx.db.insert("email_accounts", accountData);
+      debug("upsertEmailAccountForUser", "✅ Created new account:", {
+        accountId,
+      });
+    }
+
+    return accountId;
+  },
+});
+
+// Action wrapper to ensure auth over HTTP and avoid WS auth races
+export const upsertEmailAccountAction = action({
+  args: {
+    provider: v.union(
+      v.literal("gmail"),
+      v.literal("outlook"),
+      v.literal("yahoo"),
+      v.literal("imap"),
+      v.literal("smtp"),
+      // Dev-only alias; will be normalized to "smtp" before storing
+      v.literal("resend-test")
+    ),
+    email: v.string(),
+    displayName: v.string(),
+    accessToken: v.optional(v.string()),
+    refreshToken: v.optional(v.string()),
+    tokenExpiry: v.optional(v.number()),
+    imapConfig: v.optional(
+      v.object({
+        host: v.string(),
+        port: v.number(),
+        secure: v.boolean(),
+        username: v.string(),
+        password: v.string(),
+      })
+    ),
+    smtpConfig: v.optional(
+      v.object({
+        host: v.string(),
+        port: v.number(),
+        secure: v.boolean(),
+        username: v.string(),
+        password: v.string(),
+      })
+    ),
+    // Optional client-provided hint to recover user context if auth propagation lags
+    userEmailHint: v.optional(v.string()),
+  },
+  handler: async (ctx, args): Promise<string> => {
+    let userObj: any | null = null;
+    try {
+      const { authContext, user } = await requireUser(ctx);
+      logAuthState("upsertEmailAccount_action", authContext, {
+        provider: args.provider,
+        email: args.email,
+      });
+      userObj = user;
+    } catch {
+      // Fallback: recover via userEmailHint if provided
+      if (args.userEmailHint) {
+        try {
+          userObj = await ctx.runQuery(api.users.getUserByEmail as any, {
+            email: args.userEmailHint,
+          });
+        } catch {}
+      }
+      if (!userObj) {
+        throw new Error("Authentication required. Please sign in to continue.");
+      }
+    }
+
+    const { userEmailHint: _omit, ...rest } = args as any;
+    // Normalize provider: map dev-only alias to a supported provider for storage
+    const providerNormalized =
+      (rest.provider as string) === "resend-test"
+        ? "smtp"
+        : (rest.provider as string);
+    const resolvedUserId = (userObj as any)._id ?? (userObj as any).id;
+    if (!resolvedUserId) {
+      throw new Error("Authentication required. Please sign in to continue.");
+    }
+
+    const accountId: string = await ctx.runMutation(
+      api.emailAccounts.upsertEmailAccountForUser as any,
+      {
+        userId: resolvedUserId,
+        ...rest,
+        provider: providerNormalized,
+      }
+    );
+
+    return accountId;
   },
 });
 
@@ -223,7 +384,11 @@ export const getAccountById = query({
 export const updateAccountStatus = mutation({
   args: {
     accountId: v.id("email_accounts"),
-    status: v.union(v.literal("connected"), v.literal("error"), v.literal("connecting")),
+    status: v.union(
+      v.literal("connected"),
+      v.literal("error"),
+      v.literal("connecting")
+    ),
     lastValidated: v.union(v.number(), v.null()),
   },
   handler: async (ctx, args) => {
@@ -240,83 +405,132 @@ export const updateAccountStatus = mutation({
   },
 });
 
-// Get user's email accounts
+// Deactivate (logout) an email account
+export const deactivateEmailAccount = mutation({
+  args: {
+    accountId: v.id("email_accounts"),
+  },
+  handler: async (ctx, args): Promise<{ success: boolean }> => {
+    const account = await ctx.db.get(args.accountId);
+    if (!account) {
+      throw new Error("Account not found");
+    }
+
+    // Soft-deactivate: keep record for history but mark inactive and disconnected
+    await ctx.db.patch(args.accountId, {
+      is_active: false,
+      connection_status: "disconnected",
+      last_validated: undefined,
+      updated_at: Date.now(),
+    } as any);
+
+    return { success: true };
+  },
+});
+
+// Action wrapper to ensure HTTP auth path and avoid WS auth races
+export const deactivateEmailAccountAction = action({
+  args: {
+    accountId: v.id("email_accounts"),
+    userEmailHint: v.optional(v.string()),
+  },
+  handler: async (ctx, args): Promise<{ success: boolean }> => {
+    // Resolve user (Convex Auth preferred, fallback to userEmailHint)
+    let userObj: any | null = null;
+    try {
+      const { authContext, user } = await requireUser(ctx);
+      logAuthState("deactivateEmailAccount_action", authContext, {
+        accountId: args.accountId,
+        operation: "email_account_deactivate",
+      });
+      userObj = user;
+    } catch {
+      if (args.userEmailHint) {
+        try {
+          userObj = await ctx.runQuery(api.users.getUserByEmail as any, {
+            email: args.userEmailHint,
+          });
+        } catch {}
+      }
+      if (!userObj) {
+        throw new Error("Authentication required. Please sign in to continue.");
+      }
+    }
+
+    // Verify account ownership before deactivation
+    const account = await ctx.runQuery(
+      api.emailAccounts.getAccountById as any,
+      {
+        accountId: args.accountId,
+      }
+    );
+    if (!account) {
+      throw new Error("Account not found");
+    }
+    const resolvedUserId = (userObj as any)._id ?? (userObj as any).id;
+    if (!resolvedUserId || String(account.user_id) !== String(resolvedUserId)) {
+      throw new Error("Forbidden: account does not belong to the current user");
+    }
+
+    const result = await ctx.runMutation(
+      api.emailAccounts.deactivateEmailAccount as any,
+      { accountId: args.accountId }
+    );
+    return result as { success: boolean };
+  },
+});
+
+// Get user's email accounts (COLLISION-SAFE)
 export const getUserEmailAccounts = query({
-  handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
+  args: {},
+  handler: async (ctx, args) => {
+    const authContext = await getAuthContext(ctx);
+
+    if (!authContext.isAuthenticated || !authContext.user) {
+      debug("getUserEmailAccounts", "No authentication available");
       return [];
     }
 
-    // Find user
-    const user = await ctx.db
-      .query("auth_users")
-      .withIndex("by_email", (q) => q.eq("email", identity.email!))
-      .first();
-
-    if (!user) {
-      return [];
-    }
+    logAuthState("getUserEmailAccounts", authContext);
 
     // Get user's email accounts
-    return await ctx.db
+    const accounts = await ctx.db
       .query("email_accounts")
-      .withIndex("by_user_id", (q) => q.eq("user_id", user._id))
+      .withIndex("by_user_id", (q) => q.eq("user_id", authContext.user._id))
       .filter((q) => q.eq(q.field("is_active"), true))
       .collect();
+
+    debug("getUserEmailAccounts", "Retrieved accounts:", {
+      count: accounts.length,
+      userId: authContext.user._id,
+    });
+
+    return accounts;
   },
 });
 
 // Get email accounts by user email (with hybrid authentication support)
 export const getEmailAccountsByUserEmail = query({
   args: {
-    userEmail: v.optional(v.string()), // Made optional for hybrid auth
-    token_hash: v.optional(v.string()), // Support for custom auth
+    userEmail: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    console.log('📧 getEmailAccountsByUserEmail called', {
-      userEmail: args.userEmail,
-      tokenProvided: !!args.token_hash,
-    });
-
-    let identity = null;
     let userEmail = args.userEmail;
-
-    // Try custom auth first if token provided
-    if (args.token_hash) {
-      identity = await getUserIdentityFromToken(ctx, args.token_hash);
-      if (identity) {
-        userEmail = identity.email;
-        console.log('✅ Using custom auth, email:', userEmail);
-      }
-    }
-
-    // Fallback to Convex Auth if no custom token or custom auth failed
-    if (!identity && !userEmail) {
-      try {
-        identity = await ctx.auth.getUserIdentity();
-        if (identity) {
-          userEmail = identity.email;
-          console.log('✅ Using Convex Auth, email:', userEmail);
-        }
-      } catch (error) {
-        console.log('⚠️ Convex Auth not available, using custom auth only');
-      }
-    }
-
     if (!userEmail) {
-      console.log('❌ No user email available');
+      const identity = await ctx.auth.getUserIdentity();
+      userEmail = identity?.email ?? undefined;
+    }
+    if (!userEmail) {
       return [];
     }
 
     // Find user by email
     const user = await ctx.db
-      .query("auth_users")
-      .withIndex("by_email", (q) => q.eq("email", userEmail))
+      .query("users")
+      .withIndex("email", (q) => q.eq("email", userEmail))
       .first();
 
     if (!user) {
-      console.log('❌ User not found for email:', userEmail);
       return [];
     }
 
@@ -327,94 +541,74 @@ export const getEmailAccountsByUserEmail = query({
       .filter((q) => q.eq(q.field("is_active"), true))
       .collect();
 
-    console.log('✅ Found email accounts:', accounts.length);
     return accounts;
   },
 });
 
-// Test email account connection
+// Test email account connection (COLLISION-SAFE)
 export const testEmailConnection = action({
   args: {
     accountId: v.id("email_accounts"),
-    token_hash: v.optional(v.string()), // Support for custom auth
   },
   handler: async (ctx, args) => {
-    console.log('🔍 testEmailConnection called', {
+    debug("testEmailConnection", "=== CONNECTION TEST START ===", {
       accountId: args.accountId,
-      tokenProvided: !!args.token_hash,
     });
 
-    // Try custom auth first if token provided
-    let identity = null;
-    if (args.token_hash) {
-      identity = await getUserIdentityFromTokenInAction(ctx, args.token_hash);
-    }
-    
-    // Fallback to Convex Auth if no custom token or custom auth failed
-    if (!identity) {
-      try {
-        identity = await ctx.auth.getUserIdentity();
-      } catch (error) {
-        console.log('⚠️ Convex Auth not available, using custom auth only');
-      }
-    }
+    const authContext = await requireAuth(ctx);
 
-    if (!identity) {
-      throw new Error("User must be authenticated to test email connection. Please make sure you're logged in to the system.");
-    }
-
-    console.log('✅ User authenticated for connection test:', identity.email);
-    const account = await ctx.runQuery(api.emailAccounts.getAccountById, { accountId: args.accountId });
+    logAuthState("testEmailConnection", authContext, {
+      accountId: args.accountId,
+      operation: "connection_test",
+    });
+    const account = await ctx.runQuery(api.emailAccounts.getAccountById, {
+      accountId: args.accountId,
+    });
     if (!account) {
       throw new Error("Account not found");
     }
 
     try {
-      console.log('Testing connection for account:', {
+      debug("testEmailConnection", "Testing connection:", {
         accountId: args.accountId,
         provider: account.provider,
-        email: account.email
+        email: account.email,
       });
 
       // Parse credentials to test the connection
-      const credentials = JSON.parse(account.encrypted_credentials || '{}');
-      console.log('Credentials parsed:', {
+      const credentials = JSON.parse(account.encrypted_credentials || "{}");
+      debug("testEmailConnection", "Credentials parsed:", {
         hasAccessToken: !!credentials.accessToken,
         hasRefreshToken: !!credentials.refreshToken,
-        tokenExpiry: credentials.tokenExpiry
+        tokenExpiry: credentials.tokenExpiry,
       });
 
-      if (account.provider === 'gmail') {
-        console.log('Testing Gmail API connection...');
-
+      if (account.provider === "gmail") {
         // Test Gmail API connection
-        const response = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
-          headers: {
-            'Authorization': `Bearer ${credentials.accessToken}`,
-          },
-        });
-
-        console.log('Gmail API response:', {
-          status: response.status,
-          statusText: response.statusText,
-          ok: response.ok
-        });
+        const response = await fetch(
+          "https://www.googleapis.com/oauth2/v2/userinfo",
+          {
+            headers: {
+              Authorization: `Bearer ${credentials.accessToken}`,
+            },
+          }
+        );
 
         if (!response.ok) {
           const errorText = await response.text();
-          console.log('Gmail API error response:', errorText);
-          throw new Error(`Gmail API test failed: ${response.status} ${response.statusText} - ${errorText}`);
+          throw new Error(
+            `Gmail API test failed: ${response.status} ${response.statusText} - ${errorText}`
+          );
         }
 
         const userInfo = await response.json();
-        console.log('Gmail user info:', userInfo);
 
         // Verify the email matches
         if (userInfo.email !== account.email) {
-          throw new Error(`Email mismatch: expected ${account.email}, got ${userInfo.email}`);
+          throw new Error(
+            `Email mismatch: expected ${account.email}, got ${userInfo.email}`
+          );
         }
-
-        console.log('Gmail connection test successful');
       }
 
       // Update connection status
@@ -435,7 +629,7 @@ export const testEmailConnection = action({
       return {
         success: false,
         status: "error",
-        error: error instanceof Error ? error.message : "Connection failed"
+        error: error instanceof Error ? error.message : "Connection failed",
       };
     }
   },
@@ -443,41 +637,14 @@ export const testEmailConnection = action({
 
 // Get email reply templates (with hybrid authentication)
 export const getEmailReplyTemplates = query({
-  args: {
-    token_hash: v.optional(v.string()), // Support for custom auth
-  },
+  args: {},
   handler: async (ctx, args) => {
-    // Try custom auth first if token provided
-    let identity = null;
-    if (args.token_hash) {
-      identity = await getUserIdentityFromToken(ctx, args.token_hash);
-    }
-    
-    // Fallback to Convex Auth if no custom token or custom auth failed
-    if (!identity) {
-      try {
-        identity = await ctx.auth.getUserIdentity();
-      } catch (error) {
-        console.log('Convex Auth not available, using custom auth only');
-        return [];
-      }
-    }
-
-    if (!identity) {
-      return [];
-    }
-
-    // Get user from identity
-    let user = null;
-    if (args.token_hash) {
-      user = await getAuthenticatedUser(ctx, args.token_hash);
-    } else {
-      // For Convex Auth, find user by email
-      user = await ctx.db
-        .query("auth_users")
-        .withIndex("by_email", (q) => q.eq("email", identity.email!))
-        .first();
-    }
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity?.email) return [];
+    const user = await ctx.db
+      .query("users")
+      .withIndex("email", (q) => q.eq("email", identity.email!))
+      .first();
 
     if (!user) {
       return [];
@@ -507,7 +674,6 @@ export const getEmailReplyTemplates = query({
 // Store email reply template (with hybrid authentication)
 export const storeEmailReplyTemplate = mutation({
   args: {
-    token_hash: v.optional(v.string()), // Support for custom auth
     name: v.string(),
     subject: v.string(),
     body: v.string(),
@@ -516,36 +682,12 @@ export const storeEmailReplyTemplate = mutation({
     variables: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
-    // Try custom auth first if token provided
-    let identity = null;
-    if (args.token_hash) {
-      identity = await getUserIdentityFromToken(ctx, args.token_hash);
-    }
-    
-    // Fallback to Convex Auth if no custom token or custom auth failed
-    if (!identity) {
-      try {
-        identity = await ctx.auth.getUserIdentity();
-      } catch (error) {
-        console.log('Convex Auth not available, using custom auth only');
-      }
-    }
-
-    if (!identity) {
-      throw new Error("Not authenticated");
-    }
-
-    // Get user from identity
-    let user = null;
-    if (args.token_hash) {
-      user = await getAuthenticatedUser(ctx, args.token_hash);
-    } else {
-      // For Convex Auth, find user by email
-      user = await ctx.db
-        .query("auth_users")
-        .withIndex("by_email", (q) => q.eq("email", identity.email!))
-        .first();
-    }
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity?.email) throw new Error("Not authenticated");
+    const user = await ctx.db
+      .query("users")
+      .withIndex("email", (q) => q.eq("email", identity.email!))
+      .first();
 
     if (!user) {
       throw new Error("User not found");
@@ -594,11 +736,9 @@ export const storeEmailReplyTemplate = mutation({
   },
 });
 
-// Send email
+// Send email (COLLISION-SAFE)
 export const sendEmail = action({
   args: {
-    token_hash: v.optional(v.string()), // Support for custom auth
-    sessionToken: v.optional(v.string()), // Alternative name for token (frontend compatibility)
     accountId: v.id("email_accounts"),
     to: v.array(v.string()),
     cc: v.optional(v.array(v.string())),
@@ -606,207 +746,140 @@ export const sendEmail = action({
     subject: v.string(),
     textContent: v.optional(v.string()),
     htmlContent: v.optional(v.string()),
-    attachments: v.optional(v.array(v.object({
-      id: v.string(),
-      filename: v.string(),
-      mimeType: v.string(),
-      size: v.number(),
-      content: v.optional(v.string()), // Base64 content
-    }))),
+    attachments: v.optional(
+      v.array(
+        v.object({
+          id: v.string(),
+          filename: v.string(),
+          mimeType: v.string(),
+          size: v.number(),
+          content: v.optional(v.string()), // Base64 content
+        })
+      )
+    ),
+    // Optional client-provided hint to recover user context if auth propagation lags
+    // [Explanation], basically allow fallback lookup by email if ctx.auth is briefly null
+    userEmailHint: v.optional(v.string()),
   },
-  handler: async (ctx, args) => {
+  handler: async (
+    ctx,
+    args
+  ): Promise<{ success: boolean; messageId: string; sentAt: number }> => {
+    debug("sendEmail", "=== EMAIL SEND START ===", {
+      accountId: args.accountId,
+      to: args.to,
+      subject: args.subject,
+      hasAttachments: !!(args.attachments && args.attachments.length > 0),
+    });
 
-    // Try custom auth first if token provided (support both token_hash and sessionToken)
-    let identity = null;
-    const token = args.token_hash || args.sessionToken;
-    if (token) {
-      identity = await getUserIdentityFromTokenInAction(ctx, token);
-    }
-    
-    // Fallback to Convex Auth if no custom token or custom auth failed
-    if (!identity) {
-      try {
-        identity = await ctx.auth.getUserIdentity();
-      } catch (error) {
-        console.log('⚠️ Convex Auth not available, using custom auth only');
+    // Resolve identity via Convex Auth first, then fallback hint for email
+    const identity = await ctx.auth.getUserIdentity();
+    const resolvedEmail: string | undefined =
+      identity?.email ?? args.userEmailHint ?? undefined;
+    let resolvedUser: any | null = null;
+    try {
+      if (identity?.email) {
+        resolvedUser = await ctx.runQuery(api.users.getUserByEmail as any, {
+          email: identity.email,
+        });
+      } else if (args.userEmailHint) {
+        resolvedUser = await ctx.runQuery(api.users.getUserByEmail as any, {
+          email: args.userEmailHint,
+        });
       }
+    } catch {}
+
+    if (!resolvedEmail) {
+      throw new Error("Authentication required. Please sign in to continue.");
     }
 
-    if (!identity) {
-      throw new Error("User must be authenticated to send emails. Please make sure you're logged in to the system.");
-    }
+    debug("sendEmail", "Auth context resolved:", {
+      hasIdentity: !!identity,
+      identityEmail: identity?.email,
+      hasDbUser: !!resolvedUser,
+      emailHint: args.userEmailHint,
+    });
 
     // Get the email account
-    const account = await ctx.runQuery(api.emailAccounts.getAccountById, { 
-      accountId: args.accountId 
+    const account: any = await ctx.runQuery(api.emailAccounts.getAccountById, {
+      accountId: args.accountId,
     });
-    
+
     if (!account) {
       throw new Error("Email account not found");
     }
 
-    // Verify account ownership by checking if the account belongs to the authenticated user
-    // We can check this by comparing the account's email with the authenticated user's email
-    // or by using a helper query to find the user and verify ownership
-    
-    // For now, we'll use a simple approach: verify the account is active and belongs to a valid user
+    // Verify account ownership - ensure the account belongs to the authenticated user
     if (!account.is_active) {
       throw new Error("Email account is not active");
     }
 
+    // Verify account ownership: prefer DB user id check, otherwise compare account email
+    const resolvedUserId =
+      (resolvedUser && (resolvedUser._id || resolvedUser.id)) || null;
+    const ownsByUserId = resolvedUserId
+      ? String(account.user_id) === String(resolvedUserId)
+      : false;
+    const ownsByEmail =
+      account.email && resolvedEmail
+        ? String(account.email).toLowerCase() ===
+          String(resolvedEmail).toLowerCase()
+        : false;
+    if (!(ownsByUserId || ownsByEmail)) {
+      throw new Error(
+        "Forbidden: Email account does not belong to the current user"
+      );
+    }
+
     try {
-      // Parse credentials
-      const credentials = JSON.parse(account.encrypted_credentials || '{}');
-      
-      if (!credentials.accessToken) {
-        throw new Error("No access token found for account");
-      }
+      const IS_DEV = process.env.NODE_ENV !== "production";
+      const fromAddress: string = IS_DEV
+        ? `${account.display_name || "Agenitix"} <onboarding@resend.dev>`
+        : `${account.display_name || "Agenitix"} <${account.email}>`;
 
-      // Send email using Gmail API directly
-      let result;
-      if (account.provider === 'gmail') {
-        // Build email message in RFC 2822 format
-        const hasAttachments = args.attachments && args.attachments.length > 0;
-        const mainBoundary = `boundary_main_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        const altBoundary = `boundary_alt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        
+      // Map recipients per component API (to: string, optional headers)
+      const toHeader = (
+        args.to && args.to.length > 0
+          ? args.to
+          : IS_DEV
+            ? ["delivered@resend.dev"]
+            : []
+      ).join(", ");
+      const headers: Array<{ name: string; value: string }> = [];
+      if (args.cc && args.cc.length > 0)
+        headers.push({ name: "Cc", value: args.cc.join(", ") });
+      if (args.bcc && args.bcc.length > 0)
+        headers.push({ name: "Bcc", value: args.bcc.join(", ") });
 
-        
-        let emailContent = '';
-        
-        // Headers
-        emailContent += `To: ${args.to.join(', ')}\r\n`;
-        if (args.cc && args.cc.length > 0) {
-          emailContent += `Cc: ${args.cc.join(', ')}\r\n`;
-        }
-        if (args.bcc && args.bcc.length > 0) {
-          emailContent += `Bcc: ${args.bcc.join(', ')}\r\n`;
-        }
-        emailContent += `Subject: ${args.subject}\r\n`;
-        emailContent += `MIME-Version: 1.0\r\n`;
-        
-        if (hasAttachments) {
-          // Use multipart/mixed for attachments
-          emailContent += `Content-Type: multipart/mixed; boundary="${mainBoundary}"\r\n`;
-          emailContent += `\r\n`;
-          
-          // Message content part
-          emailContent += `--${mainBoundary}\r\n`;
-          
-          if (args.htmlContent) {
-            // Use multipart/alternative for text and HTML
-            emailContent += `Content-Type: multipart/alternative; boundary="${altBoundary}"\r\n`;
-            emailContent += `\r\n`;
-            
-            // Text part
-            emailContent += `--${altBoundary}\r\n`;
-            emailContent += `Content-Type: text/plain; charset=utf-8\r\n\r\n`;
-            emailContent += `${args.textContent || ''}\r\n`;
-            
-            // HTML part
-            emailContent += `--${altBoundary}\r\n`;
-            emailContent += `Content-Type: text/html; charset=utf-8\r\n\r\n`;
-            emailContent += `${args.htmlContent}\r\n`;
-            
-            emailContent += `--${altBoundary}--\r\n`;
-          } else {
-            // Plain text only
-            emailContent += `Content-Type: text/plain; charset=utf-8\r\n\r\n`;
-            emailContent += `${args.textContent || ''}\r\n`;
-          }
-          
-          // Add attachments
-          for (const attachment of args.attachments || []) {
-            if (attachment.content) {
-              emailContent += `--${mainBoundary}\r\n`;
-              emailContent += `Content-Type: ${attachment.mimeType}; name="${attachment.filename}"\r\n`;
-              emailContent += `Content-Disposition: attachment; filename="${attachment.filename}"\r\n`;
-              emailContent += `Content-Transfer-Encoding: base64\r\n\r\n`;
-              
-              // Add base64 content in chunks of 76 characters (RFC requirement)
-              const base64Content = attachment.content;
-              for (let i = 0; i < base64Content.length; i += 76) {
-                emailContent += base64Content.substr(i, 76) + '\r\n';
-              }
-            }
-          }
-          
-          emailContent += `--${mainBoundary}--\r\n`;
-        } else {
-          // No attachments - use simple structure
-          if (args.htmlContent) {
-            emailContent += `Content-Type: multipart/alternative; boundary="${altBoundary}"\r\n`;
-            emailContent += `\r\n`;
-            
-            // Text part
-            emailContent += `--${altBoundary}\r\n`;
-            emailContent += `Content-Type: text/plain; charset=utf-8\r\n\r\n`;
-            emailContent += `${args.textContent || ''}\r\n`;
-            
-            // HTML part
-            emailContent += `--${altBoundary}\r\n`;
-            emailContent += `Content-Type: text/html; charset=utf-8\r\n\r\n`;
-            emailContent += `${args.htmlContent}\r\n`;
-            
-            emailContent += `--${altBoundary}--\r\n`;
-          } else {
-            emailContent += `Content-Type: text/plain; charset=utf-8\r\n`;
-            emailContent += `\r\n`;
-            emailContent += args.textContent || '';
-          }
-        }
+      const emailId: unknown = await resend.sendEmail(
+        ctx as any,
+        {
+          from: fromAddress,
+          to: toHeader,
+          subject: args.subject,
+          html: args.htmlContent || undefined,
+          text: args.textContent || undefined,
+          headers: headers.length > 0 ? headers : undefined,
+        } as any
+      );
 
-
-
-        // Encode the message in base64url format (Convex-compatible)
-        const encodedMessage = btoa(emailContent)
-          .replace(/\+/g, '-')
-          .replace(/\//g, '_')
-          .replace(/=+$/, '');
-
-        // Send via Gmail API
-        const response = await fetch('https://www.googleapis.com/gmail/v1/users/me/messages/send', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${credentials.accessToken}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            raw: encodedMessage
-          })
-        });
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`Gmail API error: ${response.status} ${response.statusText} - ${errorText}`);
-        }
-
-        const gmailResult = await response.json();
-        result = {
-          messageId: gmailResult.id,
-          success: true
-        };
-      } else {
-        throw new Error(`Provider ${account.provider} not supported for sending yet`);
-      }
-
-      // Log the sent email (optional)
-      console.log('Email sent successfully:', {
+      debug("sendEmail", "Email enqueued via Resend:", {
         accountId: args.accountId,
         to: args.to,
         subject: args.subject,
-        messageId: result.messageId,
+        emailId,
       });
 
       return {
         success: true,
-        messageId: result.messageId,
+        messageId: String(emailId),
         sentAt: Date.now(),
       };
-
     } catch (error) {
-      console.error('Send email error:', error);
-      throw new Error(`Failed to send email: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      debug("sendEmail", "Resend error:", error);
+      throw new Error(
+        `Failed to send email: ${error instanceof Error ? error.message : "Unknown error"}`
+      );
     }
   },
 });

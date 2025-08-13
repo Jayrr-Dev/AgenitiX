@@ -11,9 +11,26 @@ import { spec as timeSchedulerSpec } from "../../node-domain/trigger/timeSchedul
 import { spec as aiToolsSpec } from "../../node-domain/ai/aiTools.node";
 import { spec as storeLocalSpec } from "../../node-domain/store/storeLocal.node";
 import { spec as aiManagerSpec } from "../../node-domain/ai/aiManager.node";
-import { spec as createObjectSpec } from "../../node-domain/create/createObject.node";
+import { spec as createJsonpec } from "../../node-domain/create/createJson.node";
 import { spec as createMapSpec } from "../../node-domain/create/createMap.node";
 import { spec as mergeNodeSpec } from "../../node-domain/store/mergeNode.node";
+import { spec as viewObjectSpec } from "../../node-domain/view/viewObject.node";
+import { spec as viewArraySpec } from "../../node-domain/view/viewArray.node";
+import { spec as emailPreviewSpec } from "../../node-domain/email/emailPreview.node";
+import { spec as toBooleanSpec } from "../../node-domain/convert/toBoolean.node";
+import { spec as toTextSpec } from "../../node-domain/convert/toText.node";
+import { spec as toObjectSpec } from "../../node-domain/convert/toObject.node";
+import { spec as toArraySpec } from "../../node-domain/convert/toArray.node";
+import { spec as toAnySpec } from "../../node-domain/convert/toAny.node";
+// TIME node specs
+import { spec as timeDelaySpec } from "../../node-domain/time/timeDelay.node";
+import { spec as timeIntervalSpec } from "../../node-domain/time/timeInterval.node";
+import { spec as timeThrottleSpec } from "../../node-domain/time/timeThrottle.node";
+import { spec as timeDebounceSpec } from "../../node-domain/time/timeDebounce.node";
+import { spec as timeStopwatchSpec } from "../../node-domain/time/timeStopwatch.node";
+import { spec as timeTimeoutSpec } from "../../node-domain/time/timeTimeout.node";
+// EMAIL node specs
+import { spec as emailMessageSpec } from "../../node-domain/email/emailMessage.node";
 import { spec as createTextSpec } from "../../node-domain/create/createText.node";
 import { spec as storeInMemorySpec } from "../../node-domain/create/storeInMemory.node";
 import { spec as emailAccountSpec } from "../../node-domain/email/emailAccount.node";
@@ -34,6 +51,11 @@ import { spec as testToastSpec } from "../../node-domain/test/testToast.node";
 import { spec as triggerToggleSpec } from "../../node-domain/trigger/triggerToggle.node";
 import { spec as viewBooleanSpec } from "../../node-domain/view/viewBoolean.node";
 import { spec as viewTextSpec } from "../../node-domain/view/viewText.node";
+import { spec as logicAndSpec } from "../../node-domain/logic/logicAnd.node";
+import { spec as logicOrSpec } from "../../node-domain/logic/logicOr.node";
+import { spec as logicNotSpec } from "../../node-domain/logic/logicNot.node";
+import { spec as logicXorSpec } from "../../node-domain/logic/logicXor.node";
+import { spec as logicXnorSpec } from "../../node-domain/logic/logicXnor.node";
 import type { NodeSpec } from "../node-core/NodeSpec";
 
 // Collect all specs in one place
@@ -45,9 +67,26 @@ const nodeSpecs: Record<string, NodeSpec> = {
 	aiTools: aiToolsSpec,
 	storeLocal: storeLocalSpec,
 	aiManager: aiManagerSpec,
-	createObject: createObjectSpec,
+	createJson: createJsonpec,
 	createMap: createMapSpec,
 	mergeNode: mergeNodeSpec,
+	viewObject: viewObjectSpec,
+	viewArray: viewArraySpec,
+	emailPreview: emailPreviewSpec,
+	toBoolean: toBooleanSpec,
+	toText: toTextSpec,
+	toObject: toObjectSpec,
+	toArray: toArraySpec,
+	toAny: toAnySpec,
+	// TIME nodes
+	timeDelay: timeDelaySpec,
+	timeInterval: timeIntervalSpec,
+	timeThrottle: timeThrottleSpec,
+	timeDebounce: timeDebounceSpec,
+	timeStopwatch: timeStopwatchSpec,
+	timeTimeout: timeTimeoutSpec,
+	// EMAIL nodes
+	emailMessage: emailMessageSpec,
 	// Add new node specs here (auto-updated by Plop)
 	createText: createTextSpec,
 	aiAgent: aiAgentSpec,
@@ -68,6 +107,11 @@ const nodeSpecs: Record<string, NodeSpec> = {
 	testToast: testToastSpec,
 	triggerToggle: triggerToggleSpec,
 	viewText: viewTextSpec,
+	logicAnd: logicAndSpec,
+	logicOr: logicOrSpec,
+	logicNot: logicNotSpec,
+	logicXor: logicXorSpec,
+	logicXnor: logicXnorSpec,
 };
 
 // Enhanced metadata that combines NodeSpec with additional UI properties
@@ -315,3 +359,13 @@ export function getNodeFeatureFlag(nodeType: string): any {
  * Alias for getNodeMetadata to maintain compatibility with existing code
  */
 export const getNodeSpecMetadata = getNodeMetadata;
+
+// Debug: Make functions available in browser console for debugging (after all exports)
+if (typeof window !== 'undefined') {
+	// Use setTimeout to ensure functions are defined after module initialization
+	setTimeout(() => {
+		(window as any).getNodeSpecMetadata = getNodeSpecMetadata;
+		(window as any).nodeSpecs = nodeSpecs;
+		(window as any).hasNodeSpec = hasNodeSpec;
+	}, 0);
+}

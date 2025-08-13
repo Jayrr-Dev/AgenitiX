@@ -35,7 +35,6 @@ import {
 import { useNodeData } from "@/hooks/useNodeData";
 import { useStore } from "@xyflow/react";
 
-import { useAuthContext } from "@/components/auth/AuthProvider";
 import { toast } from "sonner";
 
 // -----------------------------------------------------------------------------
@@ -237,6 +236,16 @@ function createDynamicSpec(data: EmailAnalyticsData): NodeSpec {
     COLLAPSED_SIZES[data.collapsedSize as keyof typeof COLLAPSED_SIZES] ??
     COLLAPSED_SIZES.C2;
 
+  /**
+   * HANDLE_TOOLTIPS – ultra‑concise labels for handles
+   * [Explanation], basically 1–3 word hints shown before dynamic value/type
+   */
+  const HANDLE_TOOLTIPS = {
+    CAMPAIGN_IN: "Campaigns",
+    REPORT_OUT: "Report",
+    METRICS_OUT: "Metrics",
+  } as const;
+
   return {
     kind: "emailAnalytics",
     displayName: "Email Analytics",
@@ -250,6 +259,7 @@ function createDynamicSpec(data: EmailAnalyticsData): NodeSpec {
         position: "left",
         type: "target",
         dataType: "Array",
+        tooltip: HANDLE_TOOLTIPS.CAMPAIGN_IN,
       },
       {
         id: "report-output",
@@ -257,6 +267,7 @@ function createDynamicSpec(data: EmailAnalyticsData): NodeSpec {
         position: "right",
         type: "source",
         dataType: "JSON",
+        tooltip: HANDLE_TOOLTIPS.REPORT_OUT,
       },
       {
         id: "metrics-output",
@@ -264,6 +275,7 @@ function createDynamicSpec(data: EmailAnalyticsData): NodeSpec {
         position: "bottom",
         type: "source",
         dataType: "JSON",
+        tooltip: HANDLE_TOOLTIPS.METRICS_OUT,
       },
     ],
     inspector: { key: "EmailAnalyticsInspector" },
@@ -554,27 +566,50 @@ const EmailAnalyticsNode = memo(
   ({ id, spec }: NodeProps & { spec: NodeSpec }) => {
     // -------------------------------------------------------------------------
     const { nodeData, updateNodeData } = useNodeData(id, {});
-    const { token } = useAuthContext();
 
     // -------------------------------------------------------------------------
     // STATE MANAGEMENT (grouped for clarity)
     // -------------------------------------------------------------------------
     const {
-      isExpanded,
-      isEnabled,
-      campaignIds,
-      dateRange,
-      trackingMetrics,
-      metrics,
-      timeSeriesData,
-      topLinks,
-      topSubjects,
-      reportType,
-      exportFormat,
-      isLoading,
-      lastUpdated,
-      activeTab,
-      isActive,
+      isExpanded = false,
+      isEnabled = true,
+      campaignIds = [],
+      dateRange = { start: "", end: "" },
+      trackingMetrics = {
+        opens: true,
+        clicks: true,
+        bounces: true,
+        unsubscribes: true,
+        forwards: false,
+        replies: false,
+        conversions: false,
+      },
+      metrics = {
+        totalSent: 0,
+        totalDelivered: 0,
+        totalOpened: 0,
+        totalClicked: 0,
+        totalBounced: 0,
+        totalUnsubscribed: 0,
+        totalForwarded: 0,
+        totalReplied: 0,
+        totalConverted: 0,
+        deliveryRate: 0,
+        openRate: 0,
+        clickRate: 0,
+        bounceRate: 0,
+        unsubscribeRate: 0,
+        conversionRate: 0,
+      },
+      timeSeriesData = [],
+      topLinks = [],
+      topSubjects = [],
+      reportType = "summary",
+      exportFormat = "json",
+      isLoading = false,
+      lastUpdated = "",
+      activeTab = "overview",
+      isActive = false,
     } = nodeData as EmailAnalyticsData;
 
     const categoryStyles = CATEGORY_TEXT.EMAIL;

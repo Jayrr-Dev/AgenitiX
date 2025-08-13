@@ -205,7 +205,7 @@ export type AgenNode =
 export type AgenEdge = Edge & {
   sourceHandle?: string | null;
   targetHandle?: string | null;
-  type: "custom" | "step" | "default";
+  type: "custom" | "step" | "default" | "marchingAnts";
   style?: { stroke: string; strokeWidth: number };
 };
 
@@ -289,7 +289,11 @@ export type DomainCategory =
   | "test"
   | "cycle"
   | "store"
-  | "ai";
+  | "ai"
+  | "email"
+  | "logic"
+  | "flow"
+  | "time";
 
 export interface DomainMetadata {
   category: DomainCategory;

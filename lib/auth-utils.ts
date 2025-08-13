@@ -2,8 +2,14 @@
  * Utility functions for authentication error handling and user experience
  */
 
-// Import the AuthErrorCode from Convex to avoid duplication
-import type { AuthErrorCode } from "@/convex/auth";
+// Define AuthErrorCode type locally, basically error codes for authentication
+export type AuthErrorCode = 
+  | "USER_NOT_FOUND"
+  | "USER_ALREADY_EXISTS" 
+  | "RATE_LIMIT_EXCEEDED"
+  | "INVALID_MAGIC_LINK"
+  | "EXPIRED_MAGIC_LINK"
+  | "EMAIL_SEND_FAILED";
 
 /**
  * Converts Convex error messages to user-friendly messages with specific error codes

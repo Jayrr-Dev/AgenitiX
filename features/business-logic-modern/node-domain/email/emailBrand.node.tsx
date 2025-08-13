@@ -34,7 +34,7 @@ import {
 import { useNodeData } from "@/hooks/useNodeData";
 import { useStore } from "@xyflow/react";
 
-import { useAuthContext } from "@/components/auth/AuthProvider";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { toast } from "sonner";
 
 // -----------------------------------------------------------------------------
@@ -255,6 +255,16 @@ function createDynamicSpec(data: EmailBrandData): NodeSpec {
     COLLAPSED_SIZES[data.collapsedSize as keyof typeof COLLAPSED_SIZES] ??
     COLLAPSED_SIZES.C2;
 
+  /**
+   * HANDLE_TOOLTIPS – ultra‑concise labels for handles
+   * [Explanation], basically 1–3 word hints shown before dynamic value/type
+   */
+  const HANDLE_TOOLTIPS = {
+    CONFIG_IN: "Config",
+    BRAND_OUT: "Brand",
+    CSS_OUT: "CSS",
+  } as const;
+
   return {
     kind: "emailBrand",
     displayName: "Email Brand",
@@ -268,6 +278,7 @@ function createDynamicSpec(data: EmailBrandData): NodeSpec {
         position: "top",
         type: "target",
         dataType: "JSON",
+        tooltip: HANDLE_TOOLTIPS.CONFIG_IN,
       },
       {
         id: "brand-output",
@@ -275,6 +286,7 @@ function createDynamicSpec(data: EmailBrandData): NodeSpec {
         position: "right",
         type: "source",
         dataType: "JSON",
+        tooltip: HANDLE_TOOLTIPS.BRAND_OUT,
       },
       {
         id: "css-output",
@@ -282,6 +294,7 @@ function createDynamicSpec(data: EmailBrandData): NodeSpec {
         position: "bottom",
         type: "source",
         dataType: "String",
+        tooltip: HANDLE_TOOLTIPS.CSS_OUT,
       },
     ],
     inspector: { key: "EmailBrandInspector" },
@@ -467,7 +480,7 @@ export const spec: NodeSpec = createDynamicSpec({
 const EmailBrandNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
   // -------------------------------------------------------------------------
   const { nodeData, updateNodeData } = useNodeData(id, {});
-  const { token } = useAuthContext();
+  const { authToken: token } = useAuth();
 
   // -------------------------------------------------------------------------
   // STATE MANAGEMENT (grouped for clarity)

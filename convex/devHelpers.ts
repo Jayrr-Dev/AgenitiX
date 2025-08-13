@@ -26,8 +26,8 @@ export const createTestUser = mutation({
 
 		// Check if user already exists
 		const existingUser = await ctx.db
-			.query("auth_users")
-			.withIndex("by_email", (q) => q.eq("email", args.email))
+			.query("users")
+			.withIndex("email", (q) => q.eq("email", args.email))
 			.first();
 
 		if (existingUser) {
@@ -39,7 +39,7 @@ export const createTestUser = mutation({
 		}
 
 		// Create test user (already verified)
-		const userId = await ctx.db.insert("auth_users", {
+		const userId = await ctx.db.insert("users", {
 			email: args.email,
 			name: args.name,
 			company: args.company,
@@ -51,22 +51,24 @@ export const createTestUser = mutation({
 			login_attempts: 0,
 		});
 
-		// Create a test session token
-		const sessionToken = `dev_session_${userId}_${Date.now()}`;
+		// Create a magic link token for dev session
+		const magicToken = `dev_magic_${userId}_${Date.now()}`;
+		
+		// Set magic link token for authentication
+		await ctx.db.patch(userId, {
+			magic_link_token: magicToken,
+			magic_link_expires: Date.now() + 30 * 24 * 60 * 60 * 1000, // 30 days
+		});
 
-		const sessionId = await ctx.db.insert("auth_sessions", {
-			user_id: userId,
-			token_hash: sessionToken,
-			expires_at: Date.now() + 30 * 24 * 60 * 60 * 1000, // 30 days
-			created_at: Date.now(),
-			ip_address: "127.0.0.1",
-			user_agent: "Development",
-			is_active: true,
+		// Create Convex Auth session
+		const sessionId = await ctx.db.insert("authSessions", {
+			userId: userId,
+			expirationTime: Date.now() + 30 * 24 * 60 * 60 * 1000, // 30 days
 		});
 
 		return {
 			userId,
-			sessionToken,
+			magicToken,
 			sessionId,
 			message: "Test user created successfully",
 			existing: false,
@@ -79,7 +81,7 @@ export const createTestUser = mutation({
  */
 export const createTestFlows = mutation({
 	args: {
-		user_id: v.id("auth_users"),
+		user_id: v.id("users"),
 		count: v.optional(v.number()),
 	},
 	handler: async (ctx, args) => {
@@ -181,7 +183,7 @@ export const clearTestData = mutation({
 		}
 
 		// Clear sessions (but keep users for easier testing)
-		const sessions = await ctx.db.query("auth_sessions").collect();
+		const sessions = await ctx.db.query("authSessions").collect();
 		for (const session of sessions) {
 			await ctx.db.delete(session._id);
 		}
@@ -210,7 +212,7 @@ export const getAllUsers = query({
 			throw new Error("This function is only available in development");
 		}
 
-		const users = await ctx.db.query("auth_users").collect();
+		const users = await ctx.db.query("users").collect();
 
 		return users.map((user) => ({
 			id: user._id,

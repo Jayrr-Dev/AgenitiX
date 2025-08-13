@@ -190,13 +190,11 @@ const performWebSearch = async (query: string, maxResults: number = 5): Promise<
     // Try SerpAPI first (premium, more accurate)
     try {
       if (process.env.SERPAPI_KEY) {
-        console.log("Using SerpAPI for search");
         results = await performSerpApiSearch(cleanQuery, maxResults);
       } else {
         throw new Error("No SerpAPI key available");
       }
     } catch (serpError) {
-      console.log("SerpAPI failed, falling back to DuckDuckGo:", serpError);
       // Fallback to DuckDuckGo (free)
       results = await performDuckDuckGoSearch(cleanQuery);
     }

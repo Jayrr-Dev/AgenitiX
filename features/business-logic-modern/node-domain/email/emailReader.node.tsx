@@ -1,3 +1,4 @@
+"use client";
 /**
  * emailReader NODE – Email inbox parsing and message retrieval
  *
@@ -10,7 +11,7 @@
  * Keywords: email-reader, inbox, messages, filtering, real-time
  */
 
-import type { NodeProps } from "@xyflow/react";
+import type { NodeProps, Node as RFNode } from "@xyflow/react";
 import {
   type ChangeEvent,
   memo,
@@ -24,6 +25,10 @@ import { z } from "zod";
 import { ExpandCollapseButton } from "@/components/nodes/ExpandCollapseButton";
 import LabelNode from "@/components/nodes/labelNode";
 import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
+import {
+  generateoutputField,
+  normalizeHandleId,
+} from "@/features/business-logic-modern/infrastructure/node-core/handleOutputUtils";
 import {
   SafeSchemas,
   createSafeInitialData,
@@ -40,13 +45,20 @@ import {
   EXPANDED_SIZES,
 } from "@/features/business-logic-modern/infrastructure/theming/sizing";
 import { useNodeData } from "@/hooks/useNodeData";
-import { Handle, Position, useReactFlow, useStore } from "@xyflow/react";
+import { useStore } from "@xyflow/react";
 
-import { useAuthContext } from "@/components/auth/AuthProvider";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { api } from "@/convex/_generated/api";
+import { useFlowMetadataOptional } from "@/features/business-logic-modern/infrastructure/flow-engine/contexts/flow-metadata-context";
 // Convex integration
+import { useNodeToast } from "@/hooks/useNodeToast";
 import { useQuery } from "convex/react";
-import { toast } from "sonner";
+import { EmailReaderCollapsed } from "./components/EmailReaderCollapsed";
+import { EmailReaderExpanded } from "./components/EmailReaderExpanded";
+import {
+  clearEmailReaderMessagesForNode,
+  setEmailReaderMessagesForNode,
+} from "./stores/use-email-reader-outputs";
 
 // -----------------------------------------------------------------------------
 // 1️⃣  Data schema & validation
@@ -145,14 +157,25 @@ const CATEGORY_TEXT = {
   },
 } as const;
 
-const CONTENT = {
-  expanded: "p-4 w-full h-full flex flex-col",
-  collapsed: "flex items-center justify-center w-full h-full",
-  header: "flex items-center justify-between mb-3",
-  body: "flex-1 flex flex-col gap-3",
-  disabled:
-    "opacity-75 bg-zinc-100 dark:bg-zinc-500 rounded-md transition-all duration-300",
-} as const;
+// [Explanation], basically view layout tokens kept within subcomponents for consistency
+
+/**
+ * RESET_ON_LOGOUT_DATA – fields cleared on logout or user switch
+ * [Explanation], basically return node to idle state when auth changes
+ */
+const RESET_ON_LOGOUT_DATA: Partial<EmailReaderData> = {
+  accountId: "",
+  isConnected: false,
+  connectionStatus: "idle",
+  messages: [],
+  messageCount: 0,
+  emailsOutput: "",
+  output: "",
+  statusOutput: false,
+  isActive: false,
+  lastError: "",
+  retryCount: 0,
+};
 
 // -----------------------------------------------------------------------------
 // 3️⃣  Dynamic spec factory (pure)
@@ -166,6 +189,18 @@ function createDynamicSpec(data: EmailReaderData): NodeSpec {
     COLLAPSED_SIZES[data.collapsedSize as keyof typeof COLLAPSED_SIZES] ??
     COLLAPSED_SIZES.C2;
 
+  /**
+   * HANDLE_TOOLTIPS – ultra‑concise custom tooltip labels for handles
+   * [Explanation], basically 1–3 word hints shown before dynamic value/type
+   */
+  const HANDLE_TOOLTIPS = {
+    TRIGGER_IN: "Trigger",
+    ACCOUNT_IN: "Email Account",
+    MESSAGES_OUT: "Emails",
+    COUNT_OUT: "# of Emails",
+    STATUS_OUT: "Read Status",
+  } as const;
+
   return {
     kind: "emailReader",
     displayName: "Email Reader",
@@ -175,38 +210,43 @@ function createDynamicSpec(data: EmailReaderData): NodeSpec {
     handles: [
       {
         id: "trigger-input",
-        code: "t",
+        code: "b",
         position: "top",
         type: "target",
         dataType: "Boolean",
+        tooltip: HANDLE_TOOLTIPS.TRIGGER_IN,
       },
       {
         id: "account-input",
-        code: "a",
+        code: "j",
         position: "left",
         type: "target",
         dataType: "JSON",
+        tooltip: HANDLE_TOOLTIPS.ACCOUNT_IN,
       },
       {
         id: "messages-output",
-        code: "m",
+        code: "a",
         position: "right",
         type: "source",
         dataType: "Array",
+        tooltip: HANDLE_TOOLTIPS.MESSAGES_OUT,
       },
       {
         id: "count-output",
-        code: "c",
+        code: "n",
         position: "bottom",
         type: "source",
         dataType: "Number",
+        tooltip: HANDLE_TOOLTIPS.COUNT_OUT,
       },
       {
         id: "status-output",
-        code: "s",
+        code: "b",
         position: "bottom",
         type: "source",
         dataType: "Boolean",
+        tooltip: HANDLE_TOOLTIPS.STATUS_OUT,
       },
     ],
     inspector: { key: "EmailReaderInspector" },
@@ -223,8 +263,8 @@ function createDynamicSpec(data: EmailReaderData): NodeSpec {
         hasAttachments: false,
         contentSearch: "",
       },
-      batchSize: 10,
-      maxMessages: 50,
+      batchSize: 5,
+      maxMessages: 5,
       includeAttachments: false,
       markAsRead: false,
       enableRealTime: false,
@@ -247,6 +287,7 @@ function createDynamicSpec(data: EmailReaderData): NodeSpec {
       autoGenerate: true,
       excludeFields: [
         "isActive",
+        "batchSize",
         "messages",
         "messageCount",
         "emailsOutput",
@@ -269,17 +310,13 @@ function createDynamicSpec(data: EmailReaderData): NodeSpec {
           label: "Email Account",
           placeholder: "Select email account...",
         },
-        {
-          key: "batchSize",
-          type: "number",
-          label: "Batch Size",
-          placeholder: "10",
-        },
+        // Hide granular knobs and expose a single user-friendly control
+        // [Explanation], basically we’ll drive both values from one field in the node UI
         {
           key: "maxMessages",
           type: "number",
-          label: "Max Messages",
-          placeholder: "50",
+          label: "# of Emails",
+          placeholder: "10",
         },
         {
           key: "includeAttachments",
@@ -321,603 +358,651 @@ export const spec: NodeSpec = createDynamicSpec({
 // 4️⃣  React component – data propagation & rendering
 // -----------------------------------------------------------------------------
 
-const EmailReaderNode = memo(({ id, spec }: NodeProps & { spec: NodeSpec }) => {
-  // -------------------------------------------------------------------------
-  const { nodeData, updateNodeData } = useNodeData(id, {});
+const EmailReaderNode = memo(
+  ({ id, spec, ...rest }: NodeProps & { spec: NodeSpec }) => {
+    // -------------------------------------------------------------------------
+    const { nodeData, updateNodeData } = useNodeData(id, {});
 
-  // -------------------------------------------------------------------------
-  // STATE MANAGEMENT (grouped for clarity)
-  // -------------------------------------------------------------------------
-  const {
-    isExpanded,
-    isEnabled,
-    accountId,
-    // provider, // unused but kept for potential future use
-    // filters, // unused but kept for potential future use
-    batchSize,
-    maxMessages,
-    includeAttachments,
-    markAsRead,
-    enableRealTime,
-    checkInterval,
-    // outputFormat, // unused
-    connectionStatus,
-    isConnected,
-    lastSync,
-    processedCount,
-    messageCount,
-    lastError,
-    retryCount,
-  } = nodeData as EmailReaderData;
+    // Category styling for consistent theming, basically email node styling
+    const categoryStyles = CATEGORY_TEXT.EMAIL;
 
-  console.log("🚀 EmailReader render:", { id, accountId, isConnected });
+    // -------------------------------------------------------------------------
+    // STATE MANAGEMENT (grouped for clarity)
+    // -------------------------------------------------------------------------
+    const {
+      isExpanded,
+      isEnabled,
+      accountId,
+      // provider, // unused but kept for potential future use
+      // filters, // unused but kept for potential future use
+      batchSize,
+      maxMessages,
+      includeAttachments,
+      markAsRead,
+      enableRealTime,
+      checkInterval,
+      // outputFormat, // unused
+      connectionStatus,
+      isConnected,
+      lastSync,
+      processedCount,
+      messageCount,
+      lastError,
+      retryCount,
+    } = nodeData as EmailReaderData;
 
-  const categoryStyles = CATEGORY_TEXT.EMAIL;
+    // Targeted selectors: avoid broad dependency on nodes/edges arrays
+    // Track only the edges connected to 'account-input' handle
+    const accountInputEdgesSignature = useStore(
+      (s) => {
+        const edges = s.edges.filter(
+          (e) => e.target === id && e.targetHandle?.startsWith("account-input")
+        );
+        // Stable primitive signature to leverage strict equality
+        return (
+          edges
+            .map((e) => `${e.id}:${e.source}:${e.sourceHandle ?? ""}`)
+            .join("|") || "none"
+        );
+      },
+      (a, b) => a === b
+    );
+    const { showSuccess, showError } = useNodeToast(id);
 
-  // Global React‑Flow store (nodes & edges) – triggers re‑render on change
-  const _nodes = useStore((s) => s.nodes);
-  const _edges = useStore((s) => s.edges);
-
-  // Keep last emitted output to avoid redundant writes
-  const _lastOutputRef = useRef<string | null>(null);
-
-  // -------------------------------------------------------------------------
-  // 4.3  Convex integration
-  // -------------------------------------------------------------------------
-  const { user, token } = useAuthContext();
-  const emailAccounts = useQuery(
-    api.emailAccounts.getEmailAccountsByUserEmail,
-    // Use hybrid auth: prefer token_hash, fallback to userEmail
-    token
-      ? { token_hash: token }
-      : user?.email
-        ? { userEmail: user.email }
-        : "skip"
-  );
-
-  // -------------------------------------------------------------------------
-  // 4.4  Get connected email account nodes
-  // -------------------------------------------------------------------------
-  const { getNodes, getEdges } = useReactFlow();
-
-  console.log("🔍 About to check connections for node:", id);
-
-  const connectedAccountIds = useMemo(() => {
-    const edges = _edges.filter(
-      (e) => e.target === id && e.targetHandle === "account-input__a"
+    // Keep last emitted output to avoid redundant writes
+    const _lastOutputRef = useRef<string | null>(null);
+    const _prevIsConnectedRef = useRef<boolean>(
+      (nodeData as EmailReaderData).isConnected
     );
 
-    console.log("🔍 EmailReader Debug - ALL EDGES:");
-    _edges.forEach((edge, i) => {
-      console.log(`Edge ${i}:`, {
-        source: edge.source,
-        target: edge.target,
-        targetHandle: edge.targetHandle,
-        sourceHandle: edge.sourceHandle,
-        matchesThisNode: edge.target === id,
-      });
-    });
-    console.log('🔍 Looking for targetHandle: "account-input"');
-    console.log("🔍 This node ID:", id);
-
-    const connectedAccountNodes = edges
-      .map((e) => {
-        const sourceNode = _nodes.find((n) => n.id === e.source);
-        console.log(
-          "🔍 Source node found:",
-          sourceNode?.id,
-          sourceNode?.type,
-          sourceNode?.data
-        );
-        return sourceNode;
-      })
-      .filter(Boolean)
-      .filter((n) => {
-        const isValid =
-          n?.type === "emailAccount" &&
-          n?.data?.isConnected &&
-          n?.data?.accountId;
-        console.log("🔍 Node validation:", {
-          nodeId: n?.id,
-          type: n?.type,
-          isConnected: n?.data?.isConnected,
-          accountId: n?.data?.accountId,
-          isValid,
-        });
-        return isValid;
-      });
-
-    const accountIds = connectedAccountNodes
-      .map((node) => node?.data?.accountId)
-      .filter(Boolean);
-    console.log("🔍 Connected account IDs:", accountIds);
-    return accountIds;
-  }, [_nodes, _edges, id]);
-
-  // -------------------------------------------------------------------------
-  // 4.5  Available accounts (filtered by connected nodes)
-  // -------------------------------------------------------------------------
-  const availableAccounts = useMemo(() => {
-    console.log("📊 EmailReader availableAccounts debug:", {
-      emailAccountsCount: emailAccounts?.length || 0,
-      connectedAccountIds,
-      emailAccounts: emailAccounts?.map((acc) => ({
-        id: acc._id,
-        email: acc.email,
-        displayName: acc.display_name,
-      })),
-    });
-
-    if (!(emailAccounts && Array.isArray(emailAccounts))) {
-      console.log("📊 No email accounts available");
-      return [];
-    }
-
-    // Only show accounts from connected nodes (no fallback to all accounts)
-    if (connectedAccountIds.length === 0) {
-      console.log("📊 No connected account IDs");
-      return []; // No connections = no available accounts
-    }
-
-    // Filter to show only accounts from connected nodes
-    const filteredAccounts = emailAccounts.filter((account) => {
-      const isIncluded = connectedAccountIds.includes(account._id);
-      console.log("📊 Account filter:", {
-        accountId: account._id,
-        email: account.email,
-        isIncluded,
-        connectedIds: connectedAccountIds,
-      });
-      return isIncluded;
-    });
-
-    console.log("📊 Filtered accounts:", filteredAccounts.length);
-
-    return filteredAccounts.map((account) => ({
-      value: account._id,
-      label: `${account.display_name} (${account.email})`,
-      provider: account.provider,
-      email: account.email,
-      isActive: account.is_active,
-      isConnected:
-        account.is_active && account.connection_status === "connected",
-      lastValidated: account.last_validated,
-    }));
-  }, [emailAccounts, connectedAccountIds]);
-
-  // -------------------------------------------------------------------------
-  // 4.5  Callbacks
-  // -------------------------------------------------------------------------
-
-  /** Toggle between collapsed / expanded */
-  const toggleExpand = useCallback(() => {
-    updateNodeData({ isExpanded: !isExpanded });
-  }, [isExpanded, updateNodeData]);
-
-  /** Handle account selection */
-  const handleAccountChange = useCallback(
-    (e: ChangeEvent<HTMLSelectElement>) => {
-      const selectedAccountId = e.target.value;
-      const selectedAccount = availableAccounts.find(
-        (acc) => acc.value === selectedAccountId
+    // -------------------------------------------------------------------------
+    // 4.2  Trigger input (Boolean) – starts retrieval on rising edge
+    // -------------------------------------------------------------------------
+    // Compute a stable string signature for trigger value to minimize renders
+    const triggerSignal = useStore((s) => {
+      const edge = s.edges.find(
+        (e) => e.target === id && e.targetHandle?.startsWith("trigger-input")
       );
+      if (!edge) return "none" as const;
+      const src = (s.nodes as RFNode[]).find((n) => n.id === edge.source);
+      if (!src) return "none" as const;
 
-      updateNodeData({
-        accountId: selectedAccountId,
-        provider: selectedAccount?.provider || "gmail",
-        connectionStatus: selectedAccountId ? "idle" : "idle",
-        isConnected: false,
-        lastError: "",
-      });
-    },
-    [availableAccounts, updateNodeData]
-  );
+      const sourceData = src.data as Record<string, unknown> | undefined;
+      let value: unknown = undefined;
 
-  /** Handle batch size change */
-  const handleBatchSizeChange = useCallback(
-    (e: ChangeEvent<HTMLInputElement>) => {
-      const value = Number.parseInt(e.target.value) || 10;
-      updateNodeData({ batchSize: Math.max(1, Math.min(100, value)) });
-    },
-    [updateNodeData]
-  );
-
-  /** Handle max messages change */
-  const handleMaxMessagesChange = useCallback(
-    (e: ChangeEvent<HTMLInputElement>) => {
-      const value = Number.parseInt(e.target.value) || 50;
-      updateNodeData({ maxMessages: Math.max(1, Math.min(1000, value)) });
-    },
-    [updateNodeData]
-  );
-
-  /** Handle checkbox changes */
-  const handleCheckboxChange = useCallback(
-    (field: string) => (e: ChangeEvent<HTMLInputElement>) => {
-      updateNodeData({ [field]: e.target.checked });
-    },
-    [updateNodeData]
-  );
-
-  /** Handle check interval change */
-  const handleCheckIntervalChange = useCallback(
-    (e: ChangeEvent<HTMLInputElement>) => {
-      const value = Number.parseInt(e.target.value) || 5;
-      updateNodeData({ checkInterval: Math.max(1, Math.min(60, value)) });
-    },
-    [updateNodeData]
-  );
-
-  /** Handle read messages action */
-  const handleReadMessages = useCallback(async () => {
-    if (!(accountId && token)) {
-      toast.error("Please select an email account first");
-      return;
-    }
-
-    try {
-      updateNodeData({
-        connectionStatus: "reading",
-        lastError: "",
-        retryCount: 0,
-      });
-
-      // Get the selected account details
-      const account = emailAccounts?.find((acc) => acc._id === accountId);
-      if (!account) {
-        throw new Error("Account not found");
+      // 1) Unified handle-based output reading
+      if (
+        sourceData &&
+        typeof sourceData.output === "object" &&
+        sourceData.output !== null
+      ) {
+        const outputObj = sourceData.output as Record<string, unknown>;
+        const cleanId = edge.sourceHandle
+          ? normalizeHandleId(edge.sourceHandle)
+          : "output";
+        value =
+          outputObj[cleanId] ?? outputObj.output ?? Object.values(outputObj)[0];
       }
 
-      // Parse credentials
-      let credentials;
+      // 2) Legacy fallbacks for compatibility
+      if (value === undefined || value === null) {
+        value =
+          (sourceData as any)?.output ??
+          (sourceData as any)?.store ??
+          (sourceData as any)?.isActive ??
+          false;
+      }
+
+      const truthy =
+        value === true || value === "true" || value === 1 || value === "1";
+      return truthy ? "true" : "false";
+    }, Object.is);
+
+    // -------------------------------------------------------------------------
+    // 4.3  Convex integration
+    // -------------------------------------------------------------------------
+    const { user, authToken: token } = useAuth();
+    const flowMetadata = useFlowMetadataOptional();
+    const flowId = String(flowMetadata?.flow?.id ?? "");
+    const canEdit = flowMetadata?.flow?.canEdit ?? true;
+    const userEmail = user?.email ?? "";
+
+    // Fetch email accounts for both owners and viewers - viewers can use their own accounts
+    const emailQueryArgs = useMemo(
+      () => (userEmail ? { userEmail } : "skip"),
+      [userEmail]
+    );
+    const emailAccounts = useQuery(
+      api.emailAccounts.getEmailAccountsByUserEmail,
+      emailQueryArgs
+    );
+
+    // -------------------------------------------------------------------------
+    // 4.4  Get connected email account nodes
+    // -------------------------------------------------------------------------
+    const connectedAccountIds = useStore(
+      (s) => {
+        const incomingEdges = s.edges.filter(
+          (e) => e.target === id && e.targetHandle?.startsWith("account-input")
+        );
+        if (incomingEdges.length === 0) return [] as string[];
+        const ids = new Set<string>();
+        for (const edge of incomingEdges) {
+          const sourceNode = (s.nodes as RFNode[]).find(
+            (n: RFNode) => n.id === edge.source
+          );
+          const output = (sourceNode?.data?.output ?? {}) as Record<
+            string,
+            unknown
+          >;
+          const explicit = output["account-output"] as
+            | Record<string, unknown>
+            | undefined;
+          if (explicit && typeof explicit === "object") {
+            const maybeId = (explicit as any).accountId;
+            if (typeof maybeId === "string" && maybeId.length > 0)
+              ids.add(maybeId);
+          } else if (edge.sourceHandle) {
+            const handleId = normalizeHandleId(edge.sourceHandle);
+            const val = output[handleId] as Record<string, unknown> | undefined;
+            const maybeId = (val as any)?.accountId;
+            if (typeof maybeId === "string" && maybeId.length > 0)
+              ids.add(maybeId);
+          }
+        }
+        return Array.from(ids).sort();
+      },
+      (a, b) => a.length === b.length && a.every((v, i) => v === b[i])
+    );
+
+    // Whether this node has any incoming edges to the account-input handle
+    // [Explanation], basically detect if an Email Account node is wired even if it hasn't emitted outputs yet
+    const hasAccountInputEdges = useStore(
+      (s) =>
+        s.edges.some(
+          (e) => e.target === id && e.targetHandle?.startsWith("account-input")
+        ),
+      Object.is
+    );
+
+    // -------------------------------------------------------------------------
+    // 4.5  Available accounts (filtered by connected nodes)
+    // -------------------------------------------------------------------------
+    const availableAccounts = useMemo(() => {
+      if (!(emailAccounts && Array.isArray(emailAccounts))) {
+        return [];
+      }
+
+      // Primary path: restrict to accounts emitted by connected Email Account nodes
+      if (connectedAccountIds.length > 0) {
+        const filtered = emailAccounts.filter((account) =>
+          connectedAccountIds.includes(account._id)
+        );
+        return filtered.map((account) => ({
+          value: account._id,
+          label: `${account.display_name} (${account.email})`,
+          provider: account.provider,
+          email: account.email,
+          isActive: account.is_active,
+          isConnected:
+            account.is_active && account.connection_status === "connected",
+          lastValidated: account.last_validated,
+        }));
+      }
+
+      // Fallback removed by design: when a wire exists but upstream hasn't emitted,
+      // we treat it as "account is off" and expose no options
+      if (hasAccountInputEdges) {
+        return [];
+      }
+
+      // No wires, no outputs
+      return [];
+    }, [emailAccounts, connectedAccountIds, hasAccountInputEdges]);
+
+    // -------------------------------------------------------------------------
+    // 4.5  Callbacks
+    // -------------------------------------------------------------------------
+
+    /** Toggle between collapsed / expanded */
+    const toggleExpand = useCallback(() => {
+      updateNodeData({ isExpanded: !isExpanded });
+    }, [isExpanded, updateNodeData]);
+
+    /** Handle account selection */
+    const handleAccountChange = useCallback(
+      (e: ChangeEvent<HTMLSelectElement>) => {
+        const selectedAccountId = e.target.value;
+        const selectedAccount = availableAccounts.find(
+          (acc) => acc.value === selectedAccountId
+        );
+
+        updateNodeData({
+          accountId: selectedAccountId,
+          provider: selectedAccount?.provider || "gmail",
+          connectionStatus: selectedAccountId ? "idle" : "idle",
+          isConnected: false,
+          lastError: "",
+        });
+      },
+      [availableAccounts, updateNodeData]
+    );
+
+    /** Handle total emails change (drives both batchSize and maxMessages) */
+    const handleBatchSizeChangeNumeric = useCallback(
+      (numericText: string) => {
+        const parsed = Number.parseInt(numericText || "1", 10);
+        const clamped = Math.max(1, Math.min(100, isNaN(parsed) ? 1 : parsed));
+        updateNodeData({ batchSize: clamped });
+      },
+      [updateNodeData]
+    );
+    const handleMaxMessagesChangeNumeric = useCallback(
+      (numericText: string) => {
+        const parsed = Number.parseInt(numericText || "1", 10);
+        // Clamp total to larger bound but keep batch within its own max (100)
+        const clampedTotal = Math.max(
+          1,
+          Math.min(1000, isNaN(parsed) ? 1 : parsed)
+        );
+        const clampedBatch = Math.max(1, Math.min(100, clampedTotal));
+        updateNodeData({ maxMessages: clampedTotal, batchSize: clampedBatch });
+      },
+      [updateNodeData]
+    );
+
+    /** Handle checkbox changes */
+    const handleCheckboxChange = useCallback(
+      (field: string) => (e: ChangeEvent<HTMLInputElement>) => {
+        updateNodeData({ [field]: e.target.checked });
+      },
+      [updateNodeData]
+    );
+
+    /** Handle check interval change */
+    const handleCheckIntervalChangeNumeric = useCallback(
+      (numericText: string) => {
+        const parsed = Number.parseInt(numericText || "1", 10);
+        const clamped = Math.max(1, Math.min(60, isNaN(parsed) ? 1 : parsed));
+        updateNodeData({ checkInterval: clamped });
+      },
+      [updateNodeData]
+    );
+
+    /** Handle read messages action */
+    const handleReadMessages = useCallback(async () => {
+      if (!(accountId && token)) {
+        showError("Please select an email account first");
+        return;
+      }
+
+      // Guard against inactive accounts
+      // [Explanation], basically prevent activation when the chosen email account is off
+      const selectedAccount = availableAccounts.find(
+        (acc) => acc.value === accountId
+      );
+      if (!selectedAccount || selectedAccount.isActive === false) {
+        showError("Selected email account is inactive");
+        return;
+      }
+
+      // Enforce upstream wiring: if an Email Account node is wired, require it to be emitting
+      if (
+        hasAccountInputEdges &&
+        !connectedAccountIds.includes(String(accountId))
+      ) {
+        showError("Email Account node is off or not connected");
+        return;
+      }
+
       try {
-        credentials = JSON.parse(account.encrypted_credentials || "{}");
-      } catch {
-        throw new Error("Invalid account credentials");
+        updateNodeData({
+          connectionStatus: "reading",
+          lastError: "",
+          retryCount: 0,
+        });
+
+        // Get the selected account details
+        const account = emailAccounts?.find((acc) => acc._id === accountId);
+        if (!account) {
+          throw new Error("Account not found");
+        }
+
+        // Parse credentials
+        let credentials;
+        try {
+          credentials = JSON.parse(account.encrypted_credentials || "{}");
+        } catch {
+          throw new Error("Invalid account credentials");
+        }
+
+        // Import the appropriate provider
+        let provider;
+        switch (account.provider) {
+          case "gmail":
+            const { gmailProvider } = await import("./providers/gmail");
+            provider = gmailProvider;
+            break;
+          default:
+            throw new Error(`Provider ${account.provider} not supported yet`);
+        }
+
+        // Read emails using the provider
+        const emails = await provider.readEmails({
+          accessToken: credentials.accessToken,
+          folder: "INBOX", // Default folder
+          limit: batchSize,
+        });
+
+        // Format emails for better readability
+        const formattedEmails = emails.map((email, index) => ({
+          [`Email ${index + 1}`]: {
+            From: `${email.from.name || email.from.email} <${email.from.email}>`,
+            Subject: email.subject,
+            Date: new Date(email.date).toLocaleString(),
+            Preview:
+              email.snippet.substring(0, 100) +
+              (email.snippet.length > 100 ? "..." : ""),
+            IsRead: email.isRead ? "Yes" : "No",
+            HasAttachments: email.hasAttachments
+              ? `Yes (${email.attachments.length})`
+              : "No",
+            Content:
+              email.textContent.substring(0, 200) +
+              (email.textContent.length > 200 ? "..." : ""),
+          },
+        }));
+
+        // Store heavy payload outside node.data to avoid React Flow lag
+        setEmailReaderMessagesForNode(
+          flowId,
+          id,
+          emails as unknown as Array<Record<string, unknown>>
+        );
+
+        // Emit handle-specific output for downstream nodes (e.g. ViewArray)
+        // [Explanation], basically write to the source handle key so unified input readers can find it
+        updateNodeData({
+          ["messages-output"]: emails,
+          // Also publish unified output map immediately for consumers that read synchronously
+          output: { ["messages-output"]: emails },
+        });
+
+        // Persist only lightweight metadata in node.data
+        updateNodeData({
+          connectionStatus: "connected",
+          isConnected: true,
+          isActive: true, // propagate status only
+          lastSync: Date.now(),
+          processedCount: processedCount + emails.length,
+          messageCount: emails.length,
+          statusOutput: true,
+          // Intentionally omit: messages, emailsOutput, heavy output strings
+        });
+
+        showSuccess(`Read ${emails.length} messages successfully`);
+      } catch (error) {
+        console.error("Message reading error:", error);
+        updateNodeData({
+          connectionStatus: "error",
+          lastError:
+            error instanceof Error ? error.message : "Failed to read messages",
+          retryCount: retryCount + 1,
+        });
+        showError(
+          "Failed to read messages",
+          error instanceof Error ? error.message : "Unknown error"
+        );
+      }
+    }, [
+      accountId,
+      token,
+      batchSize,
+      processedCount,
+      retryCount,
+      updateNodeData,
+      availableAccounts,
+      hasAccountInputEdges,
+      connectedAccountIds,
+    ]);
+
+    /** Auto-run retrieval when trigger-input turns true */
+    useEffect(() => {
+      if (triggerSignal !== "true") return; // [Explanation], basically only act on rising edge
+      const busy =
+        connectionStatus === "reading" || connectionStatus === "processing";
+      if (busy) return;
+      void handleReadMessages();
+    }, [triggerSignal, connectionStatus, handleReadMessages]);
+
+    // -------------------------------------------------------------------------
+    // 4.6  Effects
+    // -------------------------------------------------------------------------
+
+    /**
+     * Reset node state on logout or when the authenticated user changes
+     * [Explanation], basically clear selected account and outputs when auth changes
+     */
+    const _prevUserEmailRef = useRef<string>(userEmail);
+    const _prevTokenRef = useRef<string | null>(token ?? null);
+    useEffect(() => {
+      const prevEmail = _prevUserEmailRef.current;
+      const prevToken = _prevTokenRef.current;
+      const tokenChanged = prevToken !== (token ?? null);
+      const emailChanged = prevEmail !== userEmail;
+      if (tokenChanged || emailChanged) {
+        // Only write if something actually differs
+        const diffs: Partial<EmailReaderData> = {};
+        const curr = nodeData as EmailReaderData;
+        (
+          Object.keys(RESET_ON_LOGOUT_DATA) as Array<keyof EmailReaderData>
+        ).forEach((k) => {
+          const nextVal = (RESET_ON_LOGOUT_DATA as any)[k];
+          if ((curr as any)[k] !== nextVal) (diffs as any)[k] = nextVal;
+        });
+        if (Object.keys(diffs).length) updateNodeData(diffs);
+        // Clear ephemeral outputs cache for this node on auth change
+        try {
+          clearEmailReaderMessagesForNode(flowId, id);
+        } catch {}
+        _prevUserEmailRef.current = userEmail;
+        _prevTokenRef.current = token ?? null;
+      }
+    }, [userEmail, token, updateNodeData, nodeData, flowId, id]);
+
+    /**
+     * Auto-select a connected account when available
+     * [Explanation], basically choose the first connected account (or first available) if none is selected or current is invalid
+     */
+    useEffect(() => {
+      if (!Array.isArray(availableAccounts) || availableAccounts.length === 0) {
+        return;
       }
 
-      // Import the appropriate provider
-      let provider;
-      switch (account.provider) {
-        case "gmail":
-          const { gmailProvider } = await import("./providers/gmail");
-          provider = gmailProvider;
-          break;
-        default:
-          throw new Error(`Provider ${account.provider} not supported yet`);
+      const hasValidCurrent = availableAccounts.some(
+        (acc) => acc.value === accountId
+      );
+      if (hasValidCurrent && accountId) {
+        return;
       }
 
-      // Read emails using the provider
-      const emails = await provider.readEmails({
-        accessToken: credentials.accessToken,
-        folder: "INBOX", // Default folder
-        limit: batchSize,
-      });
+      const preferred =
+        availableAccounts.find((acc) => acc.isConnected) ??
+        availableAccounts[0];
+      if (preferred) {
+        const next = {
+          accountId: preferred.value,
+          provider: (preferred.provider ||
+            "gmail") as EmailReaderData["provider"],
+          connectionStatus: "idle" as const,
+          isConnected: false,
+          lastError: "",
+        } satisfies Partial<EmailReaderData>;
+        const curr = nodeData as EmailReaderData;
+        const hasDiff =
+          curr.accountId !== next.accountId ||
+          curr.provider !== next.provider ||
+          curr.connectionStatus !== next.connectionStatus ||
+          curr.isConnected !== next.isConnected ||
+          curr.lastError !== next.lastError;
+        if (hasDiff) updateNodeData(next);
+      }
+    }, [availableAccounts, accountId, updateNodeData, nodeData]);
 
-      console.log("📧 Emails fetched:", emails);
+    /** Update output when message state changes */
+    useEffect(() => {
+      const curr = nodeData as EmailReaderData;
+      const nextActive = Boolean(isEnabled && isConnected);
+      const nextStatus = nextActive;
+      if (curr.statusOutput !== nextStatus || curr.isActive !== nextActive) {
+        updateNodeData({ statusOutput: nextStatus, isActive: nextActive });
+      }
+    }, [isEnabled, isConnected, updateNodeData, nodeData]);
 
-      // Format emails for better readability
-      const formattedEmails = emails.map((email, index) => ({
-        [`Email ${index + 1}`]: {
-          From: `${email.from.name || email.from.email} <${email.from.email}>`,
-          Subject: email.subject,
-          Date: new Date(email.date).toLocaleString(),
-          Preview:
-            email.snippet.substring(0, 100) +
-            (email.snippet.length > 100 ? "..." : ""),
-          IsRead: email.isRead ? "Yes" : "No",
-          HasAttachments: email.hasAttachments
-            ? `Yes (${email.attachments.length})`
-            : "No",
-          Content:
-            email.textContent.substring(0, 200) +
-            (email.textContent.length > 200 ? "..." : ""),
-        },
-      }));
+    /**
+     * Clear outputs when connection is lost
+     * [Explanation], basically wipe node outputs after disconnect to avoid stale data
+     */
+    useEffect(() => {
+      const wasConnected = _prevIsConnectedRef.current;
 
-      updateNodeData({
-        connectionStatus: "connected",
-        isConnected: true,
-        isActive: true, // Activar el nodo para que propague datos
-        lastSync: Date.now(),
-        processedCount: processedCount + emails.length,
-        messageCount: emails.length,
-        messages: emails,
-        emailsOutput: JSON.stringify(emails), // Raw data
-        output: JSON.stringify(formattedEmails, null, 2), // Formatted for viewText
-        statusOutput: true,
-      });
+      // Only clear when transitioning from connected -> disconnected
+      if (wasConnected && !isConnected) {
+        // Clear any local indicators
+        const curr = nodeData as EmailReaderData;
+        if (
+          curr.messageCount !== 0 ||
+          curr.emailsOutput !== "" ||
+          curr.output !== ""
+        ) {
+          updateNodeData({
+            messageCount: 0,
+            emailsOutput: "",
+            output: "",
+            ["messages-output"]: [], // [Explanation], basically clear handle output array
+          });
+        }
+        // Clear heavy payload from the ephemeral store
+        try {
+          clearEmailReaderMessagesForNode(flowId, id);
+        } catch {}
+      }
 
-      toast.success(`Read ${emails.length} messages successfully`);
-    } catch (error) {
-      console.error("Message reading error:", error);
-      updateNodeData({
-        connectionStatus: "error",
-        lastError:
-          error instanceof Error ? error.message : "Failed to read messages",
-        retryCount: retryCount + 1,
-      });
-      toast.error("Failed to read messages", {
-        description: error instanceof Error ? error.message : "Unknown error",
+      _prevIsConnectedRef.current = isConnected;
+    }, [isConnected, nodeData, updateNodeData, flowId, id]);
+
+    // -------------------------------------------------------------------------
+    // 4.7a  Generate unified handle-based output map
+    // -------------------------------------------------------------------------
+    const _lastHandleMapRef = useRef<Map<string, unknown> | null>(null);
+    useEffect(() => {
+      try {
+        const map = generateoutputField(spec, nodeData as any);
+        if (!(map instanceof Map)) return;
+        const prev = _lastHandleMapRef.current;
+        let changed = true;
+        if (prev && prev instanceof Map) {
+          changed =
+            prev.size !== map.size ||
+            !Array.from(map.entries()).every(([k, v]) => prev.get(k) === v);
+        }
+        if (changed) {
+          _lastHandleMapRef.current = map;
+          updateNodeData({ output: Object.fromEntries(map.entries()) });
+        }
+      } catch {}
+    }, [
+      spec.handles,
+      (nodeData as any)["messages-output"],
+      (nodeData as EmailReaderData).isActive,
+      (nodeData as EmailReaderData).isEnabled,
+      updateNodeData,
+    ]);
+
+    // -------------------------------------------------------------------------
+    // 4.7  Validation
+    // -------------------------------------------------------------------------
+    const validation = useMemo(() => validateNodeData(nodeData), [nodeData]);
+    if (!validation.success) {
+      reportValidationError("EmailReader", id, validation.errors, {
+        originalData: validation.originalData,
+        component: "EmailReaderNode",
       });
     }
-  }, [
-    accountId,
-    token,
-    batchSize,
-    processedCount,
-    retryCount,
-    updateNodeData,
-    emailAccounts,
-  ]);
 
-  // -------------------------------------------------------------------------
-  // 4.6  Effects
-  // -------------------------------------------------------------------------
+    useNodeDataValidation(
+      EmailReaderDataSchema,
+      "EmailReader",
+      validation.data,
+      id
+    );
 
-  /** Update output when message state changes */
-  useEffect(() => {
-    if (isEnabled && isConnected) {
-      updateNodeData({
-        statusOutput: true,
-        isActive: true,
-      });
-    } else {
-      updateNodeData({
-        statusOutput: false,
-        isActive: false,
-      });
-    }
-  }, [isEnabled, isConnected, messageCount, updateNodeData]);
+    // -------------------------------------------------------------------------
+    // 4.8  Render
+    // -------------------------------------------------------------------------
+    return (
+      <>
+        <LabelNode
+          nodeId={id}
+          label={(nodeData as EmailReaderData).label || spec.displayName}
+        />
 
-  // -------------------------------------------------------------------------
-  // 4.7  Validation
-  // -------------------------------------------------------------------------
-  const validation = validateNodeData(nodeData);
-  if (!validation.success) {
-    reportValidationError("EmailReader", id, validation.errors, {
-      originalData: validation.originalData,
-      component: "EmailReaderNode",
-    });
-  }
-
-  useNodeDataValidation(
-    EmailReaderDataSchema,
-    "EmailReader",
-    validation.data,
-    id
-  );
-
-  // -------------------------------------------------------------------------
-  // 4.8  Render
-  // -------------------------------------------------------------------------
-  return (
-    <>
-      {/* Input handle for email account connection */}
-      <Handle
-        type="target"
-        position={Position.Left}
-        id="account-input"
-        style={{
-          background: "#555",
-          width: 8,
-          height: 8,
-          top: 20,
-        }}
-      />
-
-      {/* Editable label */}
-      <LabelNode
-        nodeId={id}
-        label={(nodeData as EmailReaderData).label || spec.displayName}
-      />
-
-      {isExpanded ? (
-        <div
-          className={`${CONTENT.expanded} ${isEnabled ? "" : CONTENT.disabled}`}
-        >
-          <div className={CONTENT.header}>
-            <span className="font-medium text-sm">Email Reader</span>
-            <div
-              className={`text-xs ${connectionStatus === "connected" ? "text-green-600" : connectionStatus === "error" ? "text-red-600" : "text-gray-600"}`}
-            >
-              {connectionStatus === "reading"
-                ? "📖"
-                : connectionStatus === "connected"
-                  ? "✓"
-                  : connectionStatus === "error"
-                    ? "✗"
-                    : "○"}{" "}
-              {connectionStatus}
-            </div>
-          </div>
-
-          <div className={`${CONTENT.body} max-h-[400px] overflow-y-auto`}>
-            {/* Account Selection */}
-            <div>
-              <label
-                htmlFor="email-account-select"
-                className="mb-1 block text-gray-600 text-xs"
-              >
-                Email Account:
-              </label>
-              <select
-                id="email-account-select"
-                value={accountId}
-                onChange={handleAccountChange}
-                className="w-full rounded border border-gray-300 p-2 text-xs"
-                disabled={!isEnabled || connectionStatus === "reading"}
-              >
-                <option value="">Select email account...</option>
-                {availableAccounts.map((account) => (
-                  <option
-                    key={account.value}
-                    value={account.value}
-                    disabled={!account.isActive}
-                  >
-                    {account.label} {account.isActive ? "" : "(inactive)"}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Processing Options */}
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label
-                  htmlFor="batch-size-input"
-                  className="mb-1 block text-gray-600 text-xs"
-                >
-                  Batch Size:
-                </label>
-                <input
-                  id="batch-size-input"
-                  type="number"
-                  value={batchSize}
-                  onChange={handleBatchSizeChange}
-                  min="1"
-                  max="100"
-                  className="w-full rounded border border-gray-300 p-2 text-xs"
-                  disabled={!isEnabled || connectionStatus === "reading"}
-                />
-              </div>
-              <div>
-                <label
-                  htmlFor="max-messages-input"
-                  className="mb-1 block text-gray-600 text-xs"
-                >
-                  Max Messages:
-                </label>
-                <input
-                  id="max-messages-input"
-                  type="number"
-                  value={maxMessages}
-                  onChange={handleMaxMessagesChange}
-                  min="1"
-                  max="1000"
-                  className="w-full rounded border border-gray-300 p-2 text-xs"
-                  disabled={!isEnabled || connectionStatus === "reading"}
-                />
-              </div>
-            </div>
-
-            {/* Options */}
-            <div className="flex flex-col gap-2">
-              <label className="flex items-center text-xs">
-                <input
-                  type="checkbox"
-                  checked={includeAttachments}
-                  onChange={handleCheckboxChange("includeAttachments")}
-                  className="mr-2"
-                  disabled={!isEnabled}
-                />
-                Include Attachments
-              </label>
-              <label className="flex items-center text-xs">
-                <input
-                  type="checkbox"
-                  checked={markAsRead}
-                  onChange={handleCheckboxChange("markAsRead")}
-                  className="mr-2"
-                  disabled={!isEnabled}
-                />
-                Mark as Read
-              </label>
-              <label className="flex items-center text-xs">
-                <input
-                  type="checkbox"
-                  checked={enableRealTime}
-                  onChange={handleCheckboxChange("enableRealTime")}
-                  className="mr-2"
-                  disabled={!isEnabled}
-                />
-                Real-time Monitoring
-              </label>
-            </div>
-
-            {/* Real-time Interval */}
-            {enableRealTime && (
-              <div>
-                <label
-                  htmlFor="check-interval-input"
-                  className="mb-1 block text-gray-600 text-xs"
-                >
-                  Check Interval (minutes):
-                </label>
-                <input
-                  id="check-interval-input"
-                  type="number"
-                  value={checkInterval}
-                  onChange={handleCheckIntervalChange}
-                  min="1"
-                  max="60"
-                  className="w-full rounded border border-gray-300 p-2 text-xs"
-                  disabled={!isEnabled}
-                />
-              </div>
+        {isExpanded ? (
+          <EmailReaderExpanded
+            nodeData={nodeData as EmailReaderData}
+            isEnabled={isEnabled as boolean}
+            connectionStatus={
+              connectionStatus as EmailReaderData["connectionStatus"]
+            }
+            availableAccounts={availableAccounts}
+            canActivate={
+              // Recompute lightweight boolean here to avoid passing many deps
+              (isEnabled as boolean) &&
+              Boolean((nodeData as EmailReaderData).accountId) &&
+              !availableAccounts.some(
+                (a) =>
+                  a.value === (nodeData as EmailReaderData).accountId &&
+                  a.isActive === false
+              )
+            }
+            onAccountChange={handleAccountChange}
+            onBatchSizeChange={handleBatchSizeChangeNumeric}
+            onMaxMessagesChange={handleMaxMessagesChangeNumeric}
+            onIncludeAttachmentsChange={handleCheckboxChange(
+              "includeAttachments"
             )}
+            onMarkAsReadChange={handleCheckboxChange("markAsRead")}
+            onEnableRealTimeChange={handleCheckboxChange("enableRealTime")}
+            onCheckIntervalChange={handleCheckIntervalChangeNumeric}
+            onReadMessages={handleReadMessages}
+          />
+        ) : (
+          <EmailReaderCollapsed
+            nodeData={nodeData as EmailReaderData}
+            categoryStyles={categoryStyles}
+            onToggleExpand={toggleExpand}
+            onReadMessages={handleReadMessages}
+          />
+        )}
 
-            {/* Actions */}
-            <div className="flex gap-2">
-              <button
-                onClick={handleReadMessages}
-                disabled={
-                  !(isEnabled && accountId) || connectionStatus === "reading"
-                }
-                className="flex-1 rounded bg-blue-500 p-2 text-white text-xs hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
-                type="button"
-              >
-                {connectionStatus === "reading"
-                  ? "Reading..."
-                  : "Read Messages"}
-              </button>
-            </div>
-
-            {/* Status Information */}
-            <div className="rounded bg-gray-50 p-2 text-gray-500 text-xs">
-              <div>
-                Messages: {messageCount} | Processed: {processedCount}
-              </div>
-              {lastSync && (
-                <div>Last sync: {new Date(lastSync).toLocaleString()}</div>
-              )}
-              {lastError && (
-                <div className="mt-1 text-red-600">Error: {lastError}</div>
-              )}
-              {retryCount > 0 && (
-                <div className="text-yellow-600">Retries: {retryCount}</div>
-              )}
-            </div>
-          </div>
-        </div>
-      ) : (
-        <div
-          className={`${CONTENT.collapsed} ${isEnabled ? "" : CONTENT.disabled}`}
-        >
-          <div className="p-2 text-center">
-            <div className={`font-mono text-xs ${categoryStyles.primary}`}>
-              {accountId ? `${messageCount} messages` : "No account"}
-            </div>
-            <div
-              className={`text-xs ${connectionStatus === "connected" ? "text-green-600" : connectionStatus === "error" ? "text-red-600" : "text-gray-600"}`}
-            >
-              {connectionStatus === "reading"
-                ? "📖"
-                : connectionStatus === "connected"
-                  ? "✓"
-                  : connectionStatus === "error"
-                    ? "✗"
-                    : "○"}{" "}
-              {connectionStatus}
-            </div>
-          </div>
-        </div>
-      )}
-
-      <ExpandCollapseButton showUI={isExpanded} onToggle={toggleExpand} />
-    </>
-  );
-});
+        <ExpandCollapseButton
+          showUI={isExpanded}
+          onToggle={toggleExpand}
+          size="sm"
+        />
+      </>
+    );
+  },
+  (prevProps, nextProps) => {
+    // Ignore frequent ReactFlow position/transform changes; re-render when core props change
+    return (
+      prevProps.id === nextProps.id &&
+      prevProps.spec === nextProps.spec &&
+      prevProps.data === nextProps.data &&
+      prevProps.selected === nextProps.selected
+    );
+  }
+);
 
 // -----------------------------------------------------------------------------
 // 5️⃣  High‑order wrapper – inject scaffold with dynamic spec
@@ -927,12 +1012,14 @@ const EmailReaderNodeWithDynamicSpec = (props: NodeProps) => {
   const { nodeData } = useNodeData(props.id, props.data);
 
   // Recompute spec only when the size keys change
+  const { expandedSize, collapsedSize } = nodeData as EmailReaderData;
   const dynamicSpec = useMemo(
-    () => createDynamicSpec(nodeData as EmailReaderData),
-    [
-      (nodeData as EmailReaderData).expandedSize,
-      (nodeData as EmailReaderData).collapsedSize,
-    ]
+    () =>
+      createDynamicSpec({
+        expandedSize,
+        collapsedSize,
+      } as EmailReaderData),
+    [expandedSize, collapsedSize]
   );
 
   // Memoise the scaffolded component to keep focus
