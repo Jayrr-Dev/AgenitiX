@@ -507,7 +507,7 @@ export const EmailTemplateExpanded = React.memo(
                         </p>
                         <div className="flex items-center justify-between text-[9px] text-muted-foreground">
                           <div className="flex items-center gap-1">
-                            {template.tags.slice(0, 2).map((tag, index) => (
+                            {template.tags.slice(0, 2).map((tag: string, index: number) => (
                               <span key={index} className="bg-muted/40 px-1 py-0.5 rounded text-[8px]">
                                 {tag}
                               </span>
@@ -523,7 +523,7 @@ export const EmailTemplateExpanded = React.memo(
                         </div>
                         {template.variables.length > 0 && (
                           <div className="mt-1 flex flex-wrap gap-1">
-                            {template.variables.slice(0, 3).map((variable, index) => (
+                            {template.variables.slice(0, 3).map((variable: string, index: number) => (
                               <Badge key={index} variant="outline" className="text-[8px] px-1 py-0">
                                 {variable}
                               </Badge>
@@ -599,7 +599,7 @@ export const EmailTemplateExpanded = React.memo(
                         </div>
                         {template.variables.length > 0 && (
                           <div className="mt-1 flex flex-wrap gap-1">
-                            {template.variables.slice(0, 2).map((variable, index) => (
+                            {template.variables.slice(0, 2).map((variable: string, index: number) => (
                               <Badge key={index} variant="outline" className="text-[8px] px-1 py-0">
                                 {variable}
                               </Badge>
