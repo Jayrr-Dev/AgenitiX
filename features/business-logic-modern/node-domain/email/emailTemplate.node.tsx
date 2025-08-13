@@ -1125,20 +1125,16 @@ function EmailEditorModal({ isOpen, onClose, editorData, onSave }: EmailEditorMo
 
     const ed = grapesjs.init({
       container: '#gjs-email-editor',
-      height: "calc(100vh - 48px)",
+      height: "100%",
       width: "100%",
       storageManager: false,
       fromElement: false,
+      // [Explanation], basically keep defaults per docs and let preset manage panels
       plugins: [grapesjsMjml],
       pluginsOpts: {
         [grapesjsMjml as unknown as string]: {}
       },
-      // [Explanation], basically anchor Pickr to its parent control; canvas stacking is handled separately
-      colorPicker: {
-        appendTo: 'parent',
-        offset: { top: 26, left: -166 },
-        zIndex: 9999,
-      },
+      // [Explanation], basically no colorPicker overrides to avoid panel interference
     });
 
 
@@ -1176,36 +1172,22 @@ function EmailEditorModal({ isOpen, onClose, editorData, onSave }: EmailEditorMo
         }
 
         ed.setComponents(contentToLoad);
-        // Raise canvas container below floating panels to avoid overlap issues
-        try {
-          const canvasEl = ed.Canvas.getElement();
-          const canvasFrame = ed.Canvas.getFrameEl?.();
-          if (canvasEl) (canvasEl as HTMLElement).style.zIndex = '1';
-          if (canvasFrame) (canvasFrame as HTMLElement).style.zIndex = '1';
-        } catch {}
-
         // Ensure editor is properly rendered
         ed.refresh();
         try {
           const wrapper = ed.getWrapper?.();
           if (wrapper && ed.select) ed.select(wrapper);
         } catch {}
-
-        // Ensure Pickr sits above all GrapesJS elements including canvas frame
+        // [Explanation], basically move the views panel (blocks/layers/styles) into the top toolbar
         try {
-          const styleTag = document.createElement('style');
-          styleTag.setAttribute('data-gjs-pickr-zindex', 'true');
-          styleTag.textContent = `
-            .gjs-editor .pcr-app { z-index: 2147483650 !important; position: fixed !important; }
-            .gjs-cv-canvas { position: relative !important; z-index: 1 !important; }
-            .gjs-cv-canvas iframe { z-index: 1 !important; }
-            .gjs-frame { z-index: 1 !important; }
-          `;
-          // Insert once
-          if (!document.querySelector('style[data-gjs-pickr-zindex]')) {
-            document.head.appendChild(styleTag);
-          }
+          const viewsPanel = ed.Panels?.getPanel?.('views');
+          // const topOptionsEl = ed.getContainer()?.querySelector('.gjs-pn-panel.gjs-pn-options');
+          // if (viewsPanel && topOptionsEl) {
+          //   viewsPanel.set('appendTo', topOptionsEl as HTMLElement);
+          // }
         } catch {}
+        // [Explanation], basically defer blocks panel open until the UI mounts
+        setTimeout(() => { try { ed.runCommand('open-blocks'); } catch {} }, 200);
 
 
         // Final validation that editor is visible
