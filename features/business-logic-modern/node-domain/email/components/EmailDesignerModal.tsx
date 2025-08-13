@@ -17,7 +17,7 @@ import { createPortal } from "react-dom";
 // [Explanation], basically load GrapesJS styles globally once
 import "grapesjs/dist/css/grapes.min.css";
 // [Explanation], basically bring in starter templates for quick loading
-import { STARTER_TEMPLATES, type StarterTemplate } from "../data/starterTemplates";
+import { STARTER_TEMPLATES_GRAPES, type StarterTemplate } from "../data/starterTemplates";
 
 type EmailDesignerModalProps = {
   isOpen: boolean;
@@ -177,7 +177,7 @@ export default function EmailDesignerModal({ isOpen, onClose, initialHtml, onSav
     if (!bundle?.ed) return;
     const { ed } = bundle;
     // [Explanation], basically replace canvas with chosen template content
-    ed.setComponents(tpl.htmlContent || "");
+    ed.setComponents(tpl.mjml || "");
     ed.refresh?.();
     try {
       const wrapper = ed.getWrapper?.();
@@ -195,16 +195,16 @@ export default function EmailDesignerModal({ isOpen, onClose, initialHtml, onSav
 
   const categories = React.useMemo(() => {
     const set = new Set<string>();
-    for (const t of STARTER_TEMPLATES) set.add(t.category);
+    for (const t of STARTER_TEMPLATES_GRAPES) set.add(t.category);
     return ["all", ...Array.from(set)];
   }, []);
 
   const filteredTemplates = React.useMemo(() => {
     const q = templateQuery.trim().toLowerCase();
-    return STARTER_TEMPLATES.filter((t) => {
+    return STARTER_TEMPLATES_GRAPES.filter((t) => {
       const inCat = templateCategory === "all" || t.category === templateCategory;
       if (!q) return inCat;
-      const hay = `${t.name} ${t.subject} ${t.description} ${t.tags.join(" ")}`.toLowerCase();
+      const hay = `${t.name} ${t.subject} ${t.description} ${t.tags?.join(" ")}`.toLowerCase();
       return inCat && hay.includes(q);
     });
   }, [templateQuery, templateCategory]);
@@ -267,7 +267,7 @@ export default function EmailDesignerModal({ isOpen, onClose, initialHtml, onSav
                     <div className="text-xs text-gray-600 dark:text-gray-300 line-clamp-3 mb-3">{tpl.description}</div>
                     <div className="mt-auto flex items-center justify-between">
                       <div className="flex flex-wrap gap-1">
-                        {tpl.tags.slice(0, 3).map((tag) => (
+                        {tpl.tags?.slice(0, 3).map((tag) => (
                           <span key={tag} className="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200">{tag}</span>
                         ))}
                       </div>
