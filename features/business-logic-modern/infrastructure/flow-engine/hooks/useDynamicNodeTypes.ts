@@ -17,6 +17,7 @@ import storeLocal from '../../../node-domain/store/storeLocal.node';
 import aiManager from '../../../node-domain/ai/aiManager.node';
 import createJson from '../../../node-domain/create/createJson.node';
 import createMap from '../../../node-domain/create/createMap.node';
+import mergeNode from '../../../node-domain/store/mergeNode.node';
 import viewObject from '../../../node-domain/view/viewObject.node';
 import viewArray from '../../../node-domain/view/viewArray.node';
 import emailPreview from '../../../node-domain/email/emailPreview.node';
@@ -83,6 +84,8 @@ export function useDynamicNodeTypes() {
 			aiManager,
 			createJson,
 			createMap,
+			mergeNode,
+			// Add new node types here
 			viewObject,
 			viewArray,
 			emailPreview,
