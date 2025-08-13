@@ -11,8 +11,7 @@
  */
 
 import RenderStatusDot from "@/components/RenderStatusDot";
-import { memo, useMemo, useState, useCallback } from "react";
-import dynamic from "next/dynamic";
+import { memo, useMemo } from "react";
 import { MdOutlineMailOutline } from "react-icons/md";
 import SkueButton from "@/components/ui/skue-button";
 import type { EmailMessageData } from "../emailMessage.node";
@@ -42,13 +41,6 @@ export const EmailMessageCollapsed = memo(
     onToggleExpand,
     onComposeMessage,
   }: EmailMessageCollapsedProps) => {
-    const [showDesigner, setShowDesigner] = useState(false);
-    const [designerHtml, setDesignerHtml] = useState<string | undefined>();
-
-    const EmailDesignerModal = useMemo(
-      () => dynamic(() => import("../components/EmailDesignerModal"), { ssr: false }),
-      []
-    );
     const { sentCount, connectionStatus, subject, messageContent } = nodeData;
 
     const statusProps = useMemo(() => {
@@ -90,7 +82,7 @@ export const EmailMessageCollapsed = memo(
               title="Compose"
               checked={false}
               onCheckedChange={(checked) => {
-                if (checked) setShowDesigner(true);
+                if (checked) onComposeMessage?.();
               }}
               size="sm"
               className="cursor-pointer translate-y-2"
@@ -113,19 +105,6 @@ export const EmailMessageCollapsed = memo(
             </div>
           </div>
         </div>
-        {showDesigner && (
-          <EmailDesignerModal
-            isOpen={showDesigner}
-            onClose={() => setShowDesigner(false)}
-            initialHtml={designerHtml}
-            onSave={(data) => {
-              setDesignerHtml(data.html);
-              setShowDesigner(false);
-              // [Explanation], basically trigger upstream compose/save flow
-              onComposeMessage?.();
-            }}
-          />
-        )}
       </div>
     );
   }
