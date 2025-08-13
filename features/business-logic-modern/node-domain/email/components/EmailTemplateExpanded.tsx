@@ -45,7 +45,7 @@ import type { EmailTemplateData } from "../emailTemplate.node";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
-import { STARTER_TEMPLATES, searchStarterTemplates, getStarterTemplatesByCategory } from "../data/starterTemplates";
+import { STARTER_TEMPLATES_GRAPES, searchTemplates } from "../data/starterTemplates";
 
 // Minimalist container styles matching EmailMessageExpanded
 const EXPANDED_STYLES = {
@@ -149,40 +149,50 @@ export const EmailTemplateExpanded = React.memo(
 
     const templateCategories = useQuery(api.emailTemplates.getUserTemplateCategories, {});
 
+    // Normalize GrapesJS/MJML templates to the UI's expected shape
+    const normalizeTemplate = React.useCallback((t: any) => ({
+      id: t.id,
+      name: t.name,
+      category: t.category,
+      subject: t.subject,
+      description: t.description,
+      htmlContent: t.mjml,
+      textContent: t.text,
+      variables: (t.variables || []).map((v: any) => v.name),
+      tags: t.tags || [],
+    }), []);
+
     // Filter starter templates based on search and category
     const filteredStarterTemplates = React.useMemo(() => {
-      let templates = STARTER_TEMPLATES;
-      
-      // Apply search filter
-      if (searchTerm) {
-        templates = searchStarterTemplates(searchTerm);
-      }
-      
-      // Apply category filter
+      const base = searchTerm
+        ? searchTemplates(searchTerm)
+        : STARTER_TEMPLATES_GRAPES;
+
+      let templates = base.map(normalizeTemplate);
+
       if (selectedCategory !== "all") {
-        templates = templates.filter(template => template.category === selectedCategory);
+        templates = templates.filter((template) => template.category === selectedCategory);
       }
-      
+
       return templates;
-    }, [searchTerm, selectedCategory]);
+    }, [searchTerm, selectedCategory, normalizeTemplate]);
 
     // Get all categories including starter template categories
     const allCategories = React.useMemo(() => {
-      const starterCategories = getStarterTemplatesByCategory();
       const userCategories = templateCategories || [];
-      
-      const categoryMap = new Map();
-      
-      // Add starter template categories
-      Object.entries(starterCategories).forEach(([category, templates]) => {
-        categoryMap.set(category, (categoryMap.get(category) || 0) + templates.length);
-      });
-      
-      // Add user template categories
-      userCategories.forEach(cat => {
+
+      const categoryMap = new Map<string, number>();
+
+      // Starter template categories from Grapes templates
+      for (const t of STARTER_TEMPLATES_GRAPES) {
+        categoryMap.set(t.category, (categoryMap.get(t.category) || 0) + 1);
+      }
+
+      // User template categories
+      for (const cat of userCategories) {
         categoryMap.set(cat.category, (categoryMap.get(cat.category) || 0) + cat.count);
-      });
-      
+      }
+
       return Array.from(categoryMap.entries())
         .map(([category, count]) => ({ category, count }))
         .sort((a, b) => b.count - a.count);

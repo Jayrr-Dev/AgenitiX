@@ -55,7 +55,7 @@ import { useMutation, useQuery, useConvexAuth } from "convex/react";
 import { toast } from "sonner";
 import { EmailTemplateCollapsed } from "./components/EmailTemplateCollapsed";
 import { EmailTemplateExpanded } from "./components/EmailTemplateExpanded";
-import { STARTER_TEMPLATES, type StarterTemplate } from "./data/starterTemplates";
+import { STARTER_TEMPLATES_GRAPES, type StarterTemplate } from "./data/starterTemplates";
 
 // Easy Email Editor (React + MJML)
 // [Explanation], basically embed drag‑and‑drop email designer based on MJML
@@ -1246,7 +1246,7 @@ function EmailEditorModal({ isOpen, onClose, editorData, onSave }: EmailEditorMo
     const bundle = editorRef.current as { ed: any } | null;
     if (!bundle?.ed) return;
     const { ed } = bundle;
-    ed.setComponents(tpl.htmlContent || "");
+    ed.setComponents(tpl.mjml || "");
     ed.refresh?.();
     try {
       const wrapper = ed.getWrapper?.();
@@ -1258,16 +1258,16 @@ function EmailEditorModal({ isOpen, onClose, editorData, onSave }: EmailEditorMo
 
   const categories = useMemo(() => {
     const set = new Set<string>();
-    for (const t of STARTER_TEMPLATES) set.add(t.category);
+    for (const t of STARTER_TEMPLATES_GRAPES) set.add(t.category);
     return ["all", ...Array.from(set)];
   }, []);
 
   const filteredTemplates = useMemo(() => {
     const q = templateQuery.trim().toLowerCase();
-    return STARTER_TEMPLATES.filter((t) => {
+    return STARTER_TEMPLATES_GRAPES.filter((t) => {
       const inCat = templateCategory === "all" || t.category === templateCategory;
       if (!q) return inCat;
-      const hay = `${t.name} ${t.subject} ${t.description} ${t.tags.join(" ")}`.toLowerCase();
+      const hay = `${t.name} ${t.subject} ${t.description} ${t.tags?.join(" ")}`.toLowerCase();
       return inCat && hay.includes(q);
     });
   }, [templateQuery, templateCategory]);
@@ -1388,7 +1388,7 @@ function EmailEditorModal({ isOpen, onClose, editorData, onSave }: EmailEditorMo
                     <div className="text-xs text-gray-600 dark:text-gray-300 line-clamp-3 mb-3">{tpl.description}</div>
                     <div className="mt-auto flex items-center justify-between">
                       <div className="flex flex-wrap gap-1">
-                        {tpl.tags.slice(0, 3).map((tag) => (
+                        {tpl.tags?.slice(0, 3).map((tag) => (
                           <span key={tag} className="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200">{tag}</span>
                         ))}
                       </div>
