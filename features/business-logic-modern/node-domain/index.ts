@@ -7,6 +7,7 @@ export { default as storeLocal } from "./store/storeLocal.node";
 export { default as aiManager } from "./ai/aiManager.node";
 export { default as createJson } from "./create/createJson.node";
 export { default as createMap } from "./create/createMap.node";
+export { default as mergeNode } from "./store/mergeNode.node";
 export { default as viewObject } from "./view/viewObject.node";
 export { default as viewArray } from "./view/viewArray.node";
 export { default as emailPreview } from "./email/emailPreview.node";
