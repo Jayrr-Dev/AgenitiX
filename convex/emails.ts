@@ -14,7 +14,8 @@
 
 import { render } from "@react-email/render";
 import { v } from "convex/values";
-import { AgenitiXMagicLinkEmail } from "../react-email-starter/emails/agenitix-magic-link";
+// TODO: Fix React Email compatibility with React 19
+// import { AgenitiXMagicLinkEmail } from "../react-email-starter/emails/agenitix-magic-link";
 import { action } from "./_generated/server";
 import { resend } from "./sendEmails";
 

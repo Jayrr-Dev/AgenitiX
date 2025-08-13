@@ -106,8 +106,8 @@ export interface ControlsConfig {
 export interface NodeHandleSpec {
 	/** Unique handle id */
 	id: string;
-	/** Legacy single-letter data type code (mutually exclusive with tsSymbol) */
-	dataType?: "string" | "number" | "boolean" | "JSON" | "array" | "any" | "Tools" | "String";
+	/** Legacy single-letter data type code (mutually exclusive with tsSymbol) - allows string for flexibility */
+	dataType?: "string" | "number" | "boolean" | "JSON" | "array" | "any" | "Tools" | "String" | string;
 	/** New dual-contract system: optional TypeScript symbol referencing real type */
 	tsSymbol?: string;
 	/** Optional fallback code when tsSymbol provided - allows single letters for legacy compatibility */
