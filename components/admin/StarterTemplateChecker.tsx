@@ -78,18 +78,18 @@ export const StarterTemplateChecker = ({ userId }: StarterTemplateCheckerProps) 
 				<div className="grid grid-cols-2 gap-4">
 					<div className="p-3 rounded-lg border bg-muted/50">
 						<div className="text-sm font-medium text-muted-foreground">Total Flows</div>
-						<div className="text-2xl font-bold">{templateStatus.totalFlows}</div>
+						<div className="text-2xl font-bold">{templateStatus?.totalFlows || 0}</div>
 					</div>
 					<div className="p-3 rounded-lg border bg-muted/50">
 						<div className="text-sm font-medium text-muted-foreground">Starter Templates</div>
-						<div className="text-2xl font-bold">{templateStatus.starterTemplateCount}</div>
+						<div className="text-2xl font-bold">{templateStatus?.starterTemplateCount || 0}</div>
 					</div>
 				</div>
 
 				{/* Status */}
-				<Alert className={templateStatus.hasStarterTemplates ? "border-green-500" : "border-yellow-500"}>
+				<Alert className={templateStatus?.hasStarterTemplates ? "border-green-500" : "border-yellow-500"}>
 					<AlertDescription>
-						<strong>Status:</strong> {templateStatus.hasStarterTemplates 
+						<strong>Status:</strong> {templateStatus?.hasStarterTemplates 
 							? "✅ User has starter templates" 
 							: "⚠️ User missing starter templates"
 						}
@@ -97,11 +97,11 @@ export const StarterTemplateChecker = ({ userId }: StarterTemplateCheckerProps) 
 				</Alert>
 
 				{/* Missing Templates */}
-				{templateStatus.missingTemplates.length > 0 && (
+				{templateStatus?.missingTemplates && templateStatus.missingTemplates.length > 0 && (
 					<div>
 						<h4 className="font-medium mb-2">Missing Templates:</h4>
 						<div className="flex flex-wrap gap-2">
-							{templateStatus.missingTemplates.map((templateName) => (
+							{templateStatus.missingTemplates.map((templateName: string) => (
 								<Badge key={templateName} variant="destructive">
 									{templateName}
 								</Badge>
@@ -111,11 +111,11 @@ export const StarterTemplateChecker = ({ userId }: StarterTemplateCheckerProps) 
 				)}
 
 				{/* Existing Templates */}
-				{templateStatus.starterTemplates.length > 0 && (
+				{templateStatus?.starterTemplates && templateStatus.starterTemplates.length > 0 && (
 					<div>
 						<h4 className="font-medium mb-2">Existing Templates:</h4>
 						<div className="space-y-2">
-							{templateStatus.starterTemplates.map((template) => (
+							{templateStatus.starterTemplates.map((template: any) => (
 								<div key={template.id} className="p-3 rounded-lg border bg-muted/20">
 									<div className="flex items-center justify-between mb-1">
 										<span className="font-medium">{template.name}</span>

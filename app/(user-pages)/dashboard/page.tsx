@@ -243,7 +243,7 @@ const DashboardContent = () => {
   };
 
   // Convert Convex flows to dashboard format
-  const allFlows: Flow[] = flows.map((flow) => ({
+  const allFlows: Flow[] = (flows || []).map((flow) => ({
     id: flow._id,
     name: flow.name,
     description: flow.description,

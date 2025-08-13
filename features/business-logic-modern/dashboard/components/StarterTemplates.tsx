@@ -136,7 +136,7 @@ export default function StarterTemplates({
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 md:grid-cols-3">
-            {templateStatus.starterTemplates.map((template) => {
+            {(templateStatus?.starterTemplates || []).map((template) => {
               const config = TEMPLATE_CONFIGS.find(
                 (c) => c.name === template.name
               );

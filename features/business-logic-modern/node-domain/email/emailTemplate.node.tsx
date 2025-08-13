@@ -775,7 +775,6 @@ const EmailTemplateNode = memo(
           throw new Error("Failed to save template");
         }
       } catch (error) {
-        console.error("Save template error:", error);
         updateNodeData({
           isSaving: false,
           lastError:
@@ -1070,34 +1069,22 @@ function EmailEditorModal({ isOpen, onClose, editorData, onSave }: EmailEditorMo
 
   // Initialize GrapesJS when modal opens
   useEffect(() => {
-    console.log("🔍 GrapesJS useEffect triggered:", {
-      isOpen,
-      isClient,
-      hasContainer: !!containerRef.current,
-      hasEditor: !!editorRef.current,
-      containerElement: containerRef.current
-    });
-
     if (!isOpen || !isClient) {
-      console.log("🚫 GrapesJS init skipped due to conditions");
       return;
     }
 
     // Clean up any existing editor before creating new one
     if (editorRef.current?.ed) {
-      console.log("🧹 Cleaning up existing editor");
       try {
         (document.activeElement as HTMLElement | null)?.blur?.();
       } catch {}
       try {
         editorRef.current.ed.destroy();
       } catch (e) {
-        console.warn("⚠️ Error destroying previous editor:", e);
+        // Editor cleanup error
       }
       editorRef.current = null;
     }
-
-    console.log("🚀 Starting GrapesJS initialization...");
 
     const initGrapesJS = async () => {
       try {
@@ -1112,32 +1099,20 @@ function EmailEditorModal({ isOpen, onClose, editorData, onSave }: EmailEditorMo
               containerRef.current.offsetParent !== null) {
             break;
           }
-          console.log(`🔄 Waiting for container to be ready (attempt ${attempts + 1}/${maxAttempts})`);
           await new Promise(resolve => setTimeout(resolve, 100));
           attempts++;
         }
 
         if (attempts >= maxAttempts) {
-          console.error("❌ Container never became ready for GrapesJS");
           return;
         }
         
-        console.log("📦 Loading GrapesJS modules...");
         const { default: grapesjs } = await import("grapesjs");
-        console.log("✅ GrapesJS module loaded:", typeof grapesjs);
 
     // Final validation
     if (!containerRef.current || !containerRef.current.isConnected) {
-      console.error("❌ Container not properly connected to document");
       return;
     }
-
-        console.log("🎯 Initializing GrapesJS with container:", {
-          element: containerRef.current,
-          isConnected: containerRef.current.isConnected,
-          ownerDocument: !!containerRef.current.ownerDocument,
-          offsetParent: containerRef.current.offsetParent
-        });
 
     // Load MJML plugin per docs
     const { default: grapesjsMjml } = await import("grapesjs-mjml");
@@ -1163,16 +1138,10 @@ function EmailEditorModal({ isOpen, onClose, editorData, onSave }: EmailEditorMo
         appendTo: 'parent',
         offset: { top: 26, left: -166 },
         zIndex: 9999,
-    
-      }
+      },
     });
 
-        console.log("✅ GrapesJS editor created:", ed);
-        console.log("📊 Editor details:", {
-          container: ed.getContainer(),
-          wrapper: ed.getWrapper(),
-          canvas: ed.Canvas?.getElement(),
-        });
+
 
         // Load existing content if available, otherwise use default MJML
         let contentToLoad = `
@@ -1195,21 +1164,17 @@ function EmailEditorModal({ isOpen, onClose, editorData, onSave }: EmailEditorMo
           // If we have grapesHtml from a loaded starter template
           if (data.grapesHtml && typeof data.grapesHtml === 'string') {
             contentToLoad = data.grapesHtml;
-            console.log("📝 Loading content from grapesHtml:", data.grapesHtml.substring(0, 100) + "...");
           }
           // If we have existing MJML content in the editor data
           else if (data.mjml && typeof data.mjml === 'string') {
             contentToLoad = data.mjml;
-            console.log("📝 Loading content from mjml:", data.mjml.substring(0, 100) + "...");
           }
         }
         // Fallback to editorData.nodeData htmlContent if it looks like MJML
         else if (editorData && (editorData as any).nodeData && (editorData as any).nodeData.htmlContent && typeof (editorData as any).nodeData.htmlContent === 'string' && (editorData as any).nodeData.htmlContent.includes('<mjml>')) {
           contentToLoad = (editorData as any).nodeData.htmlContent;
-          console.log("📝 Loading content from editorData.nodeData.htmlContent:", (editorData as any).nodeData.htmlContent.substring(0, 100) + "...");
         }
 
-        console.log("📝 Setting content in GrapesJS...");
         ed.setComponents(contentToLoad);
         // Raise canvas container below floating panels to avoid overlap issues
         try {
@@ -1218,7 +1183,6 @@ function EmailEditorModal({ isOpen, onClose, editorData, onSave }: EmailEditorMo
           if (canvasEl) (canvasEl as HTMLElement).style.zIndex = '1';
           if (canvasFrame) (canvasFrame as HTMLElement).style.zIndex = '1';
         } catch {}
-        console.log("✅ Content set");
 
         // Ensure editor is properly rendered
         ed.refresh();
@@ -1226,7 +1190,6 @@ function EmailEditorModal({ isOpen, onClose, editorData, onSave }: EmailEditorMo
           const wrapper = ed.getWrapper?.();
           if (wrapper && ed.select) ed.select(wrapper);
         } catch {}
-        console.log("🔄 Editor refreshed");
 
         // Ensure Pickr sits above all GrapesJS elements including canvas frame
         try {
@@ -1248,25 +1211,17 @@ function EmailEditorModal({ isOpen, onClose, editorData, onSave }: EmailEditorMo
         // Final validation that editor is visible
         setTimeout(() => {
           const canvas = ed.Canvas?.getElement();
-          console.log("🎨 Canvas element check:", {
-            exists: !!canvas,
-            visible: canvas ? canvas.offsetWidth > 0 && canvas.offsetHeight > 0 : false,
-            dimensions: canvas ? { width: canvas.offsetWidth, height: canvas.offsetHeight } : null
-          });
+          // Canvas validation check
         }, 500);
 
         // Listen for changes
         ed.on("component:add component:remove component:update style:change", () => {
-          console.log("📝 Content changed, marking unsaved");
           setHasUnsavedChanges(true);
         });
-
-        console.log("✅ GrapesJS fully initialized and ready");
         editorRef.current = { ed };
 
       } catch (error) {
-        console.error("❌ GrapesJS initialization failed:", error);
-        console.error("Stack trace:", error instanceof Error ? error.stack : "No stack trace");
+        // GrapesJS initialization failed
       }
     };
 
@@ -1285,11 +1240,10 @@ function EmailEditorModal({ isOpen, onClose, editorData, onSave }: EmailEditorMo
         destroyTimerRef.current = null;
       }
       if (editorRef.current?.ed) {
-        console.log("🧹 Cleaning up GrapesJS editor on unmount");
         try { (document.activeElement as HTMLElement | null)?.blur?.(); } catch {}
         const ed = editorRef.current.ed;
         destroyTimerRef.current = window.setTimeout(() => {
-          try { ed.destroy(); } catch (e) { console.warn("⚠️ Error destroying editor on cleanup:", e); }
+          try { ed.destroy(); } catch (e) { /* Editor cleanup error */ }
           editorRef.current = null;
           destroyTimerRef.current = null;
         }, 120);
@@ -1337,20 +1291,15 @@ function EmailEditorModal({ isOpen, onClose, editorData, onSave }: EmailEditorMo
   }, [templateQuery, templateCategory]);
 
   const handleSave = useCallback(() => {
-    console.log("💾 Save triggered");
     const bundle = editorRef.current as { ed: any } | null;
     if (!bundle?.ed) {
-      console.warn("❌ No editor available for save");
       return;
     }
 
     const { ed } = bundle;
-    console.log("📝 Getting content from editor...");
 
     const html = ed.getHtml?.() || "";
     const css = ed.getCss?.() || "";
-    
-    console.log("📄 Content retrieved:", { htmlLength: html.length, cssLength: css.length });
 
     // Combine HTML with CSS
     const compiledHtml = css 
@@ -1369,7 +1318,6 @@ function EmailEditorModal({ isOpen, onClose, editorData, onSave }: EmailEditorMo
       text
     };
 
-    console.log("💾 Saving data:", saveData);
     onSave(saveData);
   }, [onSave]);
 

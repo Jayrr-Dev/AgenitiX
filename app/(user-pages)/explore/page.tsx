@@ -301,7 +301,7 @@ const ExplorePage = () => {
 
     try {
       // Apply filtering
-      let filtered = publicFlows.filter((flow) => {
+      let filtered = (publicFlows || []).filter((flow) => {
         if (!flow || !flow.name) {
           return false;
         }

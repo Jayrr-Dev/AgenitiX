@@ -461,7 +461,7 @@ export const pruneGraphToLimit = (
     let steps = 0;
     while (cur && steps++ < safety) {
       activePathSet.add(cur);
-      const n = graph.nodes[cur];
+      const n: any = graph.nodes[cur];
       cur = (n?.parentId as string | null) ?? null;
     }
     activePathSet.add(graph.root);
@@ -533,7 +533,10 @@ export const pruneGraphToLimit = (
         .sort((a, b) => (a.createdAt ?? 0) - (b.createdAt ?? 0));
     
       if (!extras.length) break;
-      removeNodeAndChildren(graph, extras[0]!.id);
+      const oldestExtra = extras[0];
+      if (oldestExtra) {
+        removeNodeAndChildren(graph, oldestExtra.id);
+      }
     }
   }
 };

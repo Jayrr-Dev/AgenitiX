@@ -106,7 +106,7 @@ export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
       const url = URL.createObjectURL(dataBlob);
 
       // Create download link
-      const link = document.createElement("array");
+      const link = document.createElement("a");
       link.href = url;
       link.download = `agenitix-user-data-${new Date().toISOString().split("T")[0]}.json`;
       document.body.appendChild(link);

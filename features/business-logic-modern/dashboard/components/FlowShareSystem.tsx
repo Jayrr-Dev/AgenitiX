@@ -296,9 +296,9 @@ export const FlowShareSystem: React.FC<FlowShareSystemProps> = ({ flow, isOpen, 
 								text="Loading requests..."
 								textSize="text-sm"
 							/>
-						) : accessRequests && accessRequests.length > 0 ? (
+						) : (accessRequests || []).length > 0 ? (
 							<div className="space-y-3">
-								{accessRequests.map((request) => (
+								{(accessRequests || []).map((request) => (
 									<div key={request._id} className="rounded-lg border p-3">
 										<div className="mb-2 flex items-center justify-between">
 											<div className="flex items-center gap-2">
