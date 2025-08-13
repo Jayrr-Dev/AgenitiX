@@ -46,16 +46,16 @@ const NODE_CREATION_KEYS = [
   "e",
   "r",
   "t",
-  "a",
-  "s",
+  "array",
+  "string",
   "d",
   "f",
   "g",
   "z",
-  "x",
+  "any",
   "c",
   "v",
-  "b",
+  "boolean",
 ] as const;
 
 const CUSTOM_GRID_KEY_MAP: Record<string, number> = {

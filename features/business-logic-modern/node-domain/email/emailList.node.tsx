@@ -153,7 +153,7 @@ function createDynamicSpec(data: EmailListData): NodeSpec {
         code: "e",
         position: "left",
         type: "target",
-        dataType: "Array",
+        dataType: "array",
         tooltip: HANDLE_TOOLTIPS.EMAILS_IN,
       },
       {
@@ -161,7 +161,7 @@ function createDynamicSpec(data: EmailListData): NodeSpec {
         code: "l",
         position: "right",
         type: "source",
-        dataType: "Array",
+        dataType: "array",
         tooltip: HANDLE_TOOLTIPS.LIST_OUT,
       },
       {
@@ -169,7 +169,7 @@ function createDynamicSpec(data: EmailListData): NodeSpec {
         code: "v",
         position: "bottom",
         type: "source",
-        dataType: "Boolean",
+        dataType: "boolean",
         tooltip: HANDLE_TOOLTIPS.VALIDATED_OUT,
       },
     ],

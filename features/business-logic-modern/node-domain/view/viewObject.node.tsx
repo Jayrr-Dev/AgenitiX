@@ -121,14 +121,14 @@ function createDynamicSpec(data: ViewObjectData): NodeSpec {
     handles: [
       {
         id: "json-input",
-        code: "j",
+        code: "json",
         position: "left",
         type: "target",
         dataType: "JSON",
       },
       {
         id: "output",
-        code: "j",
+        code: "json",
         position: "right",
         type: "source",
         dataType: "JSON",

@@ -184,7 +184,7 @@ function pruneGraphForArgumentLimits(
   }
 }
 
-const SAVE_DEBOUNCE_MS = 750; // Debounce saves, basically wait 750ms before saving
+const SAVE_DEBOUNCE_MS = 1500; // Debounce saves, basically wait 1500ms before saving to cut bursts
 const DRAG_DEBOUNCE_MS = 1500; // Longer debounce during drag operations
 
 interface UseHistoryPersistenceOptions {

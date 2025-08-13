@@ -15,6 +15,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { normalizeHandleId } from "@/features/business-logic-modern/infrastructure/node-core/handleOutputUtils";
+// JSON shape import removed since JSON validation is disabled
+// import type { JsonShapeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
 import {
   Handle,
   type HandleProps,
@@ -38,7 +40,9 @@ import {
 } from "react-icons/lu";
 import { VscJson } from "react-icons/vsc";
 import { toast } from "sonner";
-import type { JsonShapeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
+// Node spec metadata import removed as JSON validation is disabled
+// import { getNodeSpecMetadata } from "@/features/business-logic-modern/infrastructure/node-registry/nodespec-registry";
+import { useNodeToast as usePerNodeToast } from "@/hooks/useNodeToast";
 // Auto-generated at build time (can be empty in dev before first build)
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore – file is generated post-install / build
@@ -190,7 +194,7 @@ const TOAST_DURATION = 3000;
 /**
  * Type parsing defaults
  */
-const DEFAULT_TYPE_FALLBACK = ["x"];
+const DEFAULT_TYPE_FALLBACK = ["any"];
 const DEFAULT_HANDLE_TYPE = "any";
 
 /**
@@ -228,19 +232,29 @@ const UNIFIED_TYPE_DISPLAY: Record<
  * Ultimate type map - maps short codes to type information using semantic tokens
  */
 const ULTIMATE_TYPE_MAP: Record<string, { tokenKey: string; label: string }> = {
+  // Full word aliases (primary)
+  string: { tokenKey: "string", label: "Text" },
+  number: { tokenKey: "number", label: "number" },
+  boolean: { tokenKey: "boolean", label: "On|Off" },
+  json: { tokenKey: "json", label: "JSON" },
+  array: { tokenKey: "array", label: "List" },
+  any: { tokenKey: "any", label: "any" },
+  tools: { tokenKey: "tools", label: "Tools" },
+  account: { tokenKey: "account", label: "Account" },
+  email: { tokenKey: "email", label: "Email" },
+  // Legacy single letter codes (backward compatibility)
   s: { tokenKey: "string", label: "Text" },
-  n: { tokenKey: "number", label: "Number" },
+  n: { tokenKey: "number", label: "number" },
   b: { tokenKey: "boolean", label: "On|Off" },
   j: { tokenKey: "json", label: "JSON" },
   a: { tokenKey: "array", label: "List" },
-  x: { tokenKey: "any", label: "Any" },
-  V: { tokenKey: "vibe", label: "Vibe" },
+  x: { tokenKey: "any", label: "any" },
   t: { tokenKey: "tools", label: "Tools" },
   // Full data type names for direct mapping
   JSON: { tokenKey: "json", label: "JSON" },
   String: { tokenKey: "string", label: "Text" },
   Boolean: { tokenKey: "boolean", label: "On|Off" },
-  Number: { tokenKey: "number", label: "Number" },
+  Number: { tokenKey: "number", label: "number" },
   Array: { tokenKey: "array", label: "List" },
   Object: { tokenKey: "object", label: "Object" },
   Tools: { tokenKey: "tools", label: "Tools" },
@@ -254,13 +268,23 @@ const ULTIMATE_TYPE_MAP: Record<string, { tokenKey: string; label: string }> = {
  * Type descriptions for tooltips - detailed explanations of each data type
  */
 const TYPE_DESCRIPTIONS: Record<string, string> = {
+  // Full word aliases (primary)
+  string: "String - Text and string values",
+  number: "Number - Integer and numeric values",
+  boolean: "Boolean - True/false values",
+  json: "JSON - JavaScript objects and JSON data",
+  array: "Array - Lists and array structures",
+  any: "Any - Accepts all data types",
+  tools: "Tools - AI agent tool configurations",
+  account: "Account - User account and authentication data",
+  email: "Email - Email messages and templates",
+  // Legacy single letter codes (backward compatibility)
   s: "String - Text and string values",
   n: "Number - Integer and numeric values",
   b: "Boolean - True/false values",
   j: "JSON - JavaScript objects and JSON data",
   a: "Array - Lists and array structures",
   x: "Any - Accepts all data types",
-  V: "Vibe - Custom Vibe data type",
   t: "Tools - AI agent tool configurations",
   // Full data type names
   String: "String - Text and string values",
@@ -408,19 +432,19 @@ function getHumanReadableType(typeCode: string): string {
     // Use more technical terms for error messages
     switch (mapping.tokenKey) {
       case "string":
-        return "String";
+        return "string";
       case "number":
-        return "Number";
+        return "number";
       case "boolean":
-        return "Boolean";
+        return "boolean";
       case "json":
         return "JSON";
       case "array":
-        return "Array";
+        return "array";
       case "object":
         return "Object";
       case "any":
-        return "Any";
+        return "any";
       case "tools":
         return "Tools";
       case "email":
@@ -452,7 +476,7 @@ function getTooltipContent(
   // Get the primary type code
   const typeCode = parseUnionTypes(dataType || code)[0];
 
-  // Check if it's a full data type name (like "String", "Boolean", etc.)
+  // Check if it's a full data type name (like "string", "boolean", etc.)
   const fullTypeMapping = ULTIMATE_TYPE_MAP[typeCode];
   if (fullTypeMapping) {
     return `${direction}<br/>${fullTypeMapping.label}`;
@@ -532,7 +556,7 @@ function summarizeValueForTooltip(value: unknown): string {
 }
 
 function isTypeCompatible(sourceType: string, targetType: string): boolean {
-  if (sourceType === "x" || targetType === "x") {
+  if (sourceType === "any" || targetType === "any") {
     return true;
   }
   const sourceTypes = parseUnionTypes(sourceType);
@@ -543,132 +567,133 @@ function isTypeCompatible(sourceType: string, targetType: string): boolean {
 // Simple debounce map to avoid toast spam
 const toastThrottle: Record<string, number> = {};
 
-function isJson(value: unknown): boolean {
-  if (value === null) return true;
-  const t = typeof value;
-  return (
-    t === "object" ||
-    t === "string" ||
-    t === "number" ||
-    t === "boolean"
-  );
+/**
+ * SUCCESS TOAST COPY FOR INPUT CONNECTIONS
+ * [Explanation], basically unique success messages for each input type when a new connection is made
+ */
+const INPUT_SUCCESS_MESSAGES: Record<string, { title: string; description?: string }> = {
+  string: { title: "Text connected", description: "Input is now connected" },
+  number: { title: "Number connected", description: "Input is now connected" },
+  boolean: { title: "Toggle connected", description: "Input is now connected" },
+  json: { title: "JSON connected", description: "Input is now connected" },
+  array: { title: "List connected", description: "Input is now connected" },
+  object: { title: "Object connected", description: "Input is now connected" },
+  tools: { title: "Tools connected", description: "Input is now connected" },
+  email: { title: "Email connected", description: "Input is now connected" },
+  // Email domain specifics
+  emailaccount: { title: "Account connected", description: "Email account input is set" },
+  emailtemplate: { title: "Template connected", description: "Email template input is set" },
+  composedemail: { title: "Email connected", description: "Composed email input is set" },
+  account: { title: "Account Connected", description: "Account input is now connected" },
+  any: { title: "Input connected", description: "Input is now connected" },
+};
+
+/**
+ * Resolve a friendly message key from handle metadata
+ * [Explanation], basically map various type encodings to domain-friendly keys
+ */
+function resolveMessageKey(handleTypeName: string, dataType?: string, code?: string): keyof typeof INPUT_SUCCESS_MESSAGES {
+  const lcName = (handleTypeName || '').toLowerCase();
+  const firstUnion = (val?: string) => (val ? val.split('|')[0].toLowerCase() : '');
+  const primary = firstUnion(dataType) || firstUnion(code) || lcName;
+
+  // Email domain prioritization
+  if (lcName.includes('emailaccount') || primary === 'emailaccount') return 'emailaccount';
+  if (lcName.includes('emailtemplate') || primary === 'emailtemplate') return 'emailtemplate';
+  if (lcName.includes('composedemail') || primary === 'composedemail') return 'composedemail';
+  if (lcName.includes('account') || primary === 'account') return 'account';
+  if (lcName.includes('email') || primary === 'email') return 'email';
+
+  // Full word codes → verbose keys (aliases)
+  const codeMap: Record<string, keyof typeof INPUT_SUCCESS_MESSAGES> = {
+    string: 'string', 
+    number: 'number', 
+    boolean: 'boolean', 
+    json: 'json', 
+    array: 'array', 
+    any: 'any',
+    account: 'account',
+    email: 'email',
+    tools: 'tools'
+  };
+  if (primary in codeMap) return codeMap[primary];
+
+  // Full names
+  const known: Array<keyof typeof INPUT_SUCCESS_MESSAGES> = ['string','number','boolean','json','array','object','tools'];
+  if ((known as string[]).includes(primary)) return primary as keyof typeof INPUT_SUCCESS_MESSAGES;
+
+  // Fallback using display map
+  const tokenKey = UNIFIED_TYPE_DISPLAY[lcName]?.tokenKey;
+  if (tokenKey && INPUT_SUCCESS_MESSAGES[tokenKey as keyof typeof INPUT_SUCCESS_MESSAGES]) {
+    return tokenKey as keyof typeof INPUT_SUCCESS_MESSAGES;
+  }
+  return 'any';
 }
 
-function conformsToShape(value: unknown, shape?: JsonShapeSpec): boolean {
-  if (!shape) return true;
-  switch (shape.type) {
-    case "any":
-      return true;
-    case "null":
-      return value === null;
-    case "string":
-      return typeof value === "string";
-    case "number":
-      return typeof value === "number" && Number.isFinite(value as number);
-    case "boolean":
-      return typeof value === "boolean";
-    case "array":
-      if (!Array.isArray(value)) return false;
-      return (value as unknown[]).every((v) => conformsToShape(v, shape.items));
-    case "object":
-      if (value === null || typeof value !== "object" || Array.isArray(value))
-        return false;
-      for (const [key, sub] of Object.entries(shape.properties)) {
-        const has = Object.prototype.hasOwnProperty.call(
-          value as Record<string, unknown>,
-          key
-        );
-        if (!has) {
-          if (sub.optional) continue;
-          return false;
-        }
-        if (!conformsToShape((value as any)[key], sub)) return false;
-      }
-      return true;
-    default:
-      return true;
-  }
-}
+// JSON helpers removed (isJson, conformsToShape) as validation is disabled
+
+/**
+ * Format a JsonShapeSpec into a concise human-readable snippet
+ * Examples:
+ *  - { accountId: string, provider?: string }
+ *  - Array<string>
+ */
+// JSON shape formatting removed
+
+// JSON shape mismatch renderer removed
+
+/**
+ * Check if a source JSON shape satisfies a target JSON shape contract.
+ * This is purely shape-to-shape (spec-only) – no runtime values required.
+ */
+// JSON shape comparison removed
 
 export const useUltimateFlowConnectionPrevention = (options?: {
-  targetJsonShape?: JsonShapeSpec;
-  acceptAnyJson?: boolean;
+  // JSON validation removed
 }) => {
   const storeApi = useStoreApi();
-  const isValidConnection: IsValidConnection = useCallback((connection) => {
-    const { sourceHandle, targetHandle } = connection;
+  const isValidConnection: IsValidConnection = useCallback(
+    (connection) => {
+      const { sourceHandle, targetHandle } = connection;
 
-    // Extract types from handle IDs (e.g., "handle-id__string|number")
-    const sourceDataType = sourceHandle?.split("__")[1];
-    const targetDataType = targetHandle?.split("__")[1];
+      // Extract types from handle IDs (e.g., "handle-id__string|number")
+      const sourceDataType = sourceHandle?.split("__")[1];
+      const targetDataType = targetHandle?.split("__")[1];
 
-    if (!(sourceDataType && targetDataType)) {
-      // If types aren't encoded in the handle, default to allowing the connection.
-      // This maintains compatibility with older/un-migrated nodes.
-      return true;
-    }
-
-    const compatible = isTypeCompatible(sourceDataType, targetDataType);
-
-    if (!compatible) {
-      const key = `${sourceDataType}->${targetDataType}`;
-      const now = Date.now();
-      if (!toastThrottle[key] || now - toastThrottle[key] > TOAST_DEBOUNCE_MS) {
-        const sourceLabel = getHumanReadableType(sourceDataType);
-        const targetLabel = getHumanReadableType(targetDataType);
-        toast.error(TOAST_ERROR_TITLE, {
-          description: TOAST_ERROR_DESCRIPTION_TEMPLATE.replace(
-            "{source}",
-            sourceLabel
-          ).replace("{target}", targetLabel),
-          duration: TOAST_DURATION,
-        });
-        toastThrottle[key] = now;
+      if (!(sourceDataType && targetDataType)) {
+        // If types aren't encoded in the handle, default to allowing the connection.
+        // This maintains compatibility with older/un-migrated nodes.
+        return true;
       }
-    }
 
-    // Optional JSON shape enforcement
-    try {
-      const wantsShape =
-        Boolean(options?.targetJsonShape) &&
-        !options?.acceptAnyJson &&
-        (targetDataType?.toLowerCase().startsWith("j") ||
-          targetDataType?.toLowerCase() === "json");
-      const isJsonSource =
-        sourceDataType?.toLowerCase().startsWith("j") ||
-        sourceDataType?.toLowerCase() === "json";
-      if (wantsShape && isJsonSource) {
-        const { nodes } = storeApi.getState();
-        const src = nodes.find((n: any) => n.id === connection.source);
-        const output = (src?.data?.output ?? {}) as Record<string, unknown>;
-        const cleanSrcHandle = sourceHandle
-          ? normalizeHandleId(sourceHandle)
-          : "output";
-        const candidate =
-          output[cleanSrcHandle] ?? output.output ?? Object.values(output)[0];
-        if (candidate !== undefined && isJson(candidate)) {
-          const ok = conformsToShape(candidate, options?.targetJsonShape);
-          if (!ok) {
-            const key = `json-shape:${sourceDataType}->${targetDataType}`;
-            const now = Date.now();
-            if (!toastThrottle[key] || now - toastThrottle[key] > TOAST_DEBOUNCE_MS) {
-              toast.error("JSON shape mismatch", {
-                description:
-                  "Output JSON does not match the target handle's expected shape.",
-                duration: TOAST_DURATION,
-              });
-              toastThrottle[key] = now;
-            }
-            return false;
-          }
+      const compatible = isTypeCompatible(sourceDataType, targetDataType);
+
+      if (!compatible) {
+        const key = `${sourceDataType}->${targetDataType}`;
+        const now = Date.now();
+        if (
+          !toastThrottle[key] ||
+          now - toastThrottle[key] > TOAST_DEBOUNCE_MS
+        ) {
+          const sourceLabel = getHumanReadableType(sourceDataType);
+          const targetLabel = getHumanReadableType(targetDataType);
+          toast.error(TOAST_ERROR_TITLE, {
+            description: TOAST_ERROR_DESCRIPTION_TEMPLATE.replace(
+              "{source}",
+              sourceLabel
+            ).replace("{target}", targetLabel),
+            duration: TOAST_DURATION,
+          });
+          toastThrottle[key] = now;
         }
       }
-    } catch {
-      // Best effort – do not block if inspection fails
-    }
 
-    return compatible;
-  }, [storeApi, options?.targetJsonShape, options?.acceptAnyJson]);
+      // JSON shape enforcement disabled here, basically accept JSON without contract checks
+
+      return compatible;
+    },
+    [storeApi]
+  );
   return { isValidConnection };
 };
 
@@ -686,6 +711,8 @@ interface UltimateTypesafeHandleProps {
   id?: string;
   /** Optional custom tooltip text to append to default tooltip */
   customTooltip?: string;
+  /** Optional JSON shape for target validation */
+  // JSON shape options removed
 }
 
 const UltimateTypesafeHandle: React.FC<UltimateTypesafeHandleProps> = memo(
@@ -712,14 +739,7 @@ const UltimateTypesafeHandle: React.FC<UltimateTypesafeHandleProps> = memo(
       [handleTypeName]
     );
 
-    const { isValidConnection } = useUltimateFlowConnectionPrevention({
-      targetJsonShape:
-        (props.type === "target" ? (props as any).jsonShape : undefined) ||
-        undefined,
-      acceptAnyJson:
-        props.type === "target" ? Boolean((props as any).acceptAnyJson) : false,
-    });
-
+    const { isValidConnection } = useUltimateFlowConnectionPrevention();
     // Subscribe only to edges reference; compute connection state when edges actually change
     const edgesRef = useStore((state) => state.edges);
     const isConnected = useMemo(() => {
@@ -769,6 +789,7 @@ const UltimateTypesafeHandle: React.FC<UltimateTypesafeHandleProps> = memo(
     const [isTooltipOpen, setIsTooltipOpen] = React.useState(false);
     const [dynamicTooltipSuffix, setDynamicTooltipSuffix] =
       React.useState<string>("");
+    const { showSuccess: showNodeSuccess } = usePerNodeToast(nodeId || "");
 
     const baseTooltip = useMemo(() => {
       const defaultTip = getTooltipContent(
@@ -868,6 +889,38 @@ const UltimateTypesafeHandle: React.FC<UltimateTypesafeHandleProps> = memo(
       // Recompute only when opened or handle identity/context changes
     }, [isTooltipOpen, nodeId, props.id, props.type, storeApi]);
 
+    /**
+     * Show success toast when a new connection is made to a target handle
+     * [Explanation], basically detect increase in incoming edges and show a type-specific success message
+     */
+    const prevIncomingCountRef = React.useRef<number>(0);
+    React.useEffect(() => {
+      if (props.type !== "target") return;
+      try {
+        const incoming = edgesRef.filter(
+          (e: any) => e.target === nodeId && e.targetHandle === props.id
+        );
+        const count = incoming.length;
+        const prev = prevIncomingCountRef.current;
+        if (count > prev) {
+          const typeKey = resolveMessageKey(handleTypeName, dataType, code);
+          const msg = INPUT_SUCCESS_MESSAGES[typeKey] || INPUT_SUCCESS_MESSAGES.any;
+          const key = `success-connect:${nodeId}:${props.id}:${typeKey}`;
+          const now = Date.now();
+          if (!toastThrottle[key] || now - toastThrottle[key] > TOAST_DEBOUNCE_MS) {
+            showNodeSuccess(msg.title, msg.description);
+            toastThrottle[key] = now;
+          }
+        }
+        prevIncomingCountRef.current = count;
+      } catch {
+        // ignore
+      }
+      // Depend on edges reference changes; react-flow store returns new arrays on changes
+    }, [edgesRef, nodeId, props.id, props.type, handleTypeName, showNodeSuccess]);
+
+    // JSON runtime re-validation removed
+
     const tooltipContent = useMemo(
       () => `${baseTooltip}${dynamicTooltipSuffix}`,
       [baseTooltip, dynamicTooltipSuffix]
@@ -916,13 +969,15 @@ const UltimateTypesafeHandle: React.FC<UltimateTypesafeHandleProps> = memo(
 
     return (
       <Tooltip
-        delayDuration={700}
+        delayDuration={100}
         open={isTooltipOpen}
         onOpenChange={setIsTooltipOpen}
       >
         <TooltipTrigger asChild>
           <Handle
-            {...(props as HandleProps)}
+            id={props.id}
+            type={props.type as HandleProps["type"]}
+            position={props.position as HandleProps["position"]}
             className={`${UNIFIED_HANDLE_STYLES.base} ${baseClasses} ${stateClasses} ${fontWeightClasses}`}
             style={handleStyles}
             isValidConnection={isValidConnection}

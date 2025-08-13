@@ -1529,7 +1529,7 @@ function createDynamicSpec(data: StoreLocalData): NodeSpec {
     handles: [
       {
         id: "data-input",
-        code: "j",
+        code: "json",
         position: "top",
         type: "target",
         dataType: "JSON",
@@ -1538,16 +1538,16 @@ function createDynamicSpec(data: StoreLocalData): NodeSpec {
       },
       {
         id: "trigger-input",
-        code: "b",
+        code: "boolean",
         position: "left",
         type: "target",
-        dataType: "Boolean",
+        dataType: "boolean",
         tooltip:
           "Trigger the operation when this input becomes true. Prevents auto-execution.",
       },
       {
         id: "output",
-        code: "j",
+        code: "json",
         position: "right",
         type: "source",
         dataType: "JSON",

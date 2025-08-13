@@ -36,7 +36,7 @@ export const CanvasRevealEffect = ({
               opacity *= step(intro_offset, u_time * animation_speed_factor);
               opacity *= clamp((1.0 - step(intro_offset + 0.1, u_time * animation_speed_factor)) * 1.25, 1.0, 1.25);
             `}
-					center={["x", "y"]}
+					center={["any", "y"]}
 				/>
 			</div>
 			{showGradient && <div className="absolute inset-0 bg-gradient-to-t from-gray-950 to-[84%]" />}
@@ -50,7 +50,7 @@ interface DotMatrixProps {
 	totalSize?: number;
 	dotSize?: number;
 	shader?: string;
-	center?: ("x" | "y")[];
+	center?: ("any" | "y")[];
 }
 
 const DotMatrix: React.FC<DotMatrixProps> = ({
@@ -59,7 +59,7 @@ const DotMatrix: React.FC<DotMatrixProps> = ({
 	totalSize = 4,
 	dotSize = 2,
 	shader = "",
-	center = ["x", "y"],
+	center = ["any", "y"],
 }) => {
 	const uniforms = React.useMemo(() => {
 		let colorsArray = [colors[0], colors[0], colors[0], colors[0], colors[0], colors[0]];
@@ -112,7 +112,7 @@ const DotMatrix: React.FC<DotMatrixProps> = ({
         void main() {
             vec2 st = fragCoord.xy;
             ${
-							center.includes("x")
+							center.includes("any")
 								? "st.x -= abs(floor((mod(u_resolution.x, u_total_size) - u_dot_size) * 0.5));"
 								: ""
 						}

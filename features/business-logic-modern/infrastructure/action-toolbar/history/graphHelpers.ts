@@ -448,51 +448,92 @@ export const pruneGraphToLimit = (
     return;
   }
 
-  // Continue pruning until we meet the size requirement
-  while (Object.keys(graph.nodes).length > maxSize) {
+  const currentCount = () => Object.keys(graph.nodes).length;
+
+  if (currentCount() <= maxSize) return;
+
+  // Phase 1: prune OLDEST non-active branches first
+  // [Explanation], basically remove oldest side branches before touching main timeline
+  const activePathSet = new Set<string>();
+  {
+    let cur: string | null = graph.cursor;
+    const safety = 10_000;
+    let steps = 0;
+    while (cur && steps++ < safety) {
+      activePathSet.add(cur);
+      const n = graph.nodes[cur];
+      cur = (n?.parentId as string | null) ?? null;
+    }
+    activePathSet.add(graph.root);
+  }
+
+  // Sort nodes by createdAt ascending (oldest first)
+  const nodesOldestFirst = Object.values(graph.nodes)
+    .slice()
+    .sort((a, b) => (a.createdAt ?? 0) - (b.createdAt ?? 0));
+
+  for (const node of nodesOldestFirst) {
+    if (currentCount() <= maxSize) break;
+    // Skip root and nodes on active path
+    if (!node || node.id === graph.root || activePathSet.has(node.id)) continue;
+    // Remove the node and its descendants
+    removeNodeAndChildren(graph, node.id);
+  }
+
+  if (currentCount() <= maxSize) return;
+
+  // Phase 2: trim the active path from the beginning (oldest first)
+  // Promote root forward until we are at or under the limit.
+  // [Explanation], basically shift the timeline window to the most recent states
+  const promoteRootForward = () => {
     const currentRoot = graph.nodes[graph.root];
     if (!currentRoot) {
-      // Should not happen, but break to avoid infinite loop
       console.warn(
         "[GraphHelpers] pruneGraphToLimit: root node missing – aborting prune"
       );
-      break;
+      return false;
     }
 
-    // If the current root has no children we cannot prune further safely
     if (!currentRoot.childrenIds || currentRoot.childrenIds.length === 0) {
+      // If we cannot promote further, remove the globally oldest non-root node as a last resort
+      const candidates = Object.values(graph.nodes)
+        .filter((n) => n.id !== graph.root)
+        .sort((a, b) => (a.createdAt ?? 0) - (b.createdAt ?? 0));
+      const oldest = candidates[0];
+      if (oldest) {
+        removeNodeAndChildren(graph, oldest.id);
+        return true;
+      }
       console.warn(
         "[GraphHelpers] pruneGraphToLimit: reached leaf root – cannot prune further"
       );
-      break;
+      return false;
     }
 
-    // Promote the FIRST child to become the new root (chronologically oldest)
-    const [newRootId, ...remainingChildren] = currentRoot.childrenIds;
-
-    // Update new root parent reference
+    const [newRootId, ...siblings] = currentRoot.childrenIds;
     const newRootNode = graph.nodes[newRootId];
-    if (newRootNode) {
-      newRootNode.parentId = null;
+    if (newRootNode) newRootNode.parentId = null;
+    // Siblings become top-level, basically detach old branches
+    for (const sid of siblings) {
+      const sNode = graph.nodes[sid];
+      if (sNode) sNode.parentId = null;
     }
-
-    // All siblings of the new root also become top-level nodes (parentId = null)
-    for (const childId of remainingChildren) {
-      const childNode = graph.nodes[childId];
-      if (childNode) {
-        childNode.parentId = null;
-      }
-    }
-
-    // Remove the old root, but if the new root had no explicit 'before', carry it forward
     delete graph.nodes[graph.root];
-
-    // Re-assign graph.root
+    if (graph.cursor === currentRoot.id) graph.cursor = newRootId;
     graph.root = newRootId;
+    return true;
+  };
 
-    // If cursor pointed to the removed root, update it to newRootId
-    if (graph.cursor === currentRoot.id) {
-      graph.cursor = newRootId;
+  let guard = 10_000; // safety guard for degenerate graphs
+  while (currentCount() > maxSize && guard-- > 0) {
+    if (!promoteRootForward()) {
+      // If promotion failed and count is still high, remove additional oldest nodes
+      const extras = Object.values(graph.nodes)
+        .filter((n) => n.id !== graph.root)
+        .sort((a, b) => (a.createdAt ?? 0) - (b.createdAt ?? 0));
+    
+      if (!extras.length) break;
+      removeNodeAndChildren(graph, extras[0]!.id);
     }
   }
 };

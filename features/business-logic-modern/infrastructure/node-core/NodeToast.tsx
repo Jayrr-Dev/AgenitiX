@@ -49,6 +49,15 @@ const DEFAULT_DURATIONS: Record<ToastType, number> = {
   error: 6000,
 };
 
+/**
+ * [Explanation], basically prevent double toasts caused by StrictMode re-mounts
+ *
+ * We keep a small global map of the last time a specific toast (by node + type + message + description)
+ * was shown. If the same toast fires again within the dedupe window, we ignore it.
+ */
+const TOAST_DEDUPE_WINDOW_MS = 1500 as const;
+const globalToastDedupeMap: Map<string, number> = new Map();
+
 // Toast styling configuration - shadcn/sonner inspired
 const TOAST_STYLES: Record<ToastType, {
   bg: string;
@@ -278,7 +287,19 @@ export const NodeToastContainer: React.FC<{
   // Expose toast functions via custom event system
   useEffect(() => {
     const handleShowToast = (event: CustomEvent<ToastConfig>) => {
-      addToast(event.detail);
+      // Build a stable dedupe key for this toast
+      const detail = event.detail;
+      const key = `${nodeId}|${detail.type}|${detail.message}|${detail.description ?? ''}`;
+      const now = Date.now();
+
+      // [Explanation], basically skip if same toast fired too recently
+      const last = globalToastDedupeMap.get(key);
+      if (last && now - last < TOAST_DEDUPE_WINDOW_MS) {
+        return;
+      }
+      globalToastDedupeMap.set(key, now);
+
+      addToast(detail);
     };
 
     const handleClearToasts = () => {

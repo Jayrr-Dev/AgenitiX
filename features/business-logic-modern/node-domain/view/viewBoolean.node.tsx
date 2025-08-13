@@ -133,17 +133,17 @@ function createDynamicSpec(data: ViewBooleanData): NodeSpec {
     handles: [
       {
         id: "boolean-input",
-        code: "b",
+        code: "boolean",
         position: "left",
         type: "target",
-        dataType: "Boolean",
+        dataType: "boolean",
       },
       {
         id: "boolean-output",
-        code: "b",
+        code: "boolean",
         position: "right",
         type: "source",
-        dataType: "Boolean",
+        dataType: "boolean",
       },
     ],
     inspector: { key: "ViewBooleanInspector" },

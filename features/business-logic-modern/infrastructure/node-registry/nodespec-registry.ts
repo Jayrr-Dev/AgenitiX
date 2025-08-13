@@ -13,6 +13,7 @@ import { spec as storeLocalSpec } from "../../node-domain/store/storeLocal.node"
 import { spec as aiManagerSpec } from "../../node-domain/ai/aiManager.node";
 import { spec as createJsonpec } from "../../node-domain/create/createJson.node";
 import { spec as createMapSpec } from "../../node-domain/create/createMap.node";
+import { spec as mergeNodeSpec } from "../../node-domain/store/mergeNode.node";
 import { spec as viewObjectSpec } from "../../node-domain/view/viewObject.node";
 import { spec as viewArraySpec } from "../../node-domain/view/viewArray.node";
 import { spec as emailPreviewSpec } from "../../node-domain/email/emailPreview.node";
@@ -70,6 +71,7 @@ const nodeSpecs: Record<string, NodeSpec> = {
 	aiManager: aiManagerSpec,
 	createJson: createJsonpec,
 	createMap: createMapSpec,
+	mergeNode: mergeNodeSpec,
 	viewObject: viewObjectSpec,
 	viewArray: viewArraySpec,
 	emailPreview: emailPreviewSpec,

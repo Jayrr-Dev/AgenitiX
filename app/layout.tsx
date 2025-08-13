@@ -20,6 +20,7 @@ import type React from "react";
 import { Suspense } from "react";
 import { Toaster } from "sonner";
 import "./globals.css";
+import "@arco-design/web-react/dist/css/arco.css";
 import Loading from "./loading";
 import { ConvexAuthNextjsServerProvider } from "@convex-dev/auth/nextjs/server";
 import { ConvexClientProvider } from "./provider";
@@ -132,7 +133,6 @@ export default function RootLayout({
               <PWAStatus />
               {/* <AnubisToggle /> */}
               <AnubisStatus />
-              <AnubisControlPanel />
               {process.env.NODE_ENV === "development" && <AnubisDebugger />}
               {process.env.NODE_ENV === "development" && <RiskDashboard />}
             </OptimisticVerificationProvider>

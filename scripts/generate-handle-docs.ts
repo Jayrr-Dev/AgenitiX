@@ -65,7 +65,7 @@ interface HandleSystemStats {
 const HANDLE_TYPE_MAP: Record<string, HandleTypeInfo> = {
   // Legacy single-letter codes
   j: {
-    code: "j",
+    code: "json",
     label: "JSON",
     description: "JavaScript Object Notation - flexible data structure",
     color: "var(--core-handle-types-json-color)",
@@ -82,8 +82,8 @@ const HANDLE_TYPE_MAP: Record<string, HandleTypeInfo> = {
     ],
   },
   s: {
-    code: "s",
-    label: "String",
+    code: "string",
+    label: "string",
     description: "Text data - UTF-8 encoded strings",
     color: "var(--core-handle-types-string-color)",
     icon: "T",
@@ -95,8 +95,8 @@ const HANDLE_TYPE_MAP: Record<string, HandleTypeInfo> = {
     ],
   },
   n: {
-    code: "n",
-    label: "Number",
+    code: "number",
+    label: "number",
     description: "Numeric data - integers and floating point",
     color: "var(--core-handle-types-number-color)",
     icon: "#",
@@ -108,8 +108,8 @@ const HANDLE_TYPE_MAP: Record<string, HandleTypeInfo> = {
     ],
   },
   b: {
-    code: "b",
-    label: "Boolean",
+    code: "boolean",
+    label: "boolean",
     description: "True/false values for control flow",
     color: "var(--core-handle-types-boolean-color)",
     icon: "✓",
@@ -121,8 +121,8 @@ const HANDLE_TYPE_MAP: Record<string, HandleTypeInfo> = {
     ],
   },
   a: {
-    code: "a",
-    label: "Array",
+    code: "array",
+    label: "array",
     description: "Ordered collection of values",
     color: "var(--core-handle-types-array-color)",
     icon: "[]",
@@ -147,8 +147,8 @@ const HANDLE_TYPE_MAP: Record<string, HandleTypeInfo> = {
     ],
   },
   x: {
-    code: "x",
-    label: "Any",
+    code: "any",
+    label: "any",
     description: "Unrestricted type - accepts any value",
     color: "var(--core-handle-types-any-color)",
     icon: "?",
@@ -506,9 +506,9 @@ ${stats.recommendations.map((rec) => `- 💡 ${rec}`).join("\n")}
 const spec: NodeSpec = {
   // ... other spec properties
   handles: [
-    { id: "input", code: "j", position: "top", type: "target" },
-    { id: "output", code: "s", position: "right", type: "source" },
-    { id: "input", code: "b", position: "left", type: "target" },
+    { id: "input", code: "json", position: "top", type: "target" },
+    { id: "output", code: "string", position: "right", type: "source" },
+    { id: "input", code: "boolean", position: "left", type: "target" },
   ],
 };
 \`\`\`
@@ -520,7 +520,7 @@ const spec: NodeSpec = {
   // ... other spec properties
   handles: [
     { id: "data", tsSymbol: "CreateTextOutput", position: "right", type: "source" },
-    { id: "trigger", code: "b", position: "left", type: "target" },
+    { id: "trigger", code: "boolean", position: "left", type: "target" },
   ],
 };
 \`\`\`
@@ -815,25 +815,25 @@ ${Object.entries(stats.positionDistribution)
 ### Basic Input/Output Pattern
 \`\`\`typescript
 handles: [
-  { id: "input", code: "j", position: "top", type: "target" },
-  { id: "output", code: "s", position: "right", type: "source" },
+  { id: "input", code: "json", position: "top", type: "target" },
+  { id: "output", code: "string", position: "right", type: "source" },
 ]
 \`\`\`
 
 ### Control Flow Pattern
 \`\`\`typescript
 handles: [
-  { id: "trigger", code: "b", position: "left", type: "target" },
-  { id: "data", code: "j", position: "top", type: "target" },
-  { id: "result", code: "s", position: "right", type: "source" },
+  { id: "trigger", code: "boolean", position: "left", type: "target" },
+  { id: "data", code: "json", position: "top", type: "target" },
+  { id: "result", code: "string", position: "right", type: "source" },
 ]
 \`\`\`
 
 ### Type-Safe Pattern
 \`\`\`typescript
 handles: [
-  { id: "input", tsSymbol: "InputType", code: "j", position: "top", type: "target" },
-  { id: "output", tsSymbol: "OutputType", code: "s", position: "right", type: "source" },
+  { id: "input", tsSymbol: "InputType", code: "json", position: "top", type: "target" },
+  { id: "output", tsSymbol: "OutputType", code: "string", position: "right", type: "source" },
 ]
 \`\`\`
 
@@ -851,7 +851,7 @@ handles: [
  */
 function isTypeCompatible(sourceType: string, targetType: string): boolean {
   // Any type can connect to any type
-  if (sourceType === "x" || targetType === "x") {
+  if (sourceType === "any" || targetType === "any") {
     return true;
   }
 
@@ -861,27 +861,27 @@ function isTypeCompatible(sourceType: string, targetType: string): boolean {
   }
 
   // JSON can connect to most types
-  if (sourceType === "j") {
-    return ["s", "n", "b", "a", "o"].includes(targetType);
+  if (sourceType === "json") {
+    return ["string", "number", "boolean", "array", "o"].includes(targetType);
   }
 
   // String can connect to string
-  if (sourceType === "s" && targetType === "s") {
+  if (sourceType === "string" && targetType === "string") {
     return true;
   }
 
   // Number can connect to number
-  if (sourceType === "n" && targetType === "n") {
+  if (sourceType === "number" && targetType === "number") {
     return true;
   }
 
   // Boolean can connect to boolean
-  if (sourceType === "b" && targetType === "b") {
+  if (sourceType === "boolean" && targetType === "boolean") {
     return true;
   }
 
   // Array can connect to array
-  if (sourceType === "a" && targetType === "a") {
+  if (sourceType === "array" && targetType === "array") {
     return true;
   }
 

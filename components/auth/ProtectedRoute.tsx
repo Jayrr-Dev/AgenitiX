@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { type ReactNode, useEffect, useState } from "react";
 import { Loading } from "@/components/Loading";
 import { useAuth } from "./AuthProvider";
+import { useRecoverLocalStorageOnTimeout } from "@/hooks/useRecoverLocalStorageOnTimeout";
 
 interface ProtectedRouteProps {
 	children: ReactNode;
@@ -20,20 +21,28 @@ export const ProtectedRoute = ({ children }: Pick<ProtectedRouteProps, "children
 		setMounted(true);
 	}, []);
 
-	  // Redirect to sign-in if not authenticated (with slight delay to avoid race)
-  useEffect(() => {
-    if (!mounted || isLoading) return;
+	// Soft recovery if loading stalls too long, basically clear corrupt localStorage and reload
+	useRecoverLocalStorageOnTimeout({
+		isActive: !mounted || isLoading,
+		timeoutMs: 10000,
+		preservedKeys: [],
+		reloadAfterRecover: true,
+	});
 
-    if (!isAuthenticated) {
-      // Delay to allow any late auth events to finish
-      const id = setTimeout(() => {
-        if (!isAuthenticated) {
-          router.push("/sign-in");
-        }
-      }, 800); // 0.8 s grace period
-      return () => clearTimeout(id);
-    }
-  }, [mounted, isLoading, isAuthenticated, router]);
+	// Redirect to sign-in if not authenticated (with slight delay to avoid race)
+	useEffect(() => {
+		if (!mounted || isLoading) return;
+
+		if (!isAuthenticated) {
+			// Delay to allow any late auth events to finish
+			const id = setTimeout(() => {
+				if (!isAuthenticated) {
+					router.push("/sign-in");
+				}
+			}, 800); // 0.8 s grace period
+			return () => clearTimeout(id);
+		}
+	}, [mounted, isLoading, isAuthenticated, router]);
 
 	// Show loading state while checking auth or not mounted yet
 	if (!mounted || isLoading) {

@@ -420,26 +420,9 @@ export const EmailSenderExpanded = React.memo(
         : "Sending..."
       : "Email";
 
-    // Show modal notifications for account errors, basically use node toast system
-    useEffect(() => {
-      if (accountErrors.length > 0) {
-        const errorMessage = accountErrors.length === 1 
-          ? accountErrors[0] 
-          : `${accountErrors.length} account issues detected`;
-        const errorDescription = accountErrors.length > 1 
-          ? accountErrors.join("; ") 
-          : undefined;
-        
-        showError("Account Error", errorDescription || errorMessage);
-      }
-    }, [accountErrors, showError]);
+    // Removed account error toasts – UI will show placeholder instead when no selection
 
-    // Show warning when no accounts are available, basically notify user
-    useEffect(() => {
-      if (availableAccounts.length === 0) {
-        showWarning("No Email Accounts", "Please add an email account first to send emails");
-      }
-    }, [availableAccounts.length, showWarning]);
+    // Removed warning toasts for no accounts, basically rely on the UI state instead
 
     // Show info when sending status changes, basically provide feedback
     useEffect(() => {
@@ -606,7 +589,7 @@ export const EmailSenderExpanded = React.memo(
                   disabled={!isEnabled || isSending}
                 >
                   <SelectTrigger className={INPUT_STYLES.select}>
-                    <SelectValue placeholder="Select email account..." />
+                    <SelectValue placeholder="No account selected" />
                   </SelectTrigger>
                   <SelectContent>
                     {availableAccounts.map((account) => (
@@ -921,7 +904,7 @@ export const EmailSenderExpanded = React.memo(
                 </Tooltip>
                 <Input
                   variant="node"
-                  type="number"
+                  type="text"
                   inputMode="numeric"
                   pattern="[0-9]*"
                   value={retryAttemptsInput}

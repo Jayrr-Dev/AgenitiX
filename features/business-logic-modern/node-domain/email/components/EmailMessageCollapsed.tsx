@@ -13,6 +13,7 @@
 import RenderStatusDot from "@/components/RenderStatusDot";
 import { memo, useMemo } from "react";
 import { MdOutlineMailOutline } from "react-icons/md";
+import SkueButton from "@/components/ui/skue-button";
 import type { EmailMessageData } from "../emailMessage.node";
 
 const COLLAPSED_STYLES = {
@@ -76,23 +77,20 @@ export const EmailMessageCollapsed = memo(
         <div className={COLLAPSED_STYLES.content}>
           {/* Icon */}
           <div className="flex justify-center">
-            <div
-              className={COLLAPSED_STYLES.iconButton}
-              onClick={onComposeMessage}
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  // [Explanation], basically trigger compose action from collapsed center button
-                  onComposeMessage?.();
-                }
+            <SkueButton
+              ariaLabel="Compose"
+              title="Compose"
+              checked={false}
+              onCheckedChange={(checked) => {
+                if (checked) onComposeMessage?.();
               }}
+              size="sm"
+              className="cursor-pointer translate-y-2"
+              style={{ transform: "scale(1.1)", transformOrigin: "center" }}
+              surfaceBgVar="--node-email-bg"
             >
-              <MdOutlineMailOutline
-                className={`w-5 h-5 ${COLLAPSED_STYLES.iconWrapper}`}
-              />
-            </div>
+              <MdOutlineMailOutline />
+            </SkueButton>
           </div>
 
           {/* Text and Status */}

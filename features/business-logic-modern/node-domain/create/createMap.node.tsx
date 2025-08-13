@@ -124,17 +124,17 @@ function createDynamicSpec(data: CreateMapData): NodeSpec {
     handles: [
       {
         id: "output",
-        code: "j",
+        code: "json",
         position: "right",
         type: "source",
         dataType: "JSON",
       },
       {
         id: "input",
-        code: "b",
+        code: "boolean",
         position: "left",
         type: "target",
-        dataType: "Boolean",
+        dataType: "boolean",
       },
     ],
     inspector: { key: "CreateMapInspector" },

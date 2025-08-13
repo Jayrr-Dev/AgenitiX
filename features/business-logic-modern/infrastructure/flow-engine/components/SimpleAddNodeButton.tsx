@@ -222,7 +222,7 @@ export const SimpleAddNodeButton: React.FC<SimpleAddNodeButtonProps> = ({
                 isOpen={activeCategory === category}
                 onClose={() => setActiveCategory(null)}
                 trigger={
-                  <Tooltip delayDuration={300}>
+                  <Tooltip delayDuration={100}>
                     <TooltipTrigger asChild>
                       <Button
                         variant="ghost"

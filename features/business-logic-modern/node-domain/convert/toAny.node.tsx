@@ -110,17 +110,17 @@ function createDynamicSpec(data: ToAnyData): NodeSpec {
     handles: [
       {
         id: "any-input",
-        code: "x",
+        code: "any",
         position: "left",
         type: "target",
-        dataType: "Any",
+        dataType: "any",
       },
       {
         id: "any-output",
-        code: "x",
+        code: "any",
         position: "right",
         type: "source",
-        dataType: "Any",
+        dataType: "any",
       },
     ],
     inspector: { key: "ToAnyInspector" },
@@ -431,7 +431,7 @@ const ToAnyNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) => {
                 <div className="truncate">
                   {inputValue !== null && inputValue !== undefined
                     ? "Pass"
-                    : "Any"}
+                    : "any"}
                 </div>
               </div>
             )}

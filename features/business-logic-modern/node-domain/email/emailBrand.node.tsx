@@ -282,7 +282,7 @@ function createDynamicSpec(data: EmailBrandData): NodeSpec {
       },
       {
         id: "brand-output",
-        code: "b",
+        code: "boolean",
         position: "right",
         type: "source",
         dataType: "JSON",
@@ -290,10 +290,10 @@ function createDynamicSpec(data: EmailBrandData): NodeSpec {
       },
       {
         id: "css-output",
-        code: "s",
+        code: "string",
         position: "bottom",
         type: "source",
-        dataType: "String",
+        dataType: "string",
         tooltip: HANDLE_TOOLTIPS.CSS_OUT,
       },
     ],

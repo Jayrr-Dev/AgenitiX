@@ -79,17 +79,17 @@ function createDynamicSpec(data: LogicOrData): NodeSpec {
 		handles: [
 			{
 				id: "input",
-				code: "b",
+				code: "boolean",
 				position: "left",
 				type: "target",
-				dataType: "Boolean",
+				dataType: "boolean",
 			},
 			{
 				id: "output",
-				code: "b",
+				code: "boolean",
 				position: "right",
 				type: "source",
-				dataType: "Boolean",
+				dataType: "boolean",
 			},
 		],
 		inspector: { key: "LogicOrInspector" },

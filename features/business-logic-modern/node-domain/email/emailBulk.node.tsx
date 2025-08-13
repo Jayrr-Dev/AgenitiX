@@ -208,7 +208,7 @@ function createDynamicSpec(data: EmailBulkData): NodeSpec {
         code: "r",
         position: "top",
         type: "target",
-        dataType: "Array",
+        dataType: "array",
         tooltip: HANDLE_TOOLTIPS.RECIPIENTS_IN,
       },
       {
@@ -221,10 +221,10 @@ function createDynamicSpec(data: EmailBulkData): NodeSpec {
       },
       {
         id: "success-output",
-        code: "s",
+        code: "string",
         position: "bottom",
         type: "source",
-        dataType: "Boolean",
+        dataType: "boolean",
         tooltip: HANDLE_TOOLTIPS.SUCCESS_OUT,
       },
     ],

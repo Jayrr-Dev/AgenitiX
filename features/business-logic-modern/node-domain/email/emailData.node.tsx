@@ -200,12 +200,12 @@ const createDynamicSpec = (data: EmailDataType): NodeSpec => {
         code: "m",
         position: "left",
         type: "target",
-        dataType: "Array",
+        dataType: "array",
         tooltip: "Messages",
       },
       {
         id: "structured-output",
-        code: "s",
+        code: "string",
         position: "right",
         type: "source",
         dataType: "JSON",
@@ -216,7 +216,7 @@ const createDynamicSpec = (data: EmailDataType): NodeSpec => {
         code: "f",
         position: "bottom",
         type: "source",
-        dataType: "String",
+        dataType: "string",
         tooltip: "Formatted",
       },
       {
@@ -224,7 +224,7 @@ const createDynamicSpec = (data: EmailDataType): NodeSpec => {
         code: "o",
         position: "right",
         type: "source",
-        dataType: "String",
+        dataType: "string",
         tooltip: "Outputs",
       },
     ],
@@ -423,7 +423,7 @@ const extractKeywords = (text: string): string[] => {
   // In a real implementation, this would use NLP techniques
   // Here we'll just extract words that appear frequently and aren't stopwords
   const stopwords = new Set([
-    "a",
+    "array",
     "about",
     "above",
     "after",

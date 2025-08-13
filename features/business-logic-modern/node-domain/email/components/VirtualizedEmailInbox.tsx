@@ -441,7 +441,7 @@ const EmailRow = memo(
             {email.attachmentsCount > 0 && (
               <MdAttachFile
                 className={`${OUTLOOK_STYLES.attachmentIcon} flex-shrink-0`}
-                title={`${email.attachmentsCount} attachment${email.attachmentsCount !== 1 ? "s" : ""}`}
+                title={`${email.attachmentsCount} attachment${email.attachmentsCount !== 1 ? "string" : ""}`}
               />
             )}
           </div>

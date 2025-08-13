@@ -64,7 +64,7 @@ const EnforceNumericInput = React.forwardRef<HTMLInputElement, EnforceNumericInp
     const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
       const isMeta = event.ctrlKey || event.metaKey;
       const isAllowedCombo =
-        isMeta && (event.key.toLowerCase() === "a" || event.key.toLowerCase() === "c" || event.key.toLowerCase() === "v" || event.key.toLowerCase() === "x");
+        isMeta && (event.key.toLowerCase() === "array" || event.key.toLowerCase() === "c" || event.key.toLowerCase() === "v" || event.key.toLowerCase() === "any");
 
       if (ALLOWED_CONTROL_KEYS.has(event.key) || isAllowedCombo) {
         return;

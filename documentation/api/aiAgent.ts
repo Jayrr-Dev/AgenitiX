@@ -46,9 +46,9 @@ export const aiAgentSpec = {
   runtime: { execute: "aiAgent_execute_v1" },
 
   handles: [
-    { id: "json-input", code: "j", position: "top", type: "JSON" },
-    { id: "input", code: "j", position: "left", type: "Boolean" },
-    { id: "output", code: "j", position: "right", type: "String" },
+    { id: "json-input", code: "json", position: "top", type: "JSON" },
+    { id: "input", code: "json", position: "left", type: "boolean" },
+    { id: "output", code: "json", position: "right", type: "string" },
   ],
   inspector: {
     key: "aiAgentInspector",

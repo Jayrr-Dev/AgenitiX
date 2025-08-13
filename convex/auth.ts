@@ -17,11 +17,16 @@ import Google from "@auth/core/providers/google";
 import Resend from "@auth/core/providers/resend";
 import { Password } from "@convex-dev/auth/providers/Password";
 import { convexAuth } from "@convex-dev/auth/server";
+import { PRODUCTION_EMAIL_CONFIG } from "../lib/production-config";
 
 // Debug environment variables in development only, basically check if auth keys are loaded
 if (process.env.NODE_ENV === "development") {
   // Silent environment debugging
 }
+
+// Top-level auth constants, basically single source of truth for provider config
+const RESEND_FROM_EMAIL = PRODUCTION_EMAIL_CONFIG.resendFromEmail;
+const AUTH_RESEND_KEY = PRODUCTION_EMAIL_CONFIG.authResendKey;
 
 export const {
   auth,
@@ -34,7 +39,11 @@ export const {
     GitHub,
     Google,
     Password, // Keep for backwards compatibility
-    Resend, // Standard Auth.js email provider for magic links
+    // Configure Resend provider explicitly, basically required options to avoid 400s from /api/auth
+    Resend({
+      from: RESEND_FROM_EMAIL, // [Explanation], basically the From header for magic link emails
+      apiKey: AUTH_RESEND_KEY, // [Explanation], basically Resend API key for sending emails
+    }),
   ],
   callbacks: {
     async afterUserCreatedOrUpdated(ctx, args) {

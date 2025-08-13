@@ -315,7 +315,7 @@ export const HandlePositionEditor: React.FC<HandlePositionEditorProps> = ({
         <div className="mt-3 p-2 rounded-md bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800">
           <div className="text-xs text-orange-700 dark:text-orange-300">
             <strong>{currentOverrides.length}</strong> handle
-            {currentOverrides.length !== 1 ? "s" : ""} using custom positions
+            {currentOverrides.length !== 1 ? "string" : ""} using custom positions
           </div>
         </div>
       )}

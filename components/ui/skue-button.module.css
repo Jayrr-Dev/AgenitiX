@@ -1,0 +1,142 @@
+/**
+ * COMPONENT: skue-button.module.css - Styles for SkueButton (scoped CSS Module)
+ *
+ * • Recreates the provided circular toggle button visuals with gradients and inset shadows
+ * • Scoped via CSS Modules to avoid global collisions
+ * • Keeps exact interactions: hidden checkbox controls label state via sibling selector
+ * • Includes keyframe animations for fill and border when active
+ *
+ * Keywords: shadcn, button, css-modules, animations, neumorphism, toggle
+ */
+
+.container {
+	width: 4em;
+	height: 4em;
+	position: relative;
+	/* Derive surface background from host node if available */
+	--skue-surface-bg: var(--node-email-bg, #444245);
+}
+
+.button {
+	position: absolute;
+	width: 100%;
+	height: 100%;
+	border-radius: 50%;
+	border: 1px solid #090909;
+	background-color: transparent;
+	background-image: linear-gradient(145deg, #171717, #444245);
+	box-sizing: border-box;
+	box-shadow: inset 2px 2px 0 #7d7c7e, inset -2px -2px 0px #1c1c1c;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.container input {
+	display: none;
+}
+
+.button::before {
+	position: absolute;
+	content: "";
+	width: 4.2em;
+	height: 4.2em;
+	border-radius: inherit;
+	background-color: transparent;
+	background-image: linear-gradient(145deg, #262626, #606060);
+	z-index: -1;
+	/* Fallback shadow */
+	box-shadow: 11px 11px 22px #141414, -11px -11px 22px #525252;
+	/* Match host component bg using color-mix when supported */
+	box-shadow: 11px 11px 22px color-mix(in srgb, var(--skue-surface-bg) 30%, black),
+		-11px -11px 22px color-mix(in srgb, var(--skue-surface-bg) 30%, white);
+}
+
+.icon {
+	width: 30px;
+	height: 30px;
+	display: inline-block;
+}
+
+.icon svg {
+	height: 100%;
+	width: 100%;
+	fill: #a5a5a5;
+}
+
+.container input:checked + .button {
+	box-shadow: inset -2px -2px 0 #5e5e5e, inset 2px 2px 0 #1c1c1c;
+	border: 4px solid rgba(77, 124, 255, 0.281);
+	animation: skueAnimeBorder .3s linear alternate-reverse infinite;
+}
+
+.container input:checked + .button .icon svg {
+	fill: rgb(77, 124, 255);
+	animation: skueAnimeFill .3s linear alternate-reverse infinite;
+}
+
+/* Click down effect when button is pressed */
+.button:active {
+	transform: scale(0.95);
+	box-shadow: inset 3px 1px 0 #1c1c1c, inset -1px -1px 0px #7d7c7e;
+	transition: transform 0.1s ease-out, box-shadow 0.1s ease-out;
+	border: 1px solid #090909;
+	background-image: linear-gradient(145deg, #171717, #444245);
+}
+
+.button:active::before {
+	box-shadow: 6px 6px 12px color-mix(in srgb, var(--skue-surface-bg) 30%, black),
+		-6px -6px 12px color-mix(in srgb, var(--skue-surface-bg) 30%, white);
+		transition: box-shadow 0.1s ease-out;
+		border: 1px solid #090909;
+		border-radius: inherit;
+		background-image: linear-gradient(145deg, #262626, #606060);
+}
+
+@keyframes skueAnimeFill {
+	to {
+		fill: rgba(77, 124, 255, 0.642);
+	}
+}
+
+@keyframes skueAnimeBorder {
+	to {
+		border-color: rgba(77, 124, 255, 0.137);
+	}
+}
+
+/* Activated state - makes icon glow with enhanced visual effects */
+.activated .icon svg {
+	fill: rgb(255, 215, 0);
+	filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.8)) 
+	        drop-shadow(0 0 16px rgba(255, 215, 0, 0.6))
+	        drop-shadow(0 0 24px rgba(255, 215, 0, 0.4));
+	animation: skueGlowPulse 2s ease-in-out infinite alternate;
+}
+
+.activated .button {
+	border: 2px solid rgba(255, 215, 0, 0.5);
+	box-shadow: inset 2px 2px 0 #7d7c7e, inset -2px -2px 0px #1c1c1c,
+	            0 0 20px rgba(255, 215, 0, 0.3);
+}
+
+.activated .button::before {
+	box-shadow: 11px 11px 22px color-mix(in srgb, var(--skue-surface-bg) 30%, black),
+		-11px -11px 22px color-mix(in srgb, var(--skue-surface-bg) 30%, white),
+		0 0 30px rgba(255, 215, 0, 0.2);
+}
+
+@keyframes skueGlowPulse {
+	0% {
+		filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.8)) 
+		        drop-shadow(0 0 16px rgba(255, 215, 0, 0.6))
+		        drop-shadow(0 0 24px rgba(255, 215, 0, 0.4));
+	}
+	100% {
+		filter: drop-shadow(0 0 12px rgba(255, 215, 0, 1)) 
+		        drop-shadow(0 0 24px rgba(255, 215, 0, 0.8))
+		        drop-shadow(0 0 36px rgba(255, 215, 0, 0.6));
+	}
+}
+
+

@@ -99,7 +99,7 @@ export const EdgeInspector: React.FC<EdgeInspectorProps> = ({ edge, allNodes, on
 			// Final fallback: infer from node type
 			if (node.type === "createText") {
 				return {
-					label: "String",
+					label: "string",
 					color: "text-blue-600 dark:text-blue-400",
 					value: node.data?.text || "",
 					actualType: "string",
@@ -107,7 +107,7 @@ export const EdgeInspector: React.FC<EdgeInspectorProps> = ({ edge, allNodes, on
 			}
 			if (node.type === "viewText") {
 				return {
-					label: "String",
+					label: "string",
 					color: "text-blue-600 dark:text-blue-400",
 					value: node.data?.store || node.data?.inputs || "",
 					actualType: "string",

@@ -36,7 +36,7 @@ export const NodeHandles: React.FC<NodeHandlesProps> = ({
 				<div className="mb-3 rounded border border-border/30 bg-muted/30 p-2">
 					<div className="flex items-center justify-between text-xs">
 						<span className="font-medium text-foreground">
-							{nodeInfo.handles.length} handle{nodeInfo.handles.length !== 1 ? "s" : ""}
+							{nodeInfo.handles.length} handle{nodeInfo.handles.length !== 1 ? "string" : ""}
 						</span>
 						<span className="text-muted-foreground">
 							{
@@ -50,7 +50,7 @@ export const NodeHandles: React.FC<NodeHandlesProps> = ({
 								(edge) =>
 									edge.source === selectedNode.id || edge.target === selectedNode.id
 							).length !== 1
-								? "s"
+								? "string"
 								: ""}
 						</span>
 					</div>

@@ -308,7 +308,7 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
       typeof flowId === "string",
   });
 
-  const HISTORY_CAP_ENTRIES = 30; // [Explanation], basically hard cap history length
+  const HISTORY_CAP_ENTRIES = 10; // [Explanation], basically hard cap history length
 
   const finalConfig = useMemo(
     () => ({
@@ -387,12 +387,27 @@ const UndoRedoManager: React.FC<UndoRedoManagerProps> = ({
     setPersistenceCallbacks(saveCallback, loadCallback);
   }, [flowId, saveHistory, loadedHistory]);
 
-  // Update graph ref when loaded history changes
+  // Update graph ref when loaded history changes (apply pruning immediately)
   useEffect(() => {
     if (loadedHistory && !isHistoryLoading) {
-      graphRef.current = loadedHistory;
+      // Clone shallow to avoid mutating query cache directly
+      const graph: HistoryGraph = {
+        root: loadedHistory.root,
+        cursor: loadedHistory.cursor,
+        nodes: { ...loadedHistory.nodes },
+      };
+      const beforeCount = Object.keys(graph.nodes || {}).length;
+      if (HISTORY_CAP_ENTRIES > 0) {
+        pruneGraphToLimit(graph, HISTORY_CAP_ENTRIES);
+      }
+      graphRef.current = graph;
+      const afterCount = Object.keys(graph.nodes || {}).length;
+      // If pruning changed the size, persist the trimmed graph so server state matches the cap
+      if (afterCount !== beforeCount) {
+        saveGraph(graph, flowId, false);
+      }
     }
-  }, [loadedHistory, isHistoryLoading]);
+  }, [loadedHistory, isHistoryLoading, flowId]);
 
   // ============================================================================
   // CORE FUNCTIONS

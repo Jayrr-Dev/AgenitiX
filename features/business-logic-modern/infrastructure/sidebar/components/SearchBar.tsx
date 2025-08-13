@@ -166,16 +166,16 @@ export function SearchBar({
           "e",
           "r",
           "t",
-          "a",
-          "s",
+          "array",
+          "string",
           "d",
           "f",
           "g",
           "z",
-          "x",
+          "any",
           "c",
           "v",
-          "b",
+          "boolean",
         ];
 
         // Allow Alt+Q repeats for fast text deletion
@@ -479,7 +479,7 @@ export function SearchBar({
           <div className="mb-3 px-3">
             <div className={`text-sm ${theme.text.secondary}`}>
               {filteredStencils.length} result
-              {filteredStencils.length !== 1 ? "s" : ""} for "{searchQuery}"
+              {filteredStencils.length !== 1 ? "string" : ""} for "{searchQuery}"
             </div>
 
             {/* Tooltip Panel for Keyboard Shortcuts */}

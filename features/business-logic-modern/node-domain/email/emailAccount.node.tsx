@@ -149,29 +149,39 @@ const createDynamicSpec = (
     handles: [
       {
         id: "trigger-input",
-        code: "b",
+        code: "boolean",
         position: "top",
         type: "target",
-        dataType: "Boolean",
+        dataType: "boolean",
         tooltip: HANDLE_TOOLTIPS.TRIGGER_IN,
       },
       // Expose a strongly-typed account payload for downstream consumers, basically provide the connected account object
       {
         id: "account-output",
-        code: "j",
+        code: "account",
         position: "right",
         type: "source",
         dataType: "JSON",
         tooltip: HANDLE_TOOLTIPS.ACCOUNT_OUT,
-          // Consumers may enforce shapes; output can include additional properties
-          // (no shape required on source)
+        // Declare emitted account JSON shape for downstream validation
+        jsonShape: {
+          type: "object",
+          properties: {
+            accountId: { type: "string" },
+            provider: { type: "string", optional: true },
+            email: { type: "string", optional: true },
+            displayName: { type: "string", optional: true },
+            isConnected: { type: "boolean", optional: true },
+            lastValidated: { type: "number", optional: true },
+          },
+        },
       },
       {
         id: "status-output",
-        code: "b",
+        code: "boolean",
         position: "bottom",
         type: "source",
-        dataType: "Boolean",
+        dataType: "boolean",
         tooltip: HANDLE_TOOLTIPS.STATUS_OUT,
       },
     ],
