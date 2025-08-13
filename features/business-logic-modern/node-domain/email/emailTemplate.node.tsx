@@ -53,6 +53,9 @@ import { api } from "@/convex/_generated/api";
 // Convex integration
 import { useMutation, useQuery, useConvexAuth } from "convex/react";
 import { toast } from "sonner";
+import { EmailTemplateCollapsed } from "./components/EmailTemplateCollapsed";
+import { EmailTemplateExpanded } from "./components/EmailTemplateExpanded";
+import { STARTER_TEMPLATES, type StarterTemplate } from "./data/starterTemplates";
 
 // Easy Email Editor (React + MJML)
 // [Explanation], basically embed drag‑and‑drop email designer based on MJML
@@ -146,7 +149,7 @@ export const EmailTemplateDataSchema = z
     isEnabled: SafeSchemas.boolean(true),
     isActive: SafeSchemas.boolean(false),
     isExpanded: SafeSchemas.boolean(false),
-    expandedSize: SafeSchemas.text("VE3"),
+    expandedSize: SafeSchemas.text("VE2"),
     collapsedSize: SafeSchemas.text("C2"),
     showEditorModal: SafeSchemas.boolean(false),
 
@@ -220,7 +223,7 @@ const VARIABLE_TYPES = [
 function createDynamicSpec(data: EmailTemplateData): NodeSpec {
   const expanded =
     EXPANDED_SIZES[data.expandedSize as keyof typeof EXPANDED_SIZES] ??
-    EXPANDED_SIZES.VE3;
+    EXPANDED_SIZES.VE2;
   const collapsed =
     COLLAPSED_SIZES[data.collapsedSize as keyof typeof COLLAPSED_SIZES] ??
     COLLAPSED_SIZES.C2;
@@ -375,7 +378,7 @@ function createDynamicSpec(data: EmailTemplateData): NodeSpec {
 
 /** Static spec for registry (uses default size keys) */
 export const spec: NodeSpec = createDynamicSpec({
-  expandedSize: "VE3",
+  expandedSize: "VE2",
   collapsedSize: "C2",
 } as EmailTemplateData);
 
@@ -479,6 +482,48 @@ const EmailTemplateNode = memo(
       updateNodeData({ isExpanded: !isExpanded });
     }, [isExpanded, updateNodeData]);
 
+    /** Handle opening template designer */
+    const handleOpenDesigner = useCallback(() => {
+      updateNodeData({ showEditorModal: true });
+    }, [updateNodeData]);
+
+    /** Handle template name change */
+    const handleTemplateNameChange = useCallback(
+      (e: React.ChangeEvent<HTMLInputElement>) => {
+        updateNodeData({ templateName: e.target.value });
+      },
+      [updateNodeData]
+    );
+
+    /** Handle category change */
+    const handleCategoryChange = useCallback(
+      (category: string) => {
+        updateNodeData({ category });
+      },
+      [updateNodeData]
+    );
+
+    /** Handle subject change */
+    const handleSubjectChange = useCallback(
+      (e: React.ChangeEvent<HTMLInputElement>) => {
+        updateNodeData({ subject: e.target.value });
+      },
+      [updateNodeData]
+    );
+
+    /** Handle description change */
+    const handleDescriptionChange = useCallback(
+      (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        updateNodeData({ templateDescription: e.target.value });
+      },
+      [updateNodeData]
+    );
+
+    /** Handle toggle preview */
+    const handleTogglePreview = useCallback(() => {
+      updateNodeData({ showPreview: !showPreview });
+    }, [showPreview, updateNodeData]);
+
     /** Compile template with preview data */
     const compileTemplate = useCallback(() => {
       let compiledSubject = subject || "";
@@ -515,6 +560,155 @@ const EmailTemplateNode = memo(
         variables: previewData,
       };
     }, [subject || "", htmlContent || "", textContent || "", variables || [], previewData || {}]);
+
+    /**
+     * Prepare MJML for the visual editor
+     * [Explanation], basically strip head, resolve simple conditionals, and replace variables with placeholders
+     */
+    const createCleanMjmlForEditor = useCallback((mjmlContent: string, variableNames: string[]): string => {
+      if (!mjmlContent || typeof mjmlContent !== "string") return "";
+
+      let clean = mjmlContent;
+
+      // 1) Remove <mj-head> to avoid duplicated styles, we will inject a normalized theme head
+      // [Explanation], basically keep editor stable and consistent across templates
+      clean = clean.replace(/<mj-head>[\s\S]*?<\/mj-head>/g, "");
+
+      // 2) Resolve common conditional blocks to a default branch
+      // [Explanation], basically choose verification branch as default for predictable layout
+      clean = clean.replace(
+        /\{\{#if\s+type\s*===\s*\"verification\"\}\}([\s\S]*?)\{\{else\}\}([\s\S]*?)\{\{\/if\}\}/g,
+        (_, verificationContent: string, elseContent: string) => verificationContent
+      );
+
+      // 3) Flatten any remaining simple #if blocks by keeping inner content
+      // [Explanation], basically remove wrapper and keep content so layout stays intact
+      clean = clean.replace(/\{\{#if[^}]+\}\}([\s\S]*?)\{\{\/if\}\}/g, "$1");
+
+      // 4) Replace variables with readable placeholders so editor shows nice text
+      // [Explanation], basically use [var] for visibility without leaking handlebars
+      for (const varName of variableNames || []) {
+        const re = new RegExp(`\\{\\{${varName}\\}\\}`, "g");
+        clean = clean.replace(re, `[${varName}]`);
+      }
+
+      // 4.5) Remove any remaining handlebars control tags that are not variables
+      // [Explanation], basically strip {{#...}}, {{/...}} and {{else}} that may linger
+      clean = clean
+        .replace(/\{\{\s*else\s*\}\}/g, "")
+        .replace(/\{\{\s*#[^}]+\}\}/g, "")
+        .replace(/\{\{\s*\/[^{]+\}\}/g, "");
+
+      // 5) Inject a normalized theme head with default attributes (font, colors, spacing)
+      const themeHead = `\n  <mj-head>\n    <mj-attributes>\n      <mj-all font-family=\"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif\" />\n      <mj-text font-size=\"14px\" color=\"#111827\" line-height=\"1.6\" />\n      <mj-section padding=\"0px\" />\n      <mj-column padding=\"0px\" />\n      <mj-button background-color=\"#111827\" color=\"#ffffff\" font-weight=\"600\" border-radius=\"6px\" inner-padding=\"12px 16px\" />\n      <mj-divider border-color=\"#e5e7eb\" border-width=\"1px\" />\n    </mj-attributes>\n  </mj-head>`;
+
+      const hasRoot = /<mjml>[\s\S]*<\/mjml>/.test(clean);
+      const hasBody = /<mj-body[\s\S]*<\/mj-body>/.test(clean);
+
+      if (hasRoot && hasBody) {
+        // Insert theme head right after <mjml>
+        clean = clean.replace(/<mjml>/, `<mjml>\n${themeHead}\n`);
+      } else {
+        // Wrap arbitrary content into a valid MJML with theme
+        clean = `\n<mjml>\n${themeHead}\n  <mj-body background-color=\"#ffffff\">\n    <mj-section background-color=\"#ffffff\">\n      <mj-column>\n        <mj-raw>\n${clean}\n        </mj-raw>\n      </mj-column>\n    </mj-section>\n  </mj-body>\n</mjml>`;
+      }
+
+      return clean;
+    }, []);
+
+    /** Load template data into current node */
+    const handleLoadTemplate = useCallback((template: {
+      name: string;
+      subject: string;
+      htmlContent: string;
+      textContent: string;
+      variables: string[];
+      category: string;
+    }) => {
+      // Transform variables from string array to variable objects
+      const variableObjects = template.variables.map(varName => ({
+        name: varName,
+        type: "text" as const,
+        required: false,
+        defaultValue: "",
+        description: "",
+      }));
+
+      // Create a cleaned MJML for the editor view
+      // [Explanation], basically feed GrapesJS body-only MJML without handlebars noise
+      const cleanMjmlForEditor = createCleanMjmlForEditor(template.htmlContent, template.variables);
+
+      // Create editor data structure for GrapesJS compatibility
+      // [Explanation], basically structure the HTML content for the editor and output system
+      const editorDataStructure = {
+        grapesHtml: cleanMjmlForEditor,
+        grapesCss: "", // Default empty CSS, can be enhanced later
+        templateData: {
+          name: template.name,
+          subject: template.subject,
+          category: template.category,
+          variables: template.variables,
+        },
+        loadedFrom: "starter-template",
+        loadedAt: Date.now(),
+      };
+
+      // Create template output for handle system
+      const templateOutputData = {
+        name: template.name,
+        subject: template.subject,
+        htmlContent: template.htmlContent,
+        textContent: template.textContent,
+        variables: variableObjects,
+        category: template.category,
+        compiledAt: Date.now(),
+        source: "starter-template",
+      };
+
+      // Provide sensible preview defaults so compiled view looks nice immediately
+      const defaultPreviewData = (template.variables || []).reduce((acc, key) => {
+        const FALLBACKS: Record<string, string> = {
+          name: "John Doe",
+          magicLinkUrl: "https://example.com/verify?token=abc123",
+          type: "verification",
+          requestFromIp: "192.168.1.1",
+          requestFromLocation: "San Francisco, CA",
+          loginCode: "A1B2C3",
+          validationCode: "123456",
+          serviceName: "Your Platform",
+          dashboardUrl: "https://example.com/dashboard",
+          docsUrl: "https://example.com/docs",
+          supportUrl: "https://example.com/support",
+          username: "johndoe",
+          invitedByUsername: "Jane Smith",
+          invitedByEmail: "jane@example.com",
+          teamName: "Automation Team",
+          inviteLink: "https://example.com/invite?token=xyz789",
+          inviteFromIp: "192.168.1.1",
+          inviteFromLocation: "New York, NY",
+        };
+        acc[key] = FALLBACKS[key] ?? `[${key}]`;
+        return acc;
+      }, {} as Record<string, string>);
+
+      updateNodeData({
+        templateName: template.name,
+        subject: template.subject,
+        htmlContent: template.htmlContent,
+        textContent: template.textContent,
+        variables: variableObjects,
+        category: template.category,
+        editorData: editorDataStructure,
+        previewData: defaultPreviewData,
+        templateOutput: templateOutputData,
+        isActive: true,
+        lastSaved: Date.now(),
+        // Trigger output generation by updating template-output field
+        ["template-output"]: templateOutputData,
+      });
+
+      toast.success(`Template "${template.name}" loaded successfully`);
+    }, [updateNodeData]);
 
     /** Save template */
     const handleSaveTemplate = useCallback(async () => {
@@ -747,225 +941,27 @@ const EmailTemplateNode = memo(
         <LabelNode nodeId={id} label="Email Template" />
 
         {isExpanded ? (
-          <div
-            className={`${CONTENT.expanded} ${isEnabled ? "" : CONTENT.disabled}`}
-          >
-            {/* Header */}
-            <div className={CONTENT.header}>
-              <span className="font-medium text-sm">Email Template</span>
-            </div>
+          <EmailTemplateExpanded
+            nodeId={id}
+            nodeData={nodeData as EmailTemplateData}
+            isEnabled={isEnabled as boolean}
+            canSave={Boolean(isEnabled && templateName?.trim() && !isSaving)}
+            onTemplateNameChange={handleTemplateNameChange}
+            onCategoryChange={handleCategoryChange}
+            onSubjectChange={handleSubjectChange}
+            onDescriptionChange={handleDescriptionChange}
 
-            {/* Body */}
-            <div className={CONTENT.body}>
-              {/* Template Info */}
-              <div className="space-y-2">
-                <div>
-                  <label
-                    htmlFor={`template-name-${id}`}
-                    className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1"
-                  >
-                    Template Name
-                  </label>
-                  <input
-                    id={`template-name-${id}`}
-                    type="text"
-                    value={templateName || ""}
-                    onChange={(e) =>
-                      updateNodeData({ templateName: e.target.value })
-                    }
-                    placeholder="Enter template name"
-                    className="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                    disabled={!isEnabled}
-                  />
-                </div>
-
-                <div>
-                  <label
-                    htmlFor={`template-category-${id}`}
-                    className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1"
-                  >
-                    Category
-                  </label>
-                  <select
-                    id={`template-category-${id}`}
-                    value={category || "general"}
-                    onChange={(e) =>
-                      updateNodeData({ category: e.target.value })
-                    }
-                    className="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                    disabled={!isEnabled}
-                  >
-                    {TEMPLATE_CATEGORIES.map((cat) => (
-                      <option key={cat.value} value={cat.value}>
-                        {cat.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label
-                    htmlFor={`template-subject-${id}`}
-                    className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1"
-                  >
-                    Subject
-                  </label>
-                  <input
-                    id={`template-subject-${id}`}
-                    type="text"
-                    value={subject || ""}
-                    onChange={(e) =>
-                      updateNodeData({ subject: e.target.value })
-                    }
-                    placeholder="Email subject with {{variables}}"
-                    className="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                    disabled={!isEnabled}
-                  />
-                </div>
-              </div>
-
-            {/* Designer – Easy Email Editor */}
-            <div className="space-y-2">
-              <div>
-                <div className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Designer – GrapesJS (MJML)
-                </div>
-                <div className="rounded border border-gray-200 dark:border-gray-700 p-3 bg-gray-50 dark:bg-gray-800">
-                  <div className="text-center">
-                    <button
-                      onClick={() => updateNodeData({ showEditorModal: true })}
-                      className="px-4 py-2 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 flex items-center gap-2 mx-auto"
-                      disabled={!isEnabled}
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                      </svg>
-                      {editorData && Object.keys(editorData).length > 0 ? "Edit Email Design" : "Create Email Design"}
-                    </button>
-                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                      {editorData && Object.keys(editorData).length > 0 
-                        ? "Designer has content - click to edit" 
-                        : "No design content yet - click to create"}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-              {/* Preview */}
-              {showPreview && templateName && templateName.trim() && (
-                <div className="p-2 bg-gray-50 dark:bg-gray-800 rounded border">
-                  <div className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Preview
-                  </div>
-                  <div className="text-xs text-gray-600 dark:text-gray-400">
-                    <div>
-                      <strong>Subject:</strong> {compileTemplate().subject}
-                    </div>
-                    <div className="mt-1">
-                      <strong>Content:</strong>
-                    </div>
-                    <div className="mt-1 p-1 bg-white dark:bg-gray-700 rounded text-xs max-h-20 overflow-y-auto">
-                      {compileTemplate().html ||
-                        compileTemplate().text ||
-                        "No content"}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Actions */}
-              <div className="flex flex-col gap-2 pt-2 border-t border-gray-200 dark:border-gray-700">
-                {/* Load saved template into designer */}
-                <div className="flex gap-2 items-center">
-                  <select
-                    value={(nodeData as any).selectedTemplateId || ""}
-                    onChange={(e) => updateNodeData({ selectedTemplateId: e.target.value })}
-                    className="min-w-0 flex-1 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                    disabled={!isEnabled || !Array.isArray(emailTemplates)}
-                  >
-                    <option value="">Select saved template…</option>
-                    {(emailTemplates || []).map((t: any) => (
-                      <option key={String(t.id)} value={String(t.id)}>
-                        {t.name}
-                      </option>
-                    ))}
-                  </select>
-                  <button
-                    onClick={() => {
-                      const selectedId = (nodeData as any).selectedTemplateId;
-                      if (!selectedId) return;
-                      const t = (emailTemplates || []).find(
-                        (x: any) => String(x.id) === String(selectedId)
-                      );
-                      if (!t) return;
-                      try {
-                        const parsed = JSON.parse(String(t.content_template || "{}"));
-                        updateNodeData({ editorData: parsed, isActive: true });
-                        toast.success("Template loaded into designer");
-                      } catch {
-                        toast.error("Saved template is not in JSON format");
-                      }
-                    }}
-                    className="px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
-                    disabled={!isEnabled || !((nodeData as any).selectedTemplateId || "")}
-                  >
-                    Load
-                  </button>
-                </div>
-                <button
-                  onClick={handleSaveTemplate}
-                  className="flex-1 px-2 py-1 text-xs bg-green-500 text-white rounded hover:bg-green-600 disabled:opacity-50"
-                  disabled={!isEnabled || isSaving || !templateName || !templateName.trim()}
-                >
-                  {isSaving ? "Saving..." : "Save Template"}
-                </button>
-
-                <button
-                  onClick={() => updateNodeData({ showPreview: !showPreview })}
-                  className="px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
-                  disabled={!isEnabled}
-                >
-                  {showPreview ? "Hide Preview" : "Show Preview"}
-                </button>
-              </div>
-
-              {/* Status */}
-              {lastError && (
-                <div className="text-xs text-red-500 dark:text-red-400 p-1 bg-red-50 dark:bg-red-900/20 rounded">
-                  {lastError}
-                </div>
-              )}
-
-              {isActive && (
-                <div className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1">
-                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                  Template active
-                </div>
-              )}
-            </div>
-          </div>
+            onOpenDesigner={handleOpenDesigner}
+            onSaveTemplate={handleSaveTemplate}
+            onLoadTemplate={handleLoadTemplate}
+          />
         ) : (
-          <div
-            className={`${CONTENT.collapsed} ${isEnabled ? "" : CONTENT.disabled}`}
-          >
-            <div className="flex flex-col items-center gap-1">
-              <div className="text-xs font-medium text-gray-600 dark:text-gray-300">
-                Template
-              </div>
-              <div className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[100px]">
-                {templateName?.trim() || "Untitled"}
-              </div>
-              <div className="flex items-center gap-1">
-                {isActive && (
-                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                )}
-                {editorData && Object.keys(editorData).length > 0 && (
-                  <div className="w-2 h-2 bg-blue-500 rounded-full" title="Has design content" />
-                )}
-              </div>
-            </div>
-          </div>
+          <EmailTemplateCollapsed
+            nodeData={nodeData as EmailTemplateData}
+            categoryStyles={categoryStyles}
+            onToggleExpand={toggleExpand}
+            onOpenDesigner={handleOpenDesigner}
+          />
         )}
 
         <ExpandCollapseButton showUI={isExpanded} onToggle={toggleExpand} />
@@ -975,7 +971,10 @@ const EmailTemplateNode = memo(
           <EmailEditorModal
             isOpen={showEditorModal}
             onClose={() => updateNodeData({ showEditorModal: false })}
-            editorData={editorData as Record<string, unknown>}
+            editorData={{
+              ...(editorData as Record<string, unknown>),
+              nodeData: { htmlContent, textContent, subject, templateName } // Pass additional node data
+            }}
             onSave={(data) => {
               const design = (data as any)?.design ?? (data as any) ?? {};
               const html = String((data as any)?.html ?? "");
@@ -1047,8 +1046,15 @@ type EmailEditorModalProps = {
 function EmailEditorModal({ isOpen, onClose, editorData, onSave }: EmailEditorModalProps) {
   const [isClient, setIsClient] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [isEntering, setIsEntering] = useState(false);
+  const [isLoaderOpen, setIsLoaderOpen] = useState(false);
+  const [templateQuery, setTemplateQuery] = useState("");
+  const [templateCategory, setTemplateCategory] = useState<string>("all");
   const editorRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const destroyTimerRef = useRef<number | null>(null);
+  const modalRootRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { setIsClient(true); }, []);
 
@@ -1080,6 +1086,9 @@ function EmailEditorModal({ isOpen, onClose, editorData, onSave }: EmailEditorMo
     // Clean up any existing editor before creating new one
     if (editorRef.current?.ed) {
       console.log("🧹 Cleaning up existing editor");
+      try {
+        (document.activeElement as HTMLElement | null)?.blur?.();
+      } catch {}
       try {
         editorRef.current.ed.destroy();
       } catch (e) {
@@ -1117,97 +1126,46 @@ function EmailEditorModal({ isOpen, onClose, editorData, onSave }: EmailEditorMo
         const { default: grapesjs } = await import("grapesjs");
         console.log("✅ GrapesJS module loaded:", typeof grapesjs);
 
-        // Final validation
-        if (!containerRef.current || !containerRef.current.isConnected) {
-          console.error("❌ Container not properly connected to document");
-          return;
-        }
-
-        // Validate required child elements exist
-        const editorMain = containerRef.current.querySelector('.editor-main');
-        const blockCategories = containerRef.current.querySelector('.gjs-block-categories');
-        const panelRight = containerRef.current.querySelector('.panel__right');
-        const panelSwitcher = containerRef.current.querySelector('.panel__switcher');
-
-        if (!editorMain || !blockCategories || !panelRight || !panelSwitcher) {
-          console.error("❌ Required child elements not found:", {
-            editorMain: !!editorMain,
-            blockCategories: !!blockCategories,
-            panelRight: !!panelRight,
-            panelSwitcher: !!panelSwitcher
-          });
-          return;
-        }
+    // Final validation
+    if (!containerRef.current || !containerRef.current.isConnected) {
+      console.error("❌ Container not properly connected to document");
+      return;
+    }
 
         console.log("🎯 Initializing GrapesJS with container:", {
           element: containerRef.current,
           isConnected: containerRef.current.isConnected,
           ownerDocument: !!containerRef.current.ownerDocument,
-          offsetParent: containerRef.current.offsetParent,
-          childElements: {
-            editorMain: !!editorMain,
-            blockCategories: !!blockCategories,
-            panelRight: !!panelRight,
-            panelSwitcher: !!panelSwitcher
-          }
+          offsetParent: containerRef.current.offsetParent
         });
-        
-        const ed = grapesjs.init({
-          container: containerRef.current!.querySelector('.editor-main'),
-          height: "100%",
-          width: "100%",
-          storageManager: false,
-          fromElement: false,
-          // Configure block manager to use our left panel
-          blockManager: {
-            appendTo: containerRef.current!.querySelector('.gjs-block-categories'),
-          },
-          // Configure panels to use our structure
-          panels: {
-            defaults: [
-              {
-                id: 'layers',
-                el: containerRef.current!.querySelector('.panel__right'),
-                resizable: {
-                  maxDim: 350,
-                  minDim: 200,
-                  tc: 0,
-                  cl: 1,
-                  cr: 0,
-                  bc: 0,
-                  keyWidth: 'flex-basis',
-                },
-              },
-              {
-                id: 'panel-switcher',
-                el: containerRef.current!.querySelector('.panel__switcher'),
-                buttons: [
-                  {
-                    id: 'show-layers',
-                    active: true,
-                    label: 'Layers',
-                    command: 'show-layers',
-                    togglable: false,
-                  },
-                  {
-                    id: 'show-style',
-                    active: true,
-                    label: 'Styles',
-                    command: 'show-styles',
-                    togglable: false,
-                  },
-                ],
-              },
-            ],
-          },
-          // Enhanced canvas configuration
-          canvas: {
-            styles: [
-              'https://fonts.googleapis.com/css?family=Roboto:300,400,500,700'
-            ],
-            scripts: [],
-          },
-        });
+
+    // Load MJML plugin per docs
+    const { default: grapesjsMjml } = await import("grapesjs-mjml");
+        // Compute offset so Pickr appended to modal root aligns to the input
+        const editorRect = (containerRef.current as HTMLElement).getBoundingClientRect();
+        const pickerOffset = {
+          top: Math.round(26 - editorRect.top),
+          left: Math.round(-editorRect.left),
+        };
+
+    const ed = grapesjs.init({
+      container: '#gjs-email-editor',
+      height: "calc(100vh - 48px)",
+      width: "100%",
+      storageManager: false,
+      fromElement: false,
+      plugins: [grapesjsMjml],
+      pluginsOpts: {
+        [grapesjsMjml as unknown as string]: {}
+      },
+      // [Explanation], basically anchor Pickr to its parent control; canvas stacking is handled separately
+      colorPicker: {
+        appendTo: 'parent',
+        offset: { top: 26, left: -166 },
+        zIndex: 9999,
+    
+      }
+    });
 
         console.log("✅ GrapesJS editor created:", ed);
         console.log("📊 Editor details:", {
@@ -1216,76 +1174,76 @@ function EmailEditorModal({ isOpen, onClose, editorData, onSave }: EmailEditorMo
           canvas: ed.Canvas?.getElement(),
         });
 
-        // Add basic HTML blocks
-        ed.BlockManager.add("text", {
-          label: "Text",
-          category: "Basic",
-          content: '<div data-gjs-type="text">Insert your text here</div>',
-        });
-
-        ed.BlockManager.add("image", {
-          label: "Image", 
-          category: "Basic",
-          content: { type: "image" },
-        });
-
-        ed.BlockManager.add("button", {
-          label: "Button",
-          category: "Basic", 
-          content: '<a href="#" style="display:inline-block;background:#007cba;color:#fff;padding:10px 20px;text-decoration:none;border-radius:3px;">Button</a>',
-        });
-
-        ed.BlockManager.add("section", {
-          label: "Section",
-          category: "Layout",
-          content: '<section style="padding:20px;"><div>Section content</div></section>',
-        });
-
-        console.log("✅ Blocks added");
-
-        // Set default content
-        const defaultContent = `
-          <div style="padding: 20px; font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h1 style="color: #333; margin-bottom: 20px;">Welcome to Email Designer</h1>
-            <p style="color: #666; line-height: 1.6;">Drag blocks from the left panel to start building your email template.</p>
-            <a href="#" style="display: inline-block; background: #007cba; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 4px; margin-top: 20px;">Get Started</a>
-          </div>
+        // Load existing content if available, otherwise use default MJML
+        let contentToLoad = `
+          <mjml>
+            <mj-body background-color="#f6f6f6">
+              <mj-section background-color="#ffffff">
+                <mj-column>
+                  <mj-text align="center" font-size="22px" font-weight="700">Welcome to Email Designer</mj-text>
+                  <mj-text align="center" color="#666">Drag blocks from the left panel to start building your email template.</mj-text>
+                  <mj-button background-color="#007cba" color="#ffffff" href="#">Get Started</mj-button>
+                </mj-column>
+              </mj-section>
+            </mj-body>
+          </mjml>
         `;
 
-        console.log("📝 Setting default content...");
-        ed.setComponents(defaultContent);
+        // Check if we have existing content from loaded template or previous edits
+        if (editorData && typeof editorData === 'object') {
+          const data = editorData as any;
+          // If we have grapesHtml from a loaded starter template
+          if (data.grapesHtml && typeof data.grapesHtml === 'string') {
+            contentToLoad = data.grapesHtml;
+            console.log("📝 Loading content from grapesHtml:", data.grapesHtml.substring(0, 100) + "...");
+          }
+          // If we have existing MJML content in the editor data
+          else if (data.mjml && typeof data.mjml === 'string') {
+            contentToLoad = data.mjml;
+            console.log("📝 Loading content from mjml:", data.mjml.substring(0, 100) + "...");
+          }
+        }
+        // Fallback to editorData.nodeData htmlContent if it looks like MJML
+        else if (editorData && (editorData as any).nodeData && (editorData as any).nodeData.htmlContent && typeof (editorData as any).nodeData.htmlContent === 'string' && (editorData as any).nodeData.htmlContent.includes('<mjml>')) {
+          contentToLoad = (editorData as any).nodeData.htmlContent;
+          console.log("📝 Loading content from editorData.nodeData.htmlContent:", (editorData as any).nodeData.htmlContent.substring(0, 100) + "...");
+        }
+
+        console.log("📝 Setting content in GrapesJS...");
+        ed.setComponents(contentToLoad);
+        // Raise canvas container below floating panels to avoid overlap issues
+        try {
+          const canvasEl = ed.Canvas.getElement();
+          const canvasFrame = ed.Canvas.getFrameEl?.();
+          if (canvasEl) (canvasEl as HTMLElement).style.zIndex = '1';
+          if (canvasFrame) (canvasFrame as HTMLElement).style.zIndex = '1';
+        } catch {}
         console.log("✅ Content set");
 
         // Ensure editor is properly rendered
         ed.refresh();
+        try {
+          const wrapper = ed.getWrapper?.();
+          if (wrapper && ed.select) ed.select(wrapper);
+        } catch {}
         console.log("🔄 Editor refreshed");
 
-        // Initialize panels and commands
-        setTimeout(() => {
-          try {
-            // Open blocks panel
-            const commands = ed.Commands;
-            if (commands && commands.has('sw-visibility')) {
-              commands.run('sw-visibility');
-              console.log("✅ Blocks panel opened");
-            }
-            
-            // Show layers panel
-            if (commands && commands.has('show-layers')) {
-              commands.run('show-layers');
-              console.log("✅ Layers panel opened");
-            }
-            
-            // Show styles panel  
-            if (commands && commands.has('show-styles')) {
-              commands.run('show-styles');
-              console.log("✅ Styles panel opened");
-            }
-            
-          } catch (e) {
-            console.log("ℹ️ Panel initialization error:", e);
+        // Ensure Pickr sits above all GrapesJS elements including canvas frame
+        try {
+          const styleTag = document.createElement('style');
+          styleTag.setAttribute('data-gjs-pickr-zindex', 'true');
+          styleTag.textContent = `
+            .gjs-editor .pcr-app { z-index: 2147483650 !important; position: fixed !important; }
+            .gjs-cv-canvas { position: relative !important; z-index: 1 !important; }
+            .gjs-cv-canvas iframe { z-index: 1 !important; }
+            .gjs-frame { z-index: 1 !important; }
+          `;
+          // Insert once
+          if (!document.querySelector('style[data-gjs-pickr-zindex]')) {
+            document.head.appendChild(styleTag);
           }
-        }, 200);
+        } catch {}
+
 
         // Final validation that editor is visible
         setTimeout(() => {
@@ -1322,17 +1280,61 @@ function EmailEditorModal({ isOpen, onClose, editorData, onSave }: EmailEditorMo
     // Cleanup function when modal closes
     return () => {
       clearTimeout(timeoutId);
+      if (destroyTimerRef.current) {
+        window.clearTimeout(destroyTimerRef.current);
+        destroyTimerRef.current = null;
+      }
       if (editorRef.current?.ed) {
         console.log("🧹 Cleaning up GrapesJS editor on unmount");
-        try {
-          editorRef.current.ed.destroy();
-        } catch (e) {
-          console.warn("⚠️ Error destroying editor on cleanup:", e);
-        }
-        editorRef.current = null;
+        try { (document.activeElement as HTMLElement | null)?.blur?.(); } catch {}
+        const ed = editorRef.current.ed;
+        destroyTimerRef.current = window.setTimeout(() => {
+          try { ed.destroy(); } catch (e) { console.warn("⚠️ Error destroying editor on cleanup:", e); }
+          editorRef.current = null;
+          destroyTimerRef.current = null;
+        }, 120);
       }
+      // No runtime style cleanup required
     };
   }, [isOpen, isClient, editorData]);
+
+  // [Explanation], basically open/close the loader panel
+  const handleOpenLoader = useCallback(() => setIsLoaderOpen(true), []);
+  const handleCloseLoader = useCallback(() => {
+    setIsLoaderOpen(false);
+    setTemplateQuery("");
+    setTemplateCategory("all");
+  }, []);
+
+  const handleUseTemplate = useCallback((tpl: StarterTemplate) => {
+    const bundle = editorRef.current as { ed: any } | null;
+    if (!bundle?.ed) return;
+    const { ed } = bundle;
+    ed.setComponents(tpl.htmlContent || "");
+    ed.refresh?.();
+    try {
+      const wrapper = ed.getWrapper?.();
+      if (wrapper && ed.select) ed.select(wrapper);
+    } catch {}
+    setHasUnsavedChanges(true);
+    setIsLoaderOpen(false);
+  }, []);
+
+  const categories = useMemo(() => {
+    const set = new Set<string>();
+    for (const t of STARTER_TEMPLATES) set.add(t.category);
+    return ["all", ...Array.from(set)];
+  }, []);
+
+  const filteredTemplates = useMemo(() => {
+    const q = templateQuery.trim().toLowerCase();
+    return STARTER_TEMPLATES.filter((t) => {
+      const inCat = templateCategory === "all" || t.category === templateCategory;
+      if (!q) return inCat;
+      const hay = `${t.name} ${t.subject} ${t.description} ${t.tags.join(" ")}`.toLowerCase();
+      return inCat && hay.includes(q);
+    });
+  }, [templateQuery, templateCategory]);
 
   const handleSave = useCallback(() => {
     console.log("💾 Save triggered");
@@ -1371,61 +1373,105 @@ function EmailEditorModal({ isOpen, onClose, editorData, onSave }: EmailEditorMo
     onSave(saveData);
   }, [onSave]);
 
+  // Trigger enter animation (keep hook order stable regardless of open state)
+  useEffect(() => {
+    if (!isClient) return;
+    setIsEntering(false);
+    if (!isOpen) return;
+    const t = setTimeout(() => setIsEntering(true), 10);
+    return () => clearTimeout(t);
+  }, [isOpen, isClient]);
+
   if (!isOpen || !isClient) return null;
 
-  const modalContent = (
-    <div 
-      className="fixed inset-0 z-[2147483647] bg-black/60"
+    const modalContent = (
+      <div
+      className="fixed inset-0 z-[2147483647] bg-black/60 flex items-center justify-center p-6"
       onClick={onClose}
+        ref={modalRootRef}
     >
-      <div 
-        className="absolute inset-0 w-screen h-screen bg-white dark:bg-gray-800 flex flex-col"
-        onClick={(e) => e.stopPropagation()}
+        <div
+        className={`relative flex h-[min(90vh,850px)] w-[min(98vw,1600px)] flex-col bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl transform-gpu transition-all duration-200 ease-out ${isEntering ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-1 scale-95'}`}
+          onClick={(e) => e.stopPropagation()}
+          ref={panelRef}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-3 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex h-12 items-center justify-between px-4 border-b border-gray-200 dark:border-gray-700">
           <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">
             Email Designer {hasUnsavedChanges && <span className="text-orange-500 text-sm">(Unsaved Changes)</span>}
           </h2>
           <div className="flex items-center gap-2">
+            <button onClick={handleOpenLoader} className="px-3 py-1.5 text-sm bg-emerald-600 text-white rounded hover:bg-emerald-700">Load</button>
             <button onClick={handleSave} className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700">Save</button>
             <button onClick={onClose} className="px-3 py-1.5 text-sm bg-gray-600 text-white rounded hover:bg-gray-700">Close</button>
-          </div>
+          </div>  
         </div>
 
         {/* Editor Content */}
-        <div className="flex-1 overflow-hidden relative">
-          <div 
+        <div className="flex-1 overflow-hidden relative m-2">
+          <div
             ref={containerRef}
-            id="grapesjs-editor-container"
-            className="w-full h-full flex"
-            style={{ 
-              height: 'calc(100vh - 48px)', 
+            id="gjs-email-editor"
+            style={{
+              height: 'calc(100% - 0px)',
               width: '100%',
               minHeight: '400px',
-              position: 'relative'
-            }} 
-          >
-            {/* Left Panel for Blocks */}
-            <div className="panel__left" style={{ width: '250px', borderRight: '1px solid #ddd' }}>
-              <div className="panel__switcher" style={{ padding: '10px', borderBottom: '1px solid #ddd' }}>
-                {/* Panel switcher buttons will be added by GrapesJS */}
+              position: 'relative',
+              display: 'block',
+              overflow: 'hidden'
+            }}
+          />
+
+          {isLoaderOpen && (
+            <div className="absolute inset-0 z-50 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl p-4 flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">Starter Templates</span>
+                  <input
+                    value={templateQuery}
+                    onChange={(e) => setTemplateQuery(e.target.value)}
+                    placeholder="Search templates..."
+                    className="h-9 w-64 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  />
+                  <select
+                    value={templateCategory}
+                    onChange={(e) => setTemplateCategory(e.target.value)}
+                    className="h-9 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-2 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  >
+                    {categories.map((c) => (
+                      <option key={c} value={c}>{c === 'all' ? 'All categories' : c}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button onClick={handleCloseLoader} className="px-3 py-1.5 text-sm bg-gray-600 text-white rounded hover:bg-gray-700">Close</button>
+                </div>
               </div>
-              <div className="gjs-block-categories" style={{ height: 'calc(100% - 50px)', overflow: 'auto' }}>
-                {/* Blocks will be added here by GrapesJS */}
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 overflow-auto">
+                {filteredTemplates.map((tpl) => (
+                  <div key={tpl.id} className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-3 flex flex-col">
+                    <div className="mb-2">
+                      <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">{tpl.name}</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">{tpl.category}</div>
+                    </div>
+                    <div className="text-xs text-gray-600 dark:text-gray-300 line-clamp-3 mb-3">{tpl.description}</div>
+                    <div className="mt-auto flex items-center justify-between">
+                      <div className="flex flex-wrap gap-1">
+                        {tpl.tags.slice(0, 3).map((tag) => (
+                          <span key={tag} className="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200">{tag}</span>
+                        ))}
+                      </div>
+                      <button onClick={() => handleUseTemplate(tpl)} className="px-2 py-1 text-xs bg-emerald-600 text-white rounded hover:bg-emerald-700">Use</button>
+                    </div>
+                  </div>
+                ))}
+                {filteredTemplates.length === 0 && (
+                  <div className="col-span-full text-center text-sm text-gray-500 dark:text-gray-400 py-8">No templates found.</div>
+                )}
               </div>
             </div>
-            
-            {/* Main Editor Area */}
-            <div className="editor-main" style={{ flex: '1', position: 'relative' }}>
-              {/* Canvas will be added here by GrapesJS */}
-            </div>
-            
-            {/* Right Panel for Layers/Styles */}
-            <div className="panel__right" style={{ width: '250px', borderLeft: '1px solid #ddd' }}>
-              {/* Layers and styles panels will be added here by GrapesJS */}
-            </div>
-          </div>
+          )}
         </div>
       </div>
     </div>

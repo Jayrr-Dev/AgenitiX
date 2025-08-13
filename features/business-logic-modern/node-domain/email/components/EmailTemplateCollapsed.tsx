@@ -1,21 +1,21 @@
 "use client";
 /**
- * Route: features/business-logic-modern/node-domain/email/components/EmailMessageCollapsed.tsx
- * EMAIL MESSAGE – Collapsed view UI
+ * Route: features/business-logic-modern/node-domain/email/components/EmailTemplateCollapsed.tsx
+ * EMAIL TEMPLATE – Collapsed view UI
  *
- * • Compact status with message count and send status
+ * • Compact status with template name and active state
  * • Status dot with glow and processing states
- * • Center button triggers compose action (Enter/Space supported)
+ * • Center button triggers template designer (Enter/Space supported)
+ * • Matches EmailMessageCollapsed design style
  *
- * Keywords: email-message, collapsed, status-dot, compact
+ * Keywords: email-template, collapsed, status-dot, compact, designer
  */
 
 import RenderStatusDot from "@/components/RenderStatusDot";
-import { memo, useMemo, useState, useCallback } from "react";
-import dynamic from "next/dynamic";
-import { MdOutlineMailOutline } from "react-icons/md";
+import { memo, useMemo, useCallback } from "react";
+import { MdOutlineDesignServices } from "react-icons/md";
 import SkueButton from "@/components/ui/skue-button";
-import type { EmailMessageData } from "../emailMessage.node";
+import type { EmailTemplateData } from "../emailTemplate.node";
 
 const COLLAPSED_STYLES = {
   container: "flex items-center justify-center w-full h-full",
@@ -28,57 +28,59 @@ const COLLAPSED_STYLES = {
   statusIndicator: "flex items-center justify-center gap-1",
 } as const;
 
-interface EmailMessageCollapsedProps {
-  nodeData: EmailMessageData;
+interface EmailTemplateCollapsedProps {
+  nodeData: EmailTemplateData;
   categoryStyles: { primary: string };
   onToggleExpand?: () => void;
-  onComposeMessage?: () => void;
+  onOpenDesigner?: () => void;
 }
 
-export const EmailMessageCollapsed = memo(
+export const EmailTemplateCollapsed = memo(
   ({
     nodeData,
     categoryStyles,
     onToggleExpand,
-    onComposeMessage,
-  }: EmailMessageCollapsedProps) => {
-    const [showDesigner, setShowDesigner] = useState(false);
-    const [designerHtml, setDesignerHtml] = useState<string | undefined>();
+    onOpenDesigner,
+  }: EmailTemplateCollapsedProps) => {
+    
+    const { templateName, isActive, isSaving, editorData, category } = nodeData;
 
-    const EmailDesignerModal = useMemo(
-      () => dynamic(() => import("../components/EmailDesignerModal"), { ssr: false }),
-      []
-    );
-    const { sentCount, connectionStatus, subject, messageContent } = nodeData;
+    // [Explanation], basically modal is owned by the node; this button just triggers it
 
     const statusProps = useMemo(() => {
-      const isSent = connectionStatus === "sent";
-      const isSending =
-        connectionStatus === "composing" || connectionStatus === "sending";
-      const isError = connectionStatus === "error";
+      const hasContent = Boolean(templateName?.trim() || (editorData && Object.keys(editorData).length > 0));
+      const isProcessing = isSaving;
+      const isError = Boolean(nodeData.lastError);
 
       return {
-        eventActive: isSent,
-        isProcessing: isSending,
+        eventActive: isActive && hasContent,
+        isProcessing: isProcessing,
         hasError: isError,
         enableGlow: true,
         size: "sm" as const,
         titleText: isError
           ? "error"
-          : isSending
+          : isProcessing
             ? "processing"
-            : isSent
-              ? "sent"
+            : isActive && hasContent
+              ? "active"
               : "neutral",
       };
-    }, [connectionStatus]);
+    }, [isActive, isSaving, nodeData.lastError, templateName, editorData]);
 
     const displayText = useMemo(() => {
-      if (subject || messageContent) {
-        return `${sentCount} sent`;
+      if (templateName?.trim()) {
+        return templateName.trim();
       }
-      return "No message";
-    }, [subject, messageContent, sentCount]);
+      if (editorData && Object.keys(editorData).length > 0) {
+        return "Template";
+      }
+      return "No template";
+    }, [templateName, editorData]);
+
+    const handleOpenDesigner = useCallback(() => {
+      onOpenDesigner?.();
+    }, [onOpenDesigner]);
 
     return (
       <div className={COLLAPSED_STYLES.container}>
@@ -86,18 +88,18 @@ export const EmailMessageCollapsed = memo(
           {/* Icon */}
           <div className="flex justify-center">
             <SkueButton
-              ariaLabel="Compose"
-              title="Compose"
+              ariaLabel="Design Template"
+              title="Design Template"
               checked={false}
               onCheckedChange={(checked) => {
-                if (checked) setShowDesigner(true);
+                if (checked) handleOpenDesigner();
               }}
               size="sm"
               className="cursor-pointer translate-y-2"
               style={{ transform: "scale(1.1)", transformOrigin: "center" }}
               surfaceBgVar="--node-email-bg"
             >
-              <MdOutlineMailOutline />
+              <MdOutlineDesignServices />
             </SkueButton>
           </div>
 
@@ -113,24 +115,13 @@ export const EmailMessageCollapsed = memo(
             </div>
           </div>
         </div>
-        {showDesigner && (
-          <EmailDesignerModal
-            isOpen={showDesigner}
-            onClose={() => setShowDesigner(false)}
-            initialHtml={designerHtml}
-            onSave={(data) => {
-              setDesignerHtml(data.html);
-              setShowDesigner(false);
-              // [Explanation], basically trigger upstream compose/save flow
-              onComposeMessage?.();
-            }}
-          />
-        )}
+
+        
       </div>
     );
   }
 );
 
-EmailMessageCollapsed.displayName = "EmailMessageCollapsed";
+EmailTemplateCollapsed.displayName = "EmailTemplateCollapsed";
 
-export default EmailMessageCollapsed;
+export default EmailTemplateCollapsed;
