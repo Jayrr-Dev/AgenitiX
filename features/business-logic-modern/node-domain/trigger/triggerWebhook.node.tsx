@@ -251,6 +251,7 @@ function createDynamicSpec(data: TriggerWebhookData): NodeSpec {
             responseCode: 200,
             responseData: "firstJSON",
             allowedOrigins: "*",
+            autoTrigger: true, // Explicitly set auto-trigger to true by default
             isActive: false,
             requestCount: 0,
         }),
@@ -600,6 +601,16 @@ const TriggerWebhookNode = memo(
                 });
             }
         }, [webhookPath, isEnabled, updateNodeData]);
+
+        /* 🔄 Ensure auto-trigger default value is properly set for new nodes */
+        useEffect(() => {
+            // Only run once when the node is first created
+            if (autoTrigger === undefined || autoTrigger === null) {
+                updateNodeData({
+                    autoTrigger: true, // Set default value explicitly
+                });
+            }
+        }, []); // Empty dependency array - only run once on mount
 
         /* 🔄 Deactivate webhook when disabled */
         useEffect(() => {
