@@ -64,7 +64,7 @@ export const TimeTimeoutDataSchema = z
   .object({
     // Timeout Configuration
     timeoutAmount: z.number().min(1).max(3600).default(30), // 1s-1hour
-    timeoutUnit: z.enum(["s", "min"]).default("s"),
+    timeoutUnit: z.enum(["string", "min"]).default("string"),
     
     // Timeout State
     lastActivityTime: z.number().nullable().default(null),
@@ -181,18 +181,18 @@ const CONTENT = {
 
 // Type mapping for adaptive handles
 const TYPE_MAPPING = {
-  string: { code: "s", dataType: "String" },
-  number: { code: "n", dataType: "Number" },
-  boolean: { code: "b", dataType: "Boolean" },
-  object: { code: "j", dataType: "JSON" },
-  array: { code: "a", dataType: "Array" },
-  any: { code: "x", dataType: "Any" },
+  string: { code: "string", dataType: "string" },
+  number: { code: "number", dataType: "number" },
+  boolean: { code: "boolean", dataType: "boolean" },
+  object: { code: "json", dataType: "JSON" },
+  array: { code: "array", dataType: "array" },
+  any: { code: "any", dataType: "any" },
 } as const;
 
 // Convert timeout amount to milliseconds
 const convertToMs = (amount: number, unit: string): number => {
   switch (unit) {
-    case "s": return amount * 1000;
+    case "string": return amount * 1000;
     case "min": return amount * 60 * 1000;
     default: return amount * 1000;
   }
@@ -211,7 +211,7 @@ const detectInputType = (value: any): string => {
 
 // Format timeout for display
 const formatTimeout = (amount: number, unit: string): string => {
-  if (unit === "s") return `${amount}s`;
+  if (unit === "string") return `${amount}s`;
   if (unit === "min") return `${amount}min`;
   return `${amount}${unit}`;
 };
@@ -245,10 +245,10 @@ function createDynamicSpec(data: TimeTimeoutData): NodeSpec {
       // Input handle - accepts any type, monitors for activity
       {
         id: "input",
-        code: "x", // Any type
+        code: "any", // Any type
         position: "left",
         type: "target",
-        dataType: "Any",
+        dataType: "any",
       },
       // Passthrough output - same as input
       {
@@ -261,10 +261,10 @@ function createDynamicSpec(data: TimeTimeoutData): NodeSpec {
       // Timeout event output
       {
         id: "timeout",
-        code: "b",
+        code: "boolean",
         position: "bottom",
         type: "source",
-        dataType: "Boolean",
+        dataType: "boolean",
       },
     ],
     inspector: { key: "TimeTimeoutInspector" },
@@ -272,7 +272,7 @@ function createDynamicSpec(data: TimeTimeoutData): NodeSpec {
     runtime: { execute: "timeTimeout_execute_v1" },
     initialData: createSafeInitialData(TimeTimeoutDataSchema, {
       timeoutAmount: 30,
-      timeoutUnit: "s",
+      timeoutUnit: "string",
       lastActivityTime: null,
       timeoutTime: null,
       isTimedOut: false,
@@ -336,7 +336,7 @@ export const spec: NodeSpec = createDynamicSpec({
   expandedSize: "VE2",
   collapsedSize: "C2",
   timeoutAmount: 30,
-  timeoutUnit: "s",
+  timeoutUnit: "string",
   inputType: "any",
 } as TimeTimeoutData);
 // -----------------------------------------------------------------------------
@@ -714,7 +714,7 @@ const TimeTimeoutNode = memo(
                           })
                         }
                       >
-                        <option value="s">Seconds</option>
+                        <option value="string">Seconds</option>
                         <option value="min">Minutes</option>
                       </select>
                     </div>

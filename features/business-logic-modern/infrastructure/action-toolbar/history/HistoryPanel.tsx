@@ -288,7 +288,7 @@ const DeletionModal: React.FC<DeletionModalProps> = ({
               ? "You are about to permanently delete all history states. This will remove your entire undo/redo history and cannot be undone."
               : `You are about to permanently delete the history node "${nodeLabel}"${
                   childrenCount > 0
-                    ? ` and all ${childrenCount} dependent state${childrenCount === 1 ? "" : "s"}`
+                    ? ` and all ${childrenCount} dependent state${childrenCount === 1 ? "" : "string"}`
                     : ""
                 }.`}
           </p>
@@ -304,7 +304,7 @@ const DeletionModal: React.FC<DeletionModalProps> = ({
                 {childrenCount > 0 && (
                   <div>
                     • {childrenCount} dependent child state
-                    {childrenCount === 1 ? "" : "s"}
+                    {childrenCount === 1 ? "" : "string"}
                   </div>
                 )}
                 <div>

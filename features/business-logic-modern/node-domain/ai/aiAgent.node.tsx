@@ -433,17 +433,17 @@ function createDynamicSpec(data: AiAgentData): NodeSpec {
     handles: [
       {
         id: "text-input",
-        code: "s",
+        code: "string",
         position: "top",
         type: "target",
-        dataType: "String",
+        dataType: "string",
       },
       {
         id: "trigger",
-        code: "b",
+        code: "boolean",
         position: "left",
         type: "target",
-        dataType: "Boolean",
+        dataType: "boolean",
       },
       {
         id: "tools-input",
@@ -454,10 +454,10 @@ function createDynamicSpec(data: AiAgentData): NodeSpec {
       },
       {
         id: "output",
-        code: "s",
+        code: "string",
         position: "right",
         type: "source",
-        dataType: "String",
+        dataType: "string",
       },
     ],
     inspector: { key: "AiAgentInspector" },

@@ -250,18 +250,18 @@ function createDynamicSpec(data: EmailPreviewData): NodeSpec {
     handles: [
       {
         id: "emails-input",
-        code: "a",
+        code: "array",
         position: "left",
         type: "target",
-        dataType: "Array",
+        dataType: "array",
         tooltip: HANDLE_TOOLTIPS.EMAILS_IN,
       },
       {
         id: "output",
-        code: "s",
+        code: "string",
         position: "right",
         type: "source",
-        dataType: "String",
+        dataType: "string",
         tooltip: HANDLE_TOOLTIPS.OUTPUT_OUT,
       },
     ],

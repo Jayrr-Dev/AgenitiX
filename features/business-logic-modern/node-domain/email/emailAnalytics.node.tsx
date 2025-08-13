@@ -258,7 +258,7 @@ function createDynamicSpec(data: EmailAnalyticsData): NodeSpec {
         code: "c",
         position: "left",
         type: "target",
-        dataType: "Array",
+        dataType: "array",
         tooltip: HANDLE_TOOLTIPS.CAMPAIGN_IN,
       },
       {

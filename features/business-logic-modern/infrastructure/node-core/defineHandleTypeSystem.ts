@@ -12,7 +12,7 @@
 /**
  * Default fallback union list when a handle has no explicit type code
  */
-export const DEFAULT_TYPE_FALLBACK = ["x"] as const;
+export const DEFAULT_TYPE_FALLBACK = ["any"] as const;
 
 /**
  * Default handle type string when none is provided
@@ -39,18 +39,18 @@ export const ULTIMATE_TYPE_MAP: Record<
   { tokenKey: string; label: string }
 > = {
   s: { tokenKey: "string", label: "Text" },
-  n: { tokenKey: "number", label: "Number" },
+  n: { tokenKey: "number", label: "number" },
   b: { tokenKey: "boolean", label: "On|Off" },
   j: { tokenKey: "json", label: "JSON" },
   a: { tokenKey: "array", label: "List" },
-  x: { tokenKey: "any", label: "Any" },
+  x: { tokenKey: "any", label: "any" },
   V: { tokenKey: "vibe", label: "Vibe" },
   t: { tokenKey: "tools", label: "Tools" },
   // Full data type names for direct mapping
   JSON: { tokenKey: "json", label: "JSON" },
   String: { tokenKey: "string", label: "Text" },
   Boolean: { tokenKey: "boolean", label: "On|Off" },
-  Number: { tokenKey: "number", label: "Number" },
+  Number: { tokenKey: "number", label: "number" },
   Array: { tokenKey: "array", label: "List" },
   Object: { tokenKey: "object", label: "Object" },
   Tools: { tokenKey: "tools", label: "Tools" },
@@ -89,13 +89,13 @@ export const TYPE_DESCRIPTIONS: Record<string, string> = {
 /**
  * Check compatibility between two union-capable type codes
  * @param sourceType - e.g., "s|n"
- * @param targetType - e.g., "s"
+ * @param targetType - e.g., "string"
  */
 export function isTypeCompatible(
   sourceType: string,
   targetType: string
 ): boolean {
-  if (sourceType === "x" || targetType === "x") {
+  if (sourceType === "any" || targetType === "any") {
     return true;
   }
   const sourceTypes = parseUnionTypes(sourceType);

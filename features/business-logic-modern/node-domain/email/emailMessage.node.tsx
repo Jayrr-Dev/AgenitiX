@@ -190,7 +190,7 @@ function createDynamicSpec(data: EmailMessageData): NodeSpec {
    * [Explanation], basically 1–3 word hints shown before dynamic value/type
    */
   const HANDLE_TOOLTIPS = {
-    EMAIL_INPUT: "Email Data",
+    EMAIL_INPUT: "Account",
     TRIGGER_IN: "Trigger",
     JSON_OUT: "Message JSON",
     STATUS_OUT: "Send Status",
@@ -205,7 +205,7 @@ function createDynamicSpec(data: EmailMessageData): NodeSpec {
     handles: [
       {
         id: "email-input",
-        code: "j",
+        code: "account",
         position: "left",
         type: "target",
         dataType: "JSON",
@@ -213,15 +213,15 @@ function createDynamicSpec(data: EmailMessageData): NodeSpec {
       },
       {
         id: "trigger-input",
-        code: "b",
+        code: "boolean",
         position: "top",
         type: "target",
-        dataType: "Boolean",
+        dataType: "boolean",
         tooltip: HANDLE_TOOLTIPS.TRIGGER_IN,
       },
       {
         id: "json-output",
-        code: "j",
+        code: "json",
         position: "right",
         type: "source",
         dataType: "JSON",
@@ -229,10 +229,10 @@ function createDynamicSpec(data: EmailMessageData): NodeSpec {
       },
       {
         id: "status-output",
-        code: "b",
+        code: "boolean",
         position: "bottom",
         type: "source",
-        dataType: "Boolean",
+        dataType: "boolean",
         tooltip: HANDLE_TOOLTIPS.STATUS_OUT,
       },
     ],
@@ -652,7 +652,7 @@ const EmailMessageNode = memo(
           jsonOutput: JSON.stringify(messageObject, null, 2),
         });
 
-        showSuccess("Message composed and ready for sending");
+        showSuccess("Account Connected");
       } catch (error) {
         console.error("Message composition error:", error);
         updateNodeData({

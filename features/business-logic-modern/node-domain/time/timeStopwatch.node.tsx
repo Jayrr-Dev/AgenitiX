@@ -226,26 +226,26 @@ function createDynamicSpec(data: TimeStopwatchData): NodeSpec {
       // Control input - optional trigger for start/stop
       {
         id: "control",
-        code: "b",
+        code: "boolean",
         position: "left",
         type: "target",
-        dataType: "Boolean",
+        dataType: "boolean",
       },
       // Elapsed time output
       {
         id: "elapsed",
-        code: "n",
+        code: "number",
         position: "right",
         type: "source",
-        dataType: "Number",
+        dataType: "number",
       },
       // Running state output
       {
         id: "running",
-        code: "b",
+        code: "boolean",
         position: "bottom",
         type: "source",
-        dataType: "Boolean",
+        dataType: "boolean",
       },
     ],
     inspector: { key: "TimeStopwatchInspector" },

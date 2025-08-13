@@ -213,7 +213,7 @@ function createDynamicSpec(data: EmailReplierData): NodeSpec {
         code: "m",
         position: "top",
         type: "target",
-        dataType: "Array",
+        dataType: "array",
         tooltip: HANDLE_TOOLTIPS.MESSAGES_IN,
       },
       {
@@ -221,7 +221,7 @@ function createDynamicSpec(data: EmailReplierData): NodeSpec {
         code: "t",
         position: "left",
         type: "target",
-        dataType: "String",
+        dataType: "string",
         tooltip: HANDLE_TOOLTIPS.TEMPLATE_IN,
       },
       {
@@ -234,10 +234,10 @@ function createDynamicSpec(data: EmailReplierData): NodeSpec {
       },
       {
         id: "status-output",
-        code: "s",
+        code: "string",
         position: "bottom",
         type: "source",
-        dataType: "Boolean",
+        dataType: "boolean",
         tooltip: HANDLE_TOOLTIPS.STATUS_OUT,
       },
       {
@@ -245,7 +245,7 @@ function createDynamicSpec(data: EmailReplierData): NodeSpec {
         code: "o",
         position: "right",
         type: "source",
-        dataType: "String",
+        dataType: "string",
         tooltip: HANDLE_TOOLTIPS.OUTPUTS_OUT,
       },
     ],

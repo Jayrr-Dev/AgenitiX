@@ -114,17 +114,17 @@ function createDynamicSpec(data: ToArrayData): NodeSpec {
     handles: [
       {
         id: "any-input",
-        code: "x",
+        code: "any",
         position: "left",
         type: "target",
-        dataType: "Any",
+        dataType: "any",
       },
       {
         id: "array-output",
-        code: "a",
+        code: "array",
         position: "right",
         type: "source",
-        dataType: "Array",
+        dataType: "array",
       },
     ],
     inspector: { key: "ToArrayInspector" },

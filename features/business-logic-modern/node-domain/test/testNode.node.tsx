@@ -112,7 +112,7 @@ function createDynamicSpec(data: TestNodeData): NodeSpec {
     handles: [
       {
         id: "json-input",
-        code: "j",
+        code: "json",
         position: "top",
         type: "target",
         dataType: "JSON",
@@ -121,19 +121,19 @@ function createDynamicSpec(data: TestNodeData): NodeSpec {
       },
       {
         id: "output",
-        code: "s",
+        code: "string",
         position: "right",
         type: "source",
-        dataType: "String",
+        dataType: "string",
         tooltip:
           "This is a custom tooltip for the output handle. It will appear below the default tooltip.",
       },
       {
         id: "input",
-        code: "b",
+        code: "boolean",
         position: "left",
         type: "target",
-        dataType: "Boolean",
+        dataType: "boolean",
         tooltip:
           "This is a custom tooltip for the input handle. It will appear below the default tooltip.",
       },

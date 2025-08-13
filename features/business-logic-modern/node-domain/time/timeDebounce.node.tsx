@@ -64,7 +64,7 @@ export const TimeDebounceDataSchema = z
   .object({
     // Debounce Configuration
     debounceAmount: z.number().min(1).max(30000).default(500), // 1ms-30s
-    debounceUnit: z.enum(["ms", "s"]).default("ms"),
+    debounceUnit: z.enum(["ms", "string"]).default("ms"),
 
     // Debounce State
     lastInputTime: z.number().nullable().default(null),
@@ -171,19 +171,19 @@ const CONTENT = {
 
 // Type mapping for adaptive handles
 const TYPE_MAPPING = {
-  string: { code: "s", dataType: "String" },
-  number: { code: "n", dataType: "Number" },
-  boolean: { code: "b", dataType: "Boolean" },
-  object: { code: "j", dataType: "JSON" },
-  array: { code: "a", dataType: "Array" },
-  any: { code: "x", dataType: "Any" },
+  string: { code: "string", dataType: "string" },
+  number: { code: "number", dataType: "number" },
+  boolean: { code: "boolean", dataType: "boolean" },
+  object: { code: "json", dataType: "JSON" },
+  array: { code: "array", dataType: "array" },
+  any: { code: "any", dataType: "any" },
 } as const;
 
 // Convert debounce amount to milliseconds
 const convertToMs = (amount: number, unit: string): number => {
   switch (unit) {
     case "ms": return amount;
-    case "s": return amount * 1000;
+    case "string": return amount * 1000;
     default: return amount;
   }
 };
@@ -202,7 +202,7 @@ const detectInputType = (value: any): string => {
 // Format debounce for display
 const formatDebounce = (amount: number, unit: string): string => {
   if (unit === "ms") return `${amount}ms`;
-  if (unit === "s") return `${amount}s`;
+  if (unit === "string") return `${amount}s`;
   return `${amount}${unit}`;
 };
 
@@ -222,8 +222,8 @@ function createDynamicSpec(data: TimeDebounceData): NodeSpec {
     COLLAPSED_SIZES.C2;
 
   // Determine output handle type based on current input value
-  let outputCode = "x"; // Default to any
-  let outputDataType = "Any";
+  let outputCode = "any"; // Default to any
+  let outputDataType = "any";
 
   if (data.inputValue !== null && data.inputValue !== undefined) {
     const detectedType = detectDataType(data.inputValue);
@@ -241,10 +241,10 @@ function createDynamicSpec(data: TimeDebounceData): NodeSpec {
       // Input handle - accepts any type
       {
         id: "input",
-        code: "x", // Any type
+        code: "any", // Any type
         position: "left",
         type: "target",
-        dataType: "Any",
+        dataType: "any",
       },
       // Output handle - adapts to input type
       {
@@ -663,7 +663,7 @@ const TimeDebounceNode = memo(
                         }
                       >
                         <option value="ms">Milliseconds</option>
-                        <option value="s">Seconds</option>
+                        <option value="string">Seconds</option>
                       </select>
                     </div>
                   </div>

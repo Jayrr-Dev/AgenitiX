@@ -130,17 +130,17 @@ function createDynamicSpec(data: ViewArrayData): NodeSpec {
     handles: [
       {
         id: "json-input",
-        code: "a",
+        code: "array",
         position: "left",
         type: "target",
-        dataType: "Array",
+        dataType: "array",
       },
       {
         id: "output",
-        code: "a",
+        code: "array",
         position: "right",
         type: "source",
-        dataType: "Array",
+        dataType: "array",
       },
     ],
     inspector: { key: "ViewArrayInspector" },

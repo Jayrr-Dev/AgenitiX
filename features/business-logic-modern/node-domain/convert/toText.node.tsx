@@ -112,17 +112,17 @@ function createDynamicSpec(data: ToTextData): NodeSpec {
     handles: [
       {
         id: "any-input",
-        code: "x",
+        code: "any",
         position: "left",
         type: "target",
-        dataType: "Any",
+        dataType: "any",
       },
       {
         id: "text-output",
-        code: "s",
+        code: "string",
         position: "right",
         type: "source",
-        dataType: "String",
+        dataType: "string",
       },
     ],
     inspector: { key: "ToTextInspector" },

@@ -64,7 +64,7 @@ export const TimeDelayDataSchema = z
   .object({
     // Delay Configuration
     delayAmount: z.number().min(0).max(300000).default(1000), // 0-300 seconds in ms
-    delayUnit: z.enum(["ms", "s", "min"]).default("s"),
+    delayUnit: z.enum(["ms", "string", "min"]).default("string"),
 
     // Signal State
     inputValue: z.any().nullable().default(null), // Current input value
@@ -165,19 +165,19 @@ const CONTENT = {
 
 // Type mapping for adaptive handles
 const TYPE_MAPPING = {
-  string: { code: "s", dataType: "String" },
-  number: { code: "n", dataType: "Number" },
-  boolean: { code: "b", dataType: "Boolean" },
-  object: { code: "j", dataType: "JSON" },
-  array: { code: "a", dataType: "Array" },
-  any: { code: "x", dataType: "Any" },
+  string: { code: "string", dataType: "string" },
+  number: { code: "number", dataType: "number" },
+  boolean: { code: "boolean", dataType: "boolean" },
+  object: { code: "json", dataType: "JSON" },
+  array: { code: "array", dataType: "array" },
+  any: { code: "any", dataType: "any" },
 } as const;
 
 // Convert delay amount to milliseconds
 const convertToMs = (amount: number, unit: string): number => {
   switch (unit) {
     case "ms": return amount;
-    case "s": return amount * 1000;
+    case "string": return amount * 1000;
     case "min": return amount * 60 * 1000;
     default: return amount;
   }
@@ -197,7 +197,7 @@ const detectInputType = (value: any): string => {
 // Format delay for display
 const formatDelay = (amount: number, unit: string): string => {
   if (unit === "ms") return `${amount}ms`;
-  if (unit === "s") return `${amount}s`;
+  if (unit === "string") return `${amount}s`;
   if (unit === "min") return `${amount}min`;
   return `${amount}${unit}`;
 };
@@ -231,10 +231,10 @@ function createDynamicSpec(data: TimeDelayData): NodeSpec {
       // Input handle - accepts any type
       {
         id: "input",
-        code: "x", // Any type
+        code: "any", // Any type
         position: "left",
         type: "target",
-        dataType: "Any",
+        dataType: "any",
       },
       // Output handle - adapts to input type
       {
@@ -250,7 +250,7 @@ function createDynamicSpec(data: TimeDelayData): NodeSpec {
     runtime: { execute: "timeDelay_execute_v1" },
     initialData: createSafeInitialData(TimeDelayDataSchema, {
       delayAmount: 2,
-      delayUnit: "s",
+      delayUnit: "string",
       inputValue: null,
       inputType: "any",
       outputValue: null,
@@ -307,7 +307,7 @@ export const spec: NodeSpec = createDynamicSpec({
   expandedSize: "VE2",
   collapsedSize: "C2",
   delayAmount: 2,
-  delayUnit: "s",
+  delayUnit: "string",
   inputType: "any",
 } as TimeDelayData);
 
@@ -630,7 +630,7 @@ const TimeDelayNode = memo(
                         }
                       >
                         <option value="ms">Milliseconds</option>
-                        <option value="s">Seconds</option>
+                        <option value="string">Seconds</option>
                         <option value="min">Minutes</option>
                       </select>
                     </div>

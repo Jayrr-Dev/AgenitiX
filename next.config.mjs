@@ -33,7 +33,6 @@ const nextConfig = {
             key: 'Cross-Origin-Opener-Policy',
             value: 'same-origin-allow-popups',
           },
-          // Keep other security headers but make them OAuth-compatible
           {
             key: 'X-Frame-Options',
             value: 'DENY',

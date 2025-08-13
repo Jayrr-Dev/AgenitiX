@@ -144,7 +144,7 @@ const handleCtrlShortcuts = (
       }
       break;
 
-    case "x":
+    case "any":
       // Ctrl+X for vibe mode toggle (only when not in input field)
       if (handlers.onToggleVibeMode) {
         handlers.onToggleVibeMode();

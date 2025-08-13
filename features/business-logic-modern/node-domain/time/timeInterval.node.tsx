@@ -65,7 +65,7 @@ export const TimeIntervalDataSchema = z
     .object({
         // Interval Configuration
         intervalAmount: z.number().min(1).max(3600).default(5), // 1-3600 seconds
-        intervalUnit: z.enum(["ms", "s", "min"]).default("s"),
+        intervalUnit: z.enum(["ms", "string", "min"]).default("string"),
 
         // Output Configuration
         outputType: z.enum(["counter", "timestamp", "boolean", "custom"]).default("counter"),
@@ -244,33 +244,33 @@ function createDynamicSpec(data: TimeIntervalData): NodeSpec {
         COLLAPSED_SIZES.C2;
 
     // Adaptive output handle based on output type
-    let outputCode = "s"; // Default to string
-    let outputDataType = "String"; // Default to string
+    let outputCode = "string"; // Default to string
+    let outputDataType = "string"; // Default to string
 
     // Set appropriate handle type based on output type
     switch (data.outputType) {
         case "counter":
-            outputCode = "n"; // Number
-            outputDataType = "Number";
+            outputCode = "number"; // Number
+            outputDataType = "number";
             break;
         case "timestamp":
-            outputCode = "n"; // Number (timestamp is numeric)
-            outputDataType = "Number";
+            outputCode = "number"; // Number (timestamp is numeric)
+            outputDataType = "number";
             break;
         case "boolean":
-            outputCode = "b"; // Boolean
-            outputDataType = "Boolean";
+            outputCode = "boolean"; // Boolean
+            outputDataType = "boolean";
             break;
         case "custom":
             // For custom, detect type from the custom value with better parsing
             if (typeof data.customValue === 'number') {
-                outputCode = "n";
-                outputDataType = "Number";
+                outputCode = "number";
+                outputDataType = "number";
             } else if (typeof data.customValue === 'boolean') {
-                outputCode = "b";
-                outputDataType = "Boolean";
+                outputCode = "boolean";
+                outputDataType = "boolean";
             } else if (typeof data.customValue === 'object' && data.customValue !== null) {
-                outputCode = "j"; // JSON
+                outputCode = "json"; // JSON
                 outputDataType = "JSON";
             } else if (typeof data.customValue === 'string') {
                 const trimmed = data.customValue.trim();
@@ -282,20 +282,20 @@ function createDynamicSpec(data: TimeIntervalData): NodeSpec {
                         // Try to parse as valid JSON first
                         const parsed = JSON.parse(trimmed);
                         if (Array.isArray(parsed)) {
-                            outputCode = "a"; // Array
-                            outputDataType = "Array";
+                            outputCode = "array"; // Array
+                            outputDataType = "array";
                         } else if (typeof parsed === 'object' && parsed !== null) {
-                            outputCode = "j"; // JSON
+                            outputCode = "json"; // JSON
                             outputDataType = "JSON";
                         } else if (typeof parsed === 'number') {
-                            outputCode = "n";
-                            outputDataType = "Number";
+                            outputCode = "number";
+                            outputDataType = "number";
                         } else if (typeof parsed === 'boolean') {
-                            outputCode = "b";
-                            outputDataType = "Boolean";
+                            outputCode = "boolean";
+                            outputDataType = "boolean";
                         } else {
-                            outputCode = "s";
-                            outputDataType = "String";
+                            outputCode = "string";
+                            outputDataType = "string";
                         }
                     } catch {
                         // If it fails but contains template variables, determine type
@@ -306,38 +306,38 @@ function createDynamicSpec(data: TimeIntervalData): NodeSpec {
                             trimmed.includes('{iso}')) {
                             // Determine if it's template object or array
                             if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
-                                outputCode = "a"; // Template Array - treat as Array
-                                outputDataType = "Array";
+                                outputCode = "array"; // Template Array - treat as Array
+                                outputDataType = "array";
                             } else {
-                                outputCode = "j"; // Template JSON - treat as JSON
+                                outputCode = "json"; // Template JSON - treat as JSON
                                 outputDataType = "JSON";
                             }
                         } else {
-                            outputCode = "s"; // Looks like JSON but isn't valid
-                            outputDataType = "String";
+                            outputCode = "string"; // Looks like JSON but isn't valid
+                            outputDataType = "string";
                         }
                     }
                 } else {
                     // Check for other simple types
                     if (trimmed === 'true' || trimmed === 'false') {
-                        outputCode = "b";
-                        outputDataType = "Boolean";
+                        outputCode = "boolean";
+                        outputDataType = "boolean";
                     } else if (!isNaN(Number(trimmed)) && trimmed !== '') {
-                        outputCode = "n";
-                        outputDataType = "Number";
+                        outputCode = "number";
+                        outputDataType = "number";
                     } else {
-                        outputCode = "s";
-                        outputDataType = "String";
+                        outputCode = "string";
+                        outputDataType = "string";
                     }
                 }
             } else {
-                outputCode = "s"; // String (default)
-                outputDataType = "String";
+                outputCode = "string"; // String (default)
+                outputDataType = "string";
             }
             break;
         default:
-            outputCode = "s";
-            outputDataType = "String";
+            outputCode = "string";
+            outputDataType = "string";
     }
 
     return {
@@ -350,10 +350,10 @@ function createDynamicSpec(data: TimeIntervalData): NodeSpec {
             // Control input - optional trigger for start/stop
             {
                 id: "control",
-                code: "b",
+                code: "boolean",
                 position: "left",
                 type: "target",
-                dataType: "Boolean",
+                dataType: "boolean",
             },
             // Output handle - adaptive based on output type
             {
@@ -369,7 +369,7 @@ function createDynamicSpec(data: TimeIntervalData): NodeSpec {
         runtime: { execute: "timeInterval_execute_v1" },
         initialData: createSafeInitialData(TimeIntervalDataSchema, {
             intervalAmount: 5,
-            intervalUnit: "s",
+            intervalUnit: "string",
             outputType: "counter",
             customValue: "pulse",
             isRunning: false,
@@ -433,7 +433,7 @@ export const spec: NodeSpec = createDynamicSpec({
     expandedSize: "VE2",
     collapsedSize: "C2",
     intervalAmount: 5,
-    intervalUnit: "s",
+    intervalUnit: "string",
     outputType: "counter",
 } as TimeIntervalData);
 
@@ -883,7 +883,7 @@ const TimeIntervalNode = memo(
                                                 disabled={isRunning}
                                             >
                                                 <option value="ms">Milliseconds</option>
-                                                <option value="s">Seconds</option>
+                                                <option value="string">Seconds</option>
                                                 <option value="min">Minutes</option>
                                             </select>
                                         </div>

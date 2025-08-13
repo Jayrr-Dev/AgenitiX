@@ -133,7 +133,7 @@ function createDynamicSpec(data: EmailMessengerData): NodeSpec {
     handles: [
       {
         id: "message-output",
-        code: "j",
+        code: "json",
         position: "right",
         type: "source",
         dataType: "JSON",
@@ -141,10 +141,10 @@ function createDynamicSpec(data: EmailMessengerData): NodeSpec {
       },
       {
         id: "status-output",
-        code: "b",
+        code: "boolean",
         position: "bottom",
         type: "source",
-        dataType: "Boolean",
+        dataType: "boolean",
         tooltip: HANDLE_TOOLTIPS.STATUS_OUT,
       },
     ],

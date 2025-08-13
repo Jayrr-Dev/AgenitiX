@@ -127,17 +127,17 @@ const createDynamicSpec = (() => {
       handles: [
         {
           id: "output",
-          code: "s",
+          code: "string",
           position: "right",
           type: "source",
-          dataType: "String",
+          dataType: "string",
         },
         {
           id: "input",
-          code: "b",
+          code: "boolean",
           position: "left",
           type: "target",
-          dataType: "Boolean",
+          dataType: "boolean",
         },
       ],
       inspector: { key: "CreateTextInspector" },

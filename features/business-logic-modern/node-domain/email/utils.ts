@@ -130,13 +130,13 @@ export function formatLastValidated(timestamp?: number): string {
 		return "Just now";
 	}
 	if (diffMins < 60) {
-		return `${diffMins} minute${diffMins === 1 ? "" : "s"} ago`;
+		return `${diffMins} minute${diffMins === 1 ? "" : "string"} ago`;
 	}
 	if (diffHours < 24) {
-		return `${diffHours} hour${diffHours === 1 ? "" : "s"} ago`;
+		return `${diffHours} hour${diffHours === 1 ? "" : "string"} ago`;
 	}
 	if (diffDays < 7) {
-		return `${diffDays} day${diffDays === 1 ? "" : "s"} ago`;
+		return `${diffDays} day${diffDays === 1 ? "" : "string"} ago`;
 	}
 	return date.toLocaleDateString();
 }

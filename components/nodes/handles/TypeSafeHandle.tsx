@@ -194,7 +194,7 @@ const TOAST_DURATION = 3000;
 /**
  * Type parsing defaults
  */
-const DEFAULT_TYPE_FALLBACK = ["x"];
+const DEFAULT_TYPE_FALLBACK = ["any"];
 const DEFAULT_HANDLE_TYPE = "any";
 
 /**
@@ -232,19 +232,29 @@ const UNIFIED_TYPE_DISPLAY: Record<
  * Ultimate type map - maps short codes to type information using semantic tokens
  */
 const ULTIMATE_TYPE_MAP: Record<string, { tokenKey: string; label: string }> = {
+  // Full word aliases (primary)
+  string: { tokenKey: "string", label: "Text" },
+  number: { tokenKey: "number", label: "number" },
+  boolean: { tokenKey: "boolean", label: "On|Off" },
+  json: { tokenKey: "json", label: "JSON" },
+  array: { tokenKey: "array", label: "List" },
+  any: { tokenKey: "any", label: "any" },
+  tools: { tokenKey: "tools", label: "Tools" },
+  account: { tokenKey: "account", label: "Account" },
+  email: { tokenKey: "email", label: "Email" },
+  // Legacy single letter codes (backward compatibility)
   s: { tokenKey: "string", label: "Text" },
-  n: { tokenKey: "number", label: "Number" },
+  n: { tokenKey: "number", label: "number" },
   b: { tokenKey: "boolean", label: "On|Off" },
   j: { tokenKey: "json", label: "JSON" },
   a: { tokenKey: "array", label: "List" },
-  x: { tokenKey: "any", label: "Any" },
-  V: { tokenKey: "vibe", label: "Vibe" },
+  x: { tokenKey: "any", label: "any" },
   t: { tokenKey: "tools", label: "Tools" },
   // Full data type names for direct mapping
   JSON: { tokenKey: "json", label: "JSON" },
   String: { tokenKey: "string", label: "Text" },
   Boolean: { tokenKey: "boolean", label: "On|Off" },
-  Number: { tokenKey: "number", label: "Number" },
+  Number: { tokenKey: "number", label: "number" },
   Array: { tokenKey: "array", label: "List" },
   Object: { tokenKey: "object", label: "Object" },
   Tools: { tokenKey: "tools", label: "Tools" },
@@ -258,13 +268,23 @@ const ULTIMATE_TYPE_MAP: Record<string, { tokenKey: string; label: string }> = {
  * Type descriptions for tooltips - detailed explanations of each data type
  */
 const TYPE_DESCRIPTIONS: Record<string, string> = {
+  // Full word aliases (primary)
+  string: "String - Text and string values",
+  number: "Number - Integer and numeric values",
+  boolean: "Boolean - True/false values",
+  json: "JSON - JavaScript objects and JSON data",
+  array: "Array - Lists and array structures",
+  any: "Any - Accepts all data types",
+  tools: "Tools - AI agent tool configurations",
+  account: "Account - User account and authentication data",
+  email: "Email - Email messages and templates",
+  // Legacy single letter codes (backward compatibility)
   s: "String - Text and string values",
   n: "Number - Integer and numeric values",
   b: "Boolean - True/false values",
   j: "JSON - JavaScript objects and JSON data",
   a: "Array - Lists and array structures",
   x: "Any - Accepts all data types",
-  V: "Vibe - Custom Vibe data type",
   t: "Tools - AI agent tool configurations",
   // Full data type names
   String: "String - Text and string values",
@@ -412,19 +432,19 @@ function getHumanReadableType(typeCode: string): string {
     // Use more technical terms for error messages
     switch (mapping.tokenKey) {
       case "string":
-        return "String";
+        return "string";
       case "number":
-        return "Number";
+        return "number";
       case "boolean":
-        return "Boolean";
+        return "boolean";
       case "json":
         return "JSON";
       case "array":
-        return "Array";
+        return "array";
       case "object":
         return "Object";
       case "any":
-        return "Any";
+        return "any";
       case "tools":
         return "Tools";
       case "email":
@@ -456,7 +476,7 @@ function getTooltipContent(
   // Get the primary type code
   const typeCode = parseUnionTypes(dataType || code)[0];
 
-  // Check if it's a full data type name (like "String", "Boolean", etc.)
+  // Check if it's a full data type name (like "string", "boolean", etc.)
   const fullTypeMapping = ULTIMATE_TYPE_MAP[typeCode];
   if (fullTypeMapping) {
     return `${direction}<br/>${fullTypeMapping.label}`;
@@ -536,7 +556,7 @@ function summarizeValueForTooltip(value: unknown): string {
 }
 
 function isTypeCompatible(sourceType: string, targetType: string): boolean {
-  if (sourceType === "x" || targetType === "x") {
+  if (sourceType === "any" || targetType === "any") {
     return true;
   }
   const sourceTypes = parseUnionTypes(sourceType);
@@ -564,6 +584,7 @@ const INPUT_SUCCESS_MESSAGES: Record<string, { title: string; description?: stri
   emailaccount: { title: "Account connected", description: "Email account input is set" },
   emailtemplate: { title: "Template connected", description: "Email template input is set" },
   composedemail: { title: "Email connected", description: "Composed email input is set" },
+  account: { title: "Account Connected", description: "Account input is now connected" },
   any: { title: "Input connected", description: "Input is now connected" },
 };
 
@@ -580,11 +601,20 @@ function resolveMessageKey(handleTypeName: string, dataType?: string, code?: str
   if (lcName.includes('emailaccount') || primary === 'emailaccount') return 'emailaccount';
   if (lcName.includes('emailtemplate') || primary === 'emailtemplate') return 'emailtemplate';
   if (lcName.includes('composedemail') || primary === 'composedemail') return 'composedemail';
+  if (lcName.includes('account') || primary === 'account') return 'account';
   if (lcName.includes('email') || primary === 'email') return 'email';
 
-  // One-letter codes → verbose keys
+  // Full word codes → verbose keys (aliases)
   const codeMap: Record<string, keyof typeof INPUT_SUCCESS_MESSAGES> = {
-    s: 'string', n: 'number', b: 'boolean', j: 'json', a: 'array', x: 'any'
+    string: 'string', 
+    number: 'number', 
+    boolean: 'boolean', 
+    json: 'json', 
+    array: 'array', 
+    any: 'any',
+    account: 'account',
+    email: 'email',
+    tools: 'tools'
   };
   if (primary in codeMap) return codeMap[primary];
 

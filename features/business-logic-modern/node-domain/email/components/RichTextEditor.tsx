@@ -234,7 +234,7 @@ export function RichTextEditor({
 
 			if (e.ctrlKey || e.metaKey) {
 				switch (e.key.toLowerCase()) {
-					case "b":
+					case "boolean":
 						e.preventDefault();
 						executeCommand("bold");
 						break;

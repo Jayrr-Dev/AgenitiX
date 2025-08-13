@@ -128,14 +128,14 @@ export const KEYBOARD_SHORTCUTS = {
   DUPLICATE: "d",
   COPY: "c",
   PASTE: "v",
-  LOCK_INSPECTOR: "a",
+  LOCK_INSPECTOR: "array",
   ESCAPE: "Escape",
   TOGGLE_HISTORY: "h",
-  SELECT_ALL: "a",
+  SELECT_ALL: "array",
   DELETE_NODES: "q",
-  TOGGLE_INSPECTOR: "a",
+  TOGGLE_INSPECTOR: "array",
   DUPLICATE_NODE: "w",
-  TOGGLE_SIDEBAR: "s",
+  TOGGLE_SIDEBAR: "string",
   PIE_MENU: "tab",
 };
 

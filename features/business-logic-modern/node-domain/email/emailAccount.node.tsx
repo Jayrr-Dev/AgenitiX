@@ -149,16 +149,16 @@ const createDynamicSpec = (
     handles: [
       {
         id: "trigger-input",
-        code: "b",
+        code: "boolean",
         position: "top",
         type: "target",
-        dataType: "Boolean",
+        dataType: "boolean",
         tooltip: HANDLE_TOOLTIPS.TRIGGER_IN,
       },
       // Expose a strongly-typed account payload for downstream consumers, basically provide the connected account object
       {
         id: "account-output",
-        code: "j",
+        code: "account",
         position: "right",
         type: "source",
         dataType: "JSON",
@@ -178,10 +178,10 @@ const createDynamicSpec = (
       },
       {
         id: "status-output",
-        code: "b",
+        code: "boolean",
         position: "bottom",
         type: "source",
-        dataType: "Boolean",
+        dataType: "boolean",
         tooltip: HANDLE_TOOLTIPS.STATUS_OUT,
       },
     ],

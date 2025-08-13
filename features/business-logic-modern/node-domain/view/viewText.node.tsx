@@ -163,17 +163,17 @@ function createDynamicSpec(data: ViewTextData): NodeSpec {
     handles: [
       {
         id: "output",
-        code: "s",
+        code: "string",
         position: "right",
         type: "source",
-        dataType: "String",
+        dataType: "string",
       },
       {
         id: "input",
-        code: "s",
+        code: "string",
         position: "left",
         type: "target",
-        dataType: "String",
+        dataType: "string",
       },
     ],
     inspector: { key: "ViewTextInspector" },

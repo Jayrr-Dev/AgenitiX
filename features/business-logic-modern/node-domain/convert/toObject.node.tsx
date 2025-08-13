@@ -125,14 +125,14 @@ function createDynamicSpec(data: ToObjectData): NodeSpec {
     handles: [
       {
         id: "any-input",
-        code: "x",
+        code: "any",
         position: "left",
         type: "target",
-        dataType: "Any",
+        dataType: "any",
       },
       {
         id: "object-output",
-        code: "j",
+        code: "json",
         position: "right",
         type: "source",
         dataType: "JSON",

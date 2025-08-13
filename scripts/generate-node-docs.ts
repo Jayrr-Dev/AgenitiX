@@ -1319,31 +1319,31 @@ function generateAPIDoc(nodeData: NodeDocData) {
   const handleSpecs = [...inputs, ...output]
     .map((handle) => {
       // Map handle types to proper codes based on actual node specification
-      let code = "j"; // default to JSON
+      let code = "json"; // default to JSON
       if (
         handle.type.includes("string") ||
         handle.type.includes("text") ||
-        handle.type === "s"
+        handle.type === "string"
       ) {
-        code = "s";
+        code = "string";
       } else if (
         handle.type.includes("number") ||
         handle.type.includes("num") ||
-        handle.type === "n"
+        handle.type === "number"
       ) {
-        code = "n";
+        code = "number";
       } else if (
         handle.type.includes("boolean") ||
         handle.type.includes("bool") ||
-        handle.type === "b"
+        handle.type === "boolean"
       ) {
-        code = "b";
-      } else if (handle.type.includes("array") || handle.type === "a") {
-        code = "a";
+        code = "boolean";
+      } else if (handle.type.includes("array") || handle.type === "array") {
+        code = "array";
       } else if (handle.type.includes("object") || handle.type === "o") {
         code = "o";
-      } else if (handle.type === "j") {
-        code = "j";
+      } else if (handle.type === "json") {
+        code = "json";
       }
 
       return `    { id: "${handle.id}", code: "${code}", position: "${handle.position}", type: "${handle.type}" },`;

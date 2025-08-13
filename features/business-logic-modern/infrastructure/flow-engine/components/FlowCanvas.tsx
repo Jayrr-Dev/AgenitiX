@@ -25,6 +25,7 @@ import {
   PanOnScrollMode,
   Panel,
   ReactFlow,
+  useReactFlow,
   SelectionMode,
 } from "@xyflow/react";
 import { useTheme } from "next-themes";
@@ -204,6 +205,7 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
   // Theme integration
   const { resolvedTheme } = useTheme();
   const [_mounted, setMounted] = useState(false);
+  const { zoomOut } = useReactFlow();
 
   // Get flow metadata for permission checking
   const flowMetadata = useFlowMetadataOptional();
@@ -428,6 +430,21 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
     [reactFlowHandlers.onInit]
   );
 
+  /**
+   * Alt + Scroll Wheel to zoom out
+   * [Explanation], basically when Alt is held and you scroll, we always zoom out one step
+   */
+  const handleAltWheelZoom = useCallback(
+    (event: React.WheelEvent<HTMLDivElement>) => {
+      if (event.altKey) {
+        event.preventDefault();
+        event.stopPropagation();
+        zoomOut();
+      }
+    },
+    [zoomOut]
+  );
+
   // Memoized objects passed to ReactFlow to keep references stable
   const reactFlowStyle = useMemo(() => ({ width: "100%", height: "100%" }), []);
 
@@ -453,6 +470,7 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
       className="relative h-full w-full flex-1"
       onDragOver={onDragOver}
       onDrop={onDrop}
+      onWheelCapture={handleAltWheelZoom}
       style={CANVAS_CONTAINER_STYLE}
     >
       <ReactFlow

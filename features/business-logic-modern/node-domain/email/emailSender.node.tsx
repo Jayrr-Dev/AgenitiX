@@ -190,6 +190,31 @@ const RESET_ON_LOGOUT_DATA: Partial<EmailSenderData> = {
 // 3️⃣  Dynamic spec factory (pure)
 // -----------------------------------------------------------------------------
 
+/**
+ * EmailMessagePayload – minimal shape accepted on `message-input`
+ * [Explanation], basically a JSON object with recipients, subject, content, attachments
+ */
+type EmailMessagePayload = {
+  recipients?: {
+    to?: string[];
+    cc?: string[];
+    bcc?: string[];
+  };
+  subject?: string;
+  content?: {
+    text?: string;
+    html?: string;
+    useHtml?: boolean;
+  };
+  attachments?: Array<{
+    id?: string;
+    filename?: string;
+    size?: number;
+    mimeType?: string;
+    content?: string; // base64
+  }>;
+};
+
 function createDynamicSpec(data: EmailSenderData): NodeSpec {
   const expanded =
     EXPANDED_SIZES[data.expandedSize as keyof typeof EXPANDED_SIZES] ??
@@ -221,15 +246,15 @@ function createDynamicSpec(data: EmailSenderData): NodeSpec {
     handles: [
       {
         id: "trigger-input",
-        code: "b",
+        code: "boolean",
         position: "top",
         type: "target",
-        dataType: "Boolean",
+        dataType: "boolean",
         tooltip: HANDLE_TOOLTIPS.TRIGGER_IN,
       },
       {
         id: "account-input",
-        code: "j",
+        code: "json",
         position: "left",
         type: "target",
         dataType: "JSON",
@@ -244,37 +269,85 @@ function createDynamicSpec(data: EmailSenderData): NodeSpec {
               },
             },
       },
+      {
+        id: "message-input",
+        code: "json",
+        position: "left",
+        type: "target",
+        dataType: "JSON",
+        tooltip: HANDLE_TOOLTIPS.MESSAGE_IN,
+        // Minimal email message JSON shape the sender can consume
+        // [Explanation], basically recipients + subject + content + attachments
+        jsonShape: {
+          type: "object",
+          properties: {
+            recipients: {
+              type: "object",
+              optional: true,
+              properties: {
+                to: { type: "array", items: { type: "string" }, optional: true },
+                cc: { type: "array", items: { type: "string" }, optional: true },
+                bcc: { type: "array", items: { type: "string" }, optional: true },
+              },
+            },
+            subject: { type: "string", optional: true },
+            content: {
+              type: "object",
+              optional: true,
+              properties: {
+                text: { type: "string", optional: true },
+                html: { type: "string", optional: true },
+                useHtml: { type: "boolean", optional: true },
+              },
+            },
+            attachments: {
+              type: "array",
+              optional: true,
+              items: {
+                type: "object",
+                properties: {
+                  id: { type: "string", optional: true },
+                  filename: { type: "string" },
+                  size: { type: "number", optional: true },
+                  mimeType: { type: "string", optional: true },
+                  content: { type: "string", optional: true },
+                },
+              },
+            },
+          },
+        },
+      },
       
       {
         id: "success-output",
-        code: "b",
+        code: "boolean",
         position: "right",
         type: "source",
-        dataType: "Boolean",
+        dataType: "boolean",
         tooltip: HANDLE_TOOLTIPS.SUCCESS_OUT,
       },
       {
         id: "message-id-output",
-        code: "s",
+        code: "string",
         position: "right",
         type: "source",
-        dataType: "String",
+        dataType: "string",
         tooltip: HANDLE_TOOLTIPS.MESSAGE_ID_OUT,
       },
       {
         id: "error-output",
-        code: "s",
+        code: "string",
         position: "bottom",
         type: "source",
-        dataType: "String",
+        dataType: "string",
         tooltip: HANDLE_TOOLTIPS.ERROR_OUT,
       },
       {
         id: "output",
-        code: "s",
+        code: "string",
         position: "right",
         type: "source",
-        dataType: "String",
+        dataType: "string",
         tooltip: HANDLE_TOOLTIPS.OUTPUT_OUT,
       },
     ],
@@ -480,6 +553,35 @@ const EmailSenderNode = memo(
         );
       },
       (a, b) => a === b
+    );
+
+    // -------------------------------------------------------------------------
+    // 4.4b  Get connected email message payload
+    // -------------------------------------------------------------------------
+    // Read JSON from upstream nodes wired to 'message-input'
+    // [Explanation], basically prefer structured message JSON when available
+    const messageInputPayload = useStore<EmailMessagePayload | null>(
+      (s) => {
+        const incomingEdges = s.edges.filter(
+          (e) => e.target === id && e.targetHandle?.startsWith("message-input")
+        );
+        if (incomingEdges.length === 0) return null;
+        for (const edge of incomingEdges) {
+          const sourceNode = (s.nodes as any[]).find((n: any) => n.id === edge.source);
+          const output = (sourceNode?.data?.output ?? {}) as Record<string, unknown>;
+          const explicit = output["message-output"] as EmailMessagePayload | undefined;
+          if (explicit && typeof explicit === "object") return explicit;
+          if (edge.sourceHandle) {
+            const handleId = normalizeHandleId(edge.sourceHandle);
+            const val = output[handleId] as EmailMessagePayload | undefined;
+            if (val && typeof val === "object") return val;
+          }
+          const first = Object.values(output)[0];
+          if (first && typeof first === "object") return first as EmailMessagePayload;
+        }
+        return null;
+      },
+      (a, b) => JSON.stringify(a) === JSON.stringify(b)
     );
 
     const connectedAccountIds = useStore(
@@ -855,16 +957,33 @@ const EmailSenderNode = memo(
         return;
       }
 
-      if (safeRecipients.to.length === 0) {
+      // Prefer recipients from message-input if provided
+      const resolvedRecipients = ((): {
+        to: string[];
+        cc: string[];
+        bcc: string[];
+      } => {
+        const fromMsg = messageInputPayload?.recipients;
+        const to = Array.isArray(fromMsg?.to) ? fromMsg!.to : safeRecipients.to;
+        const cc = Array.isArray(fromMsg?.cc) ? fromMsg!.cc : safeRecipients.cc;
+        const bcc = Array.isArray(fromMsg?.bcc) ? fromMsg!.bcc : safeRecipients.bcc;
+        return {
+          to: to.filter((e) => typeof e === "string" && e.trim().length > 0),
+          cc: cc.filter((e) => typeof e === "string" && e.trim().length > 0),
+          bcc: bcc.filter((e) => typeof e === "string" && e.trim().length > 0),
+        };
+      })();
+
+      if (resolvedRecipients.to.length === 0) {
         showError("Please add at least one recipient");
         return;
       }
 
       // Validate email addresses
       const allEmails = [
-        ...safeRecipients.to,
-        ...safeRecipients.cc,
-        ...safeRecipients.bcc,
+        ...resolvedRecipients.to,
+        ...resolvedRecipients.cc,
+        ...resolvedRecipients.bcc,
       ];
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       const invalidEmails = allEmails.filter(
@@ -876,12 +995,21 @@ const EmailSenderNode = memo(
         return;
       }
 
-      if (!subject.trim()) {
+      const resolvedSubject = String(
+        (messageInputPayload?.subject ?? subject) || ""
+      );
+      if (!resolvedSubject.trim()) {
         showError("Please enter a subject");
         return;
       }
 
-      if (!safeContent.text.trim() && !safeContent.html.trim()) {
+      const resolvedText = String(
+        (messageInputPayload?.content?.text ?? safeContent.text) || ""
+      );
+      const resolvedHtml = String(
+        (messageInputPayload?.content?.html ?? safeContent.html) || ""
+      );
+      if (!resolvedText.trim() && !resolvedHtml.trim()) {
         showError("Please enter message content");
         return;
       }
@@ -904,22 +1032,28 @@ const EmailSenderNode = memo(
             ? selectedAccount.email
             : undefined;
 
+        const resolvedAttachments =
+          (Array.isArray(messageInputPayload?.attachments)
+            ? messageInputPayload!.attachments
+            : safeAttachments
+          ) || [];
+
         const emailPayload = {
           accountId: accountId as any,
-          to: safeRecipients.to,
-          cc: safeRecipients.cc.length > 0 ? safeRecipients.cc : undefined,
-          bcc: safeRecipients.bcc.length > 0 ? safeRecipients.bcc : undefined,
-          subject: subject,
-          textContent: safeContent.text,
-          htmlContent: safeContent.html || undefined,
+          to: resolvedRecipients.to,
+          cc: resolvedRecipients.cc.length > 0 ? resolvedRecipients.cc : undefined,
+          bcc: resolvedRecipients.bcc.length > 0 ? resolvedRecipients.bcc : undefined,
+          subject: resolvedSubject,
+          textContent: resolvedText,
+          htmlContent: resolvedHtml || undefined,
           attachments:
-            safeAttachments.length > 0
-              ? safeAttachments.map((att) => ({
-                  id: att.id,
-                  filename: att.filename,
-                  size: att.size,
-                  mimeType: att.mimeType,
-                  content: att.content, // Include base64 content
+            resolvedAttachments.length > 0
+              ? resolvedAttachments.map((att: any) => ({
+                  id: String(att.id ?? ""),
+                  filename: String(att.filename ?? ""),
+                  size: typeof att.size === "number" ? att.size : 0,
+                  mimeType: String(att.mimeType ?? "application/octet-stream"),
+                  content: typeof att.content === "string" ? att.content : undefined,
                 }))
               : undefined,
           // Fallback hint for action auth recovery
@@ -933,26 +1067,26 @@ const EmailSenderNode = memo(
           const formattedOutput = {
             "Email Sent Successfully": {
               "Message ID": result.messageId || "N/A",
-              Subject: subject,
-              To: safeRecipients.to.join(", "),
+              Subject: resolvedSubject,
+              To: resolvedRecipients.to.join(", "),
               CC:
-                safeRecipients.cc.length > 0
-                  ? safeRecipients.cc.join(", ")
+                resolvedRecipients.cc.length > 0
+                  ? resolvedRecipients.cc.join(", ")
                   : "None",
               BCC:
-                safeRecipients.bcc.length > 0
-                  ? safeRecipients.bcc.join(", ")
+                resolvedRecipients.bcc.length > 0
+                  ? resolvedRecipients.bcc.join(", ")
                   : "None",
               "Sent At": new Date().toLocaleString(),
-              "Content Type": safeContent.useHtml ? "HTML" : "Plain Text",
+              "Content Type": (messageInputPayload?.content?.useHtml ?? safeContent.useHtml) ? "HTML" : "Plain Text",
               "Content Preview":
-                (safeContent.text || safeContent.html).substring(0, 100) +
-                ((safeContent.text || safeContent.html).length > 100
+                (resolvedText || resolvedHtml).substring(0, 100) +
+                ((resolvedText || resolvedHtml).length > 100
                   ? "..."
                   : ""),
               Attachments:
-                safeAttachments.length > 0
-                  ? `${safeAttachments.length} file(s) (${Math.round(safeAttachments.reduce((sum, att) => sum + att.size, 0) / 1024)}KB)`
+                resolvedAttachments.length > 0
+                  ? `${resolvedAttachments.length} file(s) (${Math.round(resolvedAttachments.reduce((sum, att: any) => sum + (typeof att.size === "number" ? att.size : 0), 0) / 1024)}KB)`
                   : "None",
               "Account Used": selectedAccount?.email || "Unknown",
               Status: "✅ Delivered",
@@ -967,14 +1101,14 @@ const EmailSenderNode = memo(
           });
 
           showSuccess(
-            `Sent email to ${safeRecipients.to.length} recipients successfully`
+            `Sent email to ${resolvedRecipients.to.length} recipients successfully`
           );
         } else {
           const errorMessage = "Failed to send email";
 
           updateNodeData({
             sendingStatus: "error",
-            failedCount: failedCount + safeRecipients.to.length,
+            failedCount: failedCount + resolvedRecipients.to.length,
             lastError: errorMessage,
           });
 
@@ -988,7 +1122,7 @@ const EmailSenderNode = memo(
         updateNodeData({
           sendingStatus: "error",
           lastError: errorMessage,
-          failedCount: failedCount + safeRecipients.to.length,
+          failedCount: failedCount + resolvedRecipients.to.length,
         });
 
         showError("Failed to send email", errorMessage);
@@ -996,6 +1130,7 @@ const EmailSenderNode = memo(
     }, [
       accountId,
       token,
+      messageInputPayload,
       safeRecipients,
       subject,
       safeContent,

@@ -107,11 +107,11 @@ export interface NodeHandleSpec {
 	/** Unique handle id */
 	id: string;
 	/** Legacy single-letter data type code (mutually exclusive with tsSymbol) */
-	dataType?: string;
+	dataType?: "string" | "number" | "boolean" | "JSON" | "array" | "any"
 	/** New dual-contract system: optional TypeScript symbol referencing real type */
 	tsSymbol?: string;
 	/** Optional fallback code when tsSymbol provided */
-	code?: string;
+	code?: "account" | "json" | "boolean" | "string" | "number" | "array" | "any" | "tools";
 	position: "top" | "bottom" | "left" | "right";
 	type: "source" | "target";
 	/** Optional custom tooltip text to append to default tooltip */

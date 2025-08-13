@@ -26,7 +26,7 @@ const COLLAPSED_STYLES = {
   container: "flex items-center justify-center w-full h-full",
   content: "p-3 text-center space-y-3 mt-4",
   providerIcon:
-    "relative w-12 h-12 bg-gradient-to-br from-white to-gray-50 dark:from-gray-100 dark:to-gray-200 rounded-full flex items-center justify-center transform transition-all duration-300 hover:scale-105 active:scale-95 shadow-[0_8px_32px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.3)] before:absolute before:inset-0 before:rounded-full before:bg-gradient-to-br before:from-white/80 before:to-transparent before:opacity-60 after:absolute after:inset-0 after:rounded-full after:bg-gradient-to-br after:from-transparent after:to-black/5 after:opacity-40 cursor-pointer",
+    "relative w-12 h-12 bg-gradient-to-br from-white to-gray-50 dark:from-gray-100 dark:to-gray-400 inner-shadow  rounded-full flex items-center justify-center transform transition-all duration-300 hover:scale-105 active:scale-95 shadow-[0_8px_32px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.3)] before:absolute before:inset-0 before:rounded-full before:bg-gradient-to-br before:from-white/80 before:to-transparent before:opacity-60 after:absolute after:inset-0 after:rounded-full after:bg-gradient-to-br after:from-transparent after:to-black/5 after:opacity-40 cursor-pointer",
   iconWrapper: "relative z-10",
   emailInfo: "space-y-1",
   emailText: "font-medium text-[10px] truncate",

@@ -454,7 +454,7 @@ export function withNodeScaffold(
             return (
               <TypeSafeHandle
                 key={`${handle.id}-${handleKey}-${actualPosition}`}
-                id={`${handle.id}__${handle.code ?? handle.dataType ?? "x"}`}
+                id={`${handle.id}__${handle.code ?? handle.dataType ?? "any"}`}
                 type={handle.type}
                 position={actualPosition as Position}
                 dataType={handle.dataType || "any"}
