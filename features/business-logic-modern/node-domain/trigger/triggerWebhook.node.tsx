@@ -226,7 +226,7 @@ function createDynamicSpec(data: TriggerWebhookData): NodeSpec {
             // Webhook output - emits received data
             {
                 id: "webhook-output",
-                code: "j", // JSON data from webhook
+                code: "json", // JSON data from webhook
                 position: "right",
                 type: "source",
                 dataType: "JSON",
@@ -234,10 +234,10 @@ function createDynamicSpec(data: TriggerWebhookData): NodeSpec {
             // Status output - webhook active/inactive
             {
                 id: "status-output",
-                code: "b", // Boolean status
+                code: "boolean", // Boolean status
                 position: "bottom",
                 type: "source",
-                dataType: "Boolean",
+                dataType: "boolean",
             },
         ],
         inspector: { key: "TriggerWebhookInspector" },
@@ -318,6 +318,7 @@ const TriggerWebhookNode = memo(
         // -------------------------------------------------------------------------
         // 4.2  Derived state
         // -------------------------------------------------------------------------
+        const typedNodeData = nodeData as TriggerWebhookData;
         const {
             isExpanded,
             isEnabled,
@@ -340,7 +341,7 @@ const TriggerWebhookNode = memo(
             lastRequestTime,
             requestCount,
             lastRequestData,
-        } = nodeData as TriggerWebhookData;
+        } = typedNodeData;
 
         // Local state for inputs to prevent focus loss
         const [localWebhookPath, setLocalWebhookPath] = useState(webhookPath);
