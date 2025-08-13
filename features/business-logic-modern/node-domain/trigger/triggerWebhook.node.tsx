@@ -79,6 +79,7 @@ export const TriggerWebhookDataSchema = z
         binaryProperty: z.string().default(""),
         rawBody: z.boolean().default(false),
         responseHeaders: z.string().default(""), // JSON string of headers
+        autoTrigger: z.boolean().default(true), // Auto-send data when received
 
         // Webhook State
         isActive: z.boolean().default(false),
@@ -98,6 +99,9 @@ export const TriggerWebhookDataSchema = z
         store: SafeSchemas.text(""),
         inputs: SafeSchemas.optionalText().nullable().default(null),
         output: SafeSchemas.optionalText(),
+
+        // Webhook output data (what gets sent to connected nodes)
+        webhookOutput: z.any().nullable().default(null),
     })
     .passthrough();
 
@@ -267,6 +271,7 @@ function createDynamicSpec(data: TriggerWebhookData): NodeSpec {
             ],
             customFields: [
                 { key: "isEnabled", type: "boolean", label: "Enable Webhook" },
+                { key: "autoTrigger", type: "boolean", label: "Auto-trigger Flow" },
                 { key: "httpMethod", type: "select", label: "HTTP Method" },
                 { key: "webhookPath", type: "text", label: "Webhook Path", placeholder: "/my-webhook" },
                 { key: "authType", type: "select", label: "Authentication" },
@@ -328,6 +333,7 @@ const TriggerWebhookNode = memo(
             binaryProperty,
             rawBody,
             responseHeaders,
+            autoTrigger,
             isActive,
             webhookUrl,
             lastRequestTime,
@@ -343,7 +349,7 @@ const TriggerWebhookNode = memo(
         const [localResponseHeaders, setLocalResponseHeaders] = useState(responseHeaders);
 
         // Auth config local state
-        const [localAuthConfig, setLocalAuthConfig] = useState(authConfig);
+        const [localAuthConfig, setLocalAuthConfig] = useState(authConfig || {});
 
         // Ref to track if we're currently editing
         const isEditingRef = useRef(false);
@@ -431,15 +437,56 @@ const TriggerWebhookNode = memo(
 
                 const data = await response.json();
                 if (data.success && data.stats) {
+                    console.log('📊 Polling webhook stats - checking for new data...');
+
+                    // Get webhook data from backend response
+                    const lastData = data.stats.lastRequestData;
+                    if (lastData) {
+                        console.log('💾 Found webhook data from backend:', lastData);
+                    } else {
+                        console.log('💾 No webhook data available from backend');
+                    }
+
+                    // Check if we have new data and auto-trigger is enabled
+                    const hasNewData = lastData && JSON.stringify(lastData) !== JSON.stringify(lastRequestData);
+
+                    console.log('🔍 Auto-trigger debug:', {
+                        autoTrigger,
+                        hasNewData,
+                        lastData: lastData ? 'exists' : 'null',
+                        lastRequestData: lastRequestData ? 'exists' : 'null',
+                        dataComparison: {
+                            new: lastData ? JSON.stringify(lastData).substring(0, 100) : 'null',
+                            old: lastRequestData ? JSON.stringify(lastRequestData).substring(0, 100) : 'null'
+                        }
+                    });
+
                     updateNodeData({
                         requestCount: data.stats.requestCount,
                         lastRequestTime: data.stats.lastRequestTime,
+                        lastRequestData: lastData,
                     });
+
+                    // Auto-trigger if enabled and we have new data
+                    if (autoTrigger && hasNewData && lastData) {
+                        console.log('🚀 Auto-triggering webhook data:', lastData);
+
+                        updateNodeData({
+                            webhookOutput: lastData,
+                            output: JSON.stringify(lastData),
+                        });
+
+                        toast.success("Webhook data automatically sent to connected nodes!");
+                    } else if (autoTrigger && lastData && !hasNewData) {
+                        console.log('⏭️ Auto-trigger enabled but no new data detected');
+                    } else if (!autoTrigger && lastData) {
+                        console.log('⏸️ Auto-trigger disabled, data available but not sent');
+                    }
                 }
             } catch (error) {
                 console.error('❌ Failed to get webhook stats:', error);
             }
-        }, [updateNodeData]);
+        }, [updateNodeData, id, lastRequestData, autoTrigger]);
 
         // -------------------------------------------------------------------------
         // 4.5  Main Action Callbacks
@@ -539,7 +586,7 @@ const TriggerWebhookNode = memo(
                 setLocalIpWhitelist(ipWhitelist);
                 setLocalBinaryProperty(binaryProperty);
                 setLocalResponseHeaders(responseHeaders);
-                setLocalAuthConfig(authConfig);
+                setLocalAuthConfig(authConfig || {});
             }
         }, [webhookPath, allowedOrigins, ipWhitelist, binaryProperty, responseHeaders, authConfig]);
 
@@ -798,6 +845,107 @@ const TriggerWebhookNode = memo(
                                             </select>
                                         </div>
                                     </div>
+
+                                    {/* Basic Auth Configuration */}
+                                    {authType === "basic" && (
+                                        <>
+                                            <div className={CONTENT.formGroup}>
+                                                <div className={CONTENT.formRow}>
+                                                    <label className={CONTENT.label}>Username:</label>
+                                                    <input
+                                                        type="text"
+                                                        className={CONTENT.input}
+                                                        value={(localAuthConfig || {}).username || ""}
+                                                        onChange={(e) => {
+                                                            const newConfig = { ...(localAuthConfig || {}), username: e.target.value };
+                                                            setLocalAuthConfig(newConfig);
+                                                            updateNodeData({ authConfig: newConfig });
+                                                        }}
+                                                        placeholder="admin"
+                                                        disabled={isActive}
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className={CONTENT.formGroup}>
+                                                <div className={CONTENT.formRow}>
+                                                    <label className={CONTENT.label}>Password:</label>
+                                                    <input
+                                                        type="password"
+                                                        className={CONTENT.input}
+                                                        value={(localAuthConfig || {}).password || ""}
+                                                        onChange={(e) => {
+                                                            const newConfig = { ...(localAuthConfig || {}), password: e.target.value };
+                                                            setLocalAuthConfig(newConfig);
+                                                            updateNodeData({ authConfig: newConfig });
+                                                        }}
+                                                        placeholder="password123"
+                                                        disabled={isActive}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
+
+                                    {/* Header Auth Configuration */}
+                                    {authType === "header" && (
+                                        <>
+                                            <div className={CONTENT.formGroup}>
+                                                <div className={CONTENT.formRow}>
+                                                    <label className={CONTENT.label}>Header Name:</label>
+                                                    <input
+                                                        type="text"
+                                                        className={CONTENT.input}
+                                                        value={(localAuthConfig || {}).headerName || ""}
+                                                        onChange={(e) => {
+                                                            const newConfig = { ...(localAuthConfig || {}), headerName: e.target.value };
+                                                            setLocalAuthConfig(newConfig);
+                                                            updateNodeData({ authConfig: newConfig });
+                                                        }}
+                                                        placeholder="X-API-Key"
+                                                        disabled={isActive}
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className={CONTENT.formGroup}>
+                                                <div className={CONTENT.formRow}>
+                                                    <label className={CONTENT.label}>Header Value:</label>
+                                                    <input
+                                                        type="text"
+                                                        className={CONTENT.input}
+                                                        value={(localAuthConfig || {}).headerValue || ""}
+                                                        onChange={(e) => {
+                                                            const newConfig = { ...(localAuthConfig || {}), headerValue: e.target.value };
+                                                            setLocalAuthConfig(newConfig);
+                                                            updateNodeData({ authConfig: newConfig });
+                                                        }}
+                                                        placeholder="your-secret-key"
+                                                        disabled={isActive}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
+
+                                    {/* JWT Auth Configuration */}
+                                    {authType === "jwt" && (
+                                        <div className={CONTENT.formGroup}>
+                                            <div className={CONTENT.formRow}>
+                                                <label className={CONTENT.label}>JWT Secret:</label>
+                                                <input
+                                                    type="password"
+                                                    className={CONTENT.input}
+                                                    value={(localAuthConfig || {}).jwtSecret || ""}
+                                                    onChange={(e) => {
+                                                        const newConfig = { ...(localAuthConfig || {}), jwtSecret: e.target.value };
+                                                        setLocalAuthConfig(newConfig);
+                                                        updateNodeData({ authConfig: newConfig });
+                                                    }}
+                                                    placeholder="your-jwt-secret"
+                                                    disabled={isActive}
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
@@ -931,6 +1079,24 @@ const TriggerWebhookNode = memo(
                                             {lastRequestDisplay}
                                         </span>
                                     </div>
+
+                                    {/* Auto-trigger status */}
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-[8px] font-medium text-purple-600 dark:text-purple-400">Auto-trigger:</span>
+                                        <span className={`text-[8px] font-medium ${autoTrigger ? 'text-green-600 dark:text-green-400' : 'text-slate-500 dark:text-slate-400'}`}>
+                                            {autoTrigger ? 'Enabled' : 'Disabled'}
+                                        </span>
+                                    </div>
+
+                                    {/* Last data preview */}
+                                    {lastRequestData && (
+                                        <div className="mt-1 p-1 bg-slate-100 dark:bg-slate-700 rounded text-[7px] font-mono">
+                                            <div className="text-purple-600 dark:text-purple-400 font-semibold mb-0.5">Last Data:</div>
+                                            <div className="text-slate-600 dark:text-slate-300 truncate">
+                                                {JSON.stringify(lastRequestData).substring(0, 50)}...
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
@@ -979,6 +1145,8 @@ const TriggerWebhookNode = memo(
                                         Test
                                     </button>
                                 )}
+
+
                             </div>
                         </div>
                     </div>
