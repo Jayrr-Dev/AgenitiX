@@ -62,6 +62,9 @@ function validateAuth(request: NextRequest, authType: string, authConfig: any): 
     }
 }
 
+// In-memory storage for webhook data (temporary solution)
+const webhookDataStorage = new Map<string, any>();
+
 // In-memory storage for active webhooks (in production, use database)
 const activeWebhooks = new Map<string, {
     httpMethod: string;
@@ -266,6 +269,19 @@ async function handleWebhookRequest(
             timestamp: webhookData.timestamp,
         });
 
+        // Log the actual webhook data for debugging
+        console.log('📤 Webhook data to be sent to nodes:', {
+            nodeId: webhookConfig.nodeId,
+            webhookData: webhookData,
+            requestBody: requestData,
+        });
+
+        // Store webhook data for the node (temporary solution)
+        if (webhookConfig.nodeId) {
+            webhookDataStorage.set(webhookConfig.nodeId, requestData);
+            console.log('💾 Stored webhook data for node:', webhookConfig.nodeId);
+        }
+
         // Update webhook statistics
         updateWebhookStats(webhookPath, method, webhookData);
 
@@ -383,12 +399,16 @@ async function handleWebhookManagement(
             const key = `${method}:${webhookPath}`;
             const config = activeWebhooks.get(key);
 
+            // Get stored webhook data for this node
+            const nodeData = config?.nodeId ? webhookDataStorage.get(config.nodeId) : null;
+
             return NextResponse.json({
                 success: true,
                 stats: config ? {
                     requestCount: config.requestCount,
                     lastRequestTime: config.lastRequestTime,
                     isActive: config.isActive,
+                    lastRequestData: nodeData, // Include the actual webhook data
                 } : null,
                 path: webhookPath,
                 method: method,
