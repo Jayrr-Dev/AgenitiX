@@ -19,7 +19,7 @@ import { ThemeSwitcher } from "@/components/theme-switcher";
 import { History, Maximize, Minimize, RotateCcw, RotateCw, Copy, Trash2 } from "lucide-react";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useComponentButtonClasses, useComponentClasses } from "../theming/components";
-import { useUndoRedo } from "./history/undo-redo-context";
+import { useUndoRedo } from "./history/features/undo-redo-context";
 import { useFlowStore, useSelectedNodeId, useAddNode, useRemoveNode, useSelectNode } from "../flow-engine/stores/flowStore";
 import type { AgenNode } from "../flow-engine/types/nodeData";
 import { useFlowMetadataOptional } from "../flow-engine/contexts/flow-metadata-context";

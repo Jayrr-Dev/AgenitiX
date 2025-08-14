@@ -21,7 +21,7 @@ import {
   useRef,
 } from "react";
 import type { ActionType } from "./UndoRedoManager";
-import type { HistoryNode } from "./historyGraph";
+import type { HistoryNode } from "../utils/historyGraph";
 
 export interface UndoRedoManagerAPI {
   undo: () => boolean;

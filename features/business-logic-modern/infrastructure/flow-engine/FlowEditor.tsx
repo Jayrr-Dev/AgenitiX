@@ -31,12 +31,12 @@ import { useFlowMetadataOptional } from "./contexts/flow-metadata-context";
 
 import ActionToolbar from "@/features/business-logic-modern/infrastructure/action-toolbar/ActionToolbar";
 import Sidebar from "@/features/business-logic-modern/infrastructure/sidebar/Sidebar";
-import UndoRedoManager from "../action-toolbar/history/UndoRedoManager";
-import type { HistoryNode } from "../action-toolbar/history/historyGraph";
+import UndoRedoManager from "../action-toolbar/history/features/UndoRedoManager";
+import type { HistoryNode } from "../action-toolbar/history/utils/historyGraph";
 import {
   UndoRedoProvider,
   useUndoRedo,
-} from "../action-toolbar/history/undo-redo-context";
+} from "../action-toolbar/history/features/undo-redo-context";
 import { useNodeStyleStore } from "../theming/stores/nodeStyleStore";
 import { FlowCanvas } from "./components/FlowCanvas";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";

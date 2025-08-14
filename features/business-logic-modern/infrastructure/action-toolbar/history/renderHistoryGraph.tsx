@@ -21,7 +21,7 @@ import {
   ReactFlowProvider,
 } from "@xyflow/react";
 import React, { useCallback, useMemo } from "react";
-import type { HistoryNode } from "./historyGraph";
+import type { HistoryNode } from "./utils/historyGraph";
 
 // LAYOUT CONSTANTS
 const LAYOUT_CONFIG = {

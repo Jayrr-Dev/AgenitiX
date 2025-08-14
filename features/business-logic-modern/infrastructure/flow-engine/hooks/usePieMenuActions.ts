@@ -14,7 +14,7 @@ import type { PieMenuAction, PieMenuSubItem } from "@/components/ui/pie-menu";
 import { usePieMenu } from "@/components/ui/pie-menu";
 import { useCallback, useMemo } from "react";
 import { getAllNodeSpecMetadata } from "@/features/business-logic-modern/infrastructure/node-registry/nodespec-registry";
-import { useUndoRedo } from "../../action-toolbar/history/undo-redo-context";
+import { useUndoRedo } from "../../action-toolbar/history/features/undo-redo-context";
 import {
   useAddNode,
   useFlowStore,

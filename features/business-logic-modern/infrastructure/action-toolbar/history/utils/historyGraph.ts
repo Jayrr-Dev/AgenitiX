@@ -44,7 +44,7 @@ export interface HistoryGraph {
 }
 
 // Re-export the manager API to keep imports centralized
-export type { UndoRedoManagerAPI } from "./undo-redo-context";
+export type { UndoRedoManagerAPI } from "../features/undo-redo-context";
 
 /**
  * Build the path from the graph root to a target node.

@@ -17,9 +17,9 @@ import { type Edge, type Node, useReactFlow } from "@xyflow/react";
 import { enableMapSet, produce } from "immer";
 import type React from "react";
 import { useCallback, useEffect, useMemo, useRef } from "react";
-import { useAuth } from "../../../../../components/auth/AuthProvider";
-import type { Id } from "../../../../../convex/_generated/dataModel";
-import { useFlowMetadataOptional } from "../../flow-engine/contexts/flow-metadata-context";
+import { useAuth } from "../../../../../../components/auth/AuthProvider";
+import type { Id } from "../../../../../../convex/_generated/dataModel";
+import { useFlowMetadataOptional } from "../../../flow-engine/contexts/flow-metadata-context";
 import {
   createChildNode,
   createRootGraph,
@@ -31,8 +31,8 @@ import {
   removeNodeAndChildren,
   saveGraph,
   setPersistenceCallbacks,
-} from "./graphHelpers";
-import type { FlowState, HistoryGraph, HistoryNode } from "./historyGraph";
+} from "../utils/graphHelpers";
+import type { FlowState, HistoryGraph, HistoryNode } from "../utils/historyGraph";
 import { useRegisterUndoRedoManager } from "./undo-redo-context";
 import { useHistoryPersistence } from "./useHistoryPersistence";
 

@@ -11,9 +11,9 @@
 
 import { useMutation, useQuery } from "convex/react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { api } from "../../../../../convex/_generated/api";
-import type { Id } from "../../../../../convex/_generated/dataModel";
-import type { HistoryGraph } from "./historyGraph";
+import { api } from "../../../../../../convex/_generated/api";
+import type { Id } from "../../../../../../convex/_generated/dataModel";
+import type { HistoryGraph } from "../utils/historyGraph";
 
 // Robust client-side sanitizer to ensure ZERO content/outputs reach Convex
 function optimizeGraphForStorage(graph: HistoryGraph): HistoryGraph {

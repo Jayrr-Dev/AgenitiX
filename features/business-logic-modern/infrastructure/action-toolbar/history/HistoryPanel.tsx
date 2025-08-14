@@ -25,8 +25,8 @@ import {
   Zap,
 } from "lucide-react";
 import React, { Suspense, useCallback, useMemo, useState } from "react";
-import type { HistoryNode } from "./historyGraph";
-import { useUndoRedo } from "./undo-redo-context";
+import type { HistoryNode } from "./utils/historyGraph";
+import { useUndoRedo } from "./features/undo-redo-context";
 // Lazy-load the heavy ReactFlow-powered graph renderer only when needed for significant memory & bundle savings
 const RenderHistoryGraph = React.lazy(() => import("./renderHistoryGraph"));
 

@@ -10,7 +10,7 @@
  */
 
 // Lightweight runtime compression for large graphs (≈70% smaller). Adds <2 KB to bundle.
-import { generateNodeId as generateReadableNodeId } from "../../flow-engine/utils/nodeUtils";
+import { generateNodeId as generateReadableNodeId } from "../../../flow-engine/utils/nodeUtils";
 import type {
   FlowState,
   HistoryGraph,
