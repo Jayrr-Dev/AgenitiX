@@ -6,29 +6,34 @@ import {
 import { cn } from "@/lib/utils";
 import * as AccordionPrimitive from "@radix-ui/react-accordion";
 import { PlusIcon } from "lucide-react";
+import { useTheme } from "next-themes";
 import type { typeFAQ } from "../types";
 
 export default function FAQ({ faq }: { faq: typeFAQ[] }) {
+  // Get current theme
+  const { theme } = useTheme();
+  const isDarkTheme = theme === "dark";
+  
   return (
     <div className="relative py-16 lg:py-24">
       {/* Background with subtle pattern */}
-      <div className="absolute inset-0 bg-gradient-to-b from-gray-50/50 to-white dark:from-gray-900/50 dark:to-gray-900" />
+      <div className={`absolute inset-0 bg-gradient-to-b ${isDarkTheme ? 'from-gray-900/50 to-gray-900' : 'from-gray-50/50 to-white'}`} />
 
       <div className="relative mx-auto max-w-4xl px-6">
         {/* Enhanced header section */}
         <div className="text-center mb-16">
           <div className="inline-flex items-center gap-2 rounded-full bg-purple-500/10 px-4 py-2 mb-6 border border-purple-500/20">
             <div className="h-2 w-2 rounded-full bg-purple-400" />
-            <span className="font-medium text-sm text-purple-600 dark:text-purple-400 tracking-wider uppercase">
+            <span className={`font-medium text-sm tracking-wider uppercase ${isDarkTheme ? 'text-purple-400' : 'text-purple-600'}`}>
               FAQ
             </span>
           </div>
 
-          <h2 className="font-bold text-3xl text-gray-900 dark:text-white lg:text-4xl xl:text-5xl mb-4 tracking-tight">
+          <h2 className={`font-bold text-3xl lg:text-4xl xl:text-5xl mb-4 tracking-tight ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>
             Frequently Asked Questions
           </h2>
 
-          <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto leading-relaxed">
+          <p className={`text-lg max-w-2xl mx-auto leading-relaxed ${isDarkTheme ? 'text-white' : 'text-gray-600'}`}>
             Everything you need to know about AgenitiX automation platform.
             Can't find what you're looking for? Contact our team.
           </p>
@@ -72,17 +77,17 @@ export default function FAQ({ faq }: { faq: typeFAQ[] }) {
         {/* CTA section */}
         <div className="mt-16 text-center">
           <div className="rounded-2xl bg-gradient-to-r from-purple-500/10 to-blue-500/10 border border-purple-200/50 dark:border-purple-700/50 p-8">
-            <h3 className="font-bold text-xl text-gray-900 dark:text-white mb-3">
+            <h3 className={`font-bold text-xl mb-3 ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>
               Still have questions?
             </h3>
-            <p className="text-gray-600 dark:text-gray-300 mb-6">
+            <p className={`mb-6 ${isDarkTheme ? 'text-white' : 'text-gray-600'}`}>
               Our team is here to help you get the most out of AgenitiX
               automation.
             </p>
             <button
               type="button"
               className="inline-flex items-center gap-2 rounded-full bg-purple-600 px-6 py-3 font-semibold text-white transition-all duration-300 hover:bg-purple-700 hover:scale-105 shadow-lg hover:shadow-xl"
-              onClick={() => (window.location.href = "/contact")}
+              onClick={() => (window.location.href = "mailto:support@agenitix.com")}
             >
               Contact Support
               <svg
