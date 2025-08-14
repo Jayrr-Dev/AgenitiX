@@ -15,6 +15,8 @@ export default function FeatureBoxesBento({
 }: {
   features: typeFeatureBoxesBento[];
 }) {
+  const { theme } = useTheme();
+  const isDarkTheme = theme === "dark";
   const getSkeleton = (type: typeFeatureBoxesBento["skeleton"]) => {
     switch (type) {
       case "SkeletonOne":
@@ -45,11 +47,11 @@ export default function FeatureBoxesBento({
             </span>
           </div>
 
-          <h4 className="mx-auto max-w-5xl text-center font-bold text-3xl text-gray-900 tracking-tight lg:text-5xl lg:leading-tight dark:text-white mb-6">
+          <h4 className={`mx-auto max-w-5xl text-center font-bold text-3xl tracking-tight lg:text-5xl lg:leading-tight mb-6 ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>
             Everything you need to automate your business
           </h4>
 
-          <p className="mx-auto max-w-2xl text-center font-normal text-gray-600 text-lg lg:text-xl leading-relaxed dark:text-gray-300">
+          <p className={`mx-auto max-w-2xl text-center font-normal text-lg lg:text-xl leading-relaxed ${isDarkTheme ? 'text-white' : 'text-gray-600'}`}>
             From simple data entry to complex multi-step workflows, AgenitiX
             provides the tools, integrations, and AI capabilities to automate
             any business process—without writing a single line of code.
