@@ -1,0 +1,1 @@
+Don't break the code or remove logc or remove the header jsdocs. But make it more organized and easier to read and maintain? You can optimize as long as it still will work. Create clear seperatation between sections with ascii text Use best practices for formating and code cleaning. Make the notes more Succent and clean and easy to skim through.

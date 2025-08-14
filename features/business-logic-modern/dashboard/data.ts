@@ -1,6 +1,7 @@
 import type { Flow } from "./types";
 
 /**
+ * @deprecated
  * FLOW DATA - Legacy dummy data (DEPRECATED)
  *
  * This file is being removed in favor of Convex database integration.

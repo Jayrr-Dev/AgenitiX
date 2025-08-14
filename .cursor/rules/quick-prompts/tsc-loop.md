@@ -1,0 +1,1 @@
+loop through pnpm tsc --noemit and fix all issues you encounter using best practices
