@@ -14,5 +14,92 @@
 		"**/.git/**": true,
 		"**/node_modules/**": true,
 		"**/.vscode/**": true
-	}
+	},
+	"workbench.editor.highlightModifiedTabs": true,
+	"workbench.colorCustomizations": {
+		"tab.activeBackground": "#000000",
+	},
+	"editor.tokenColorCustomizations": {
+		"comments": "#fcac00" // any hex, rgb, or theme color
+	},
+	"folder-color.pathColors": [
+		{
+			"folderPath": "Agenitix-2\\features\\",
+			"badge": "🔥"
+		},
+		{
+			"folderPath": "Agenitix-2\\features\\business-logic-modern\\dashboard\\",
+			"badge": "📘",
+			"color": "foldercolorizer.color_0066ff"
+		},
+		{
+			"folderPath": "Agenitix-2\\features\\business-logic-modern\\infrastructure\\",
+			"badge": "🏭",
+			"color": "foldercolorizer.color_66cc66"
+		},
+		{
+			"folderPath": "Agenitix-2\\features\\business-logic-modern\\node-domain\\",
+			"badge": "⚪",
+			"color": "foldercolorizer.color_cccc00"
+		},
+		{
+			"folderPath": "Agenitix-2\\features\\business-logic-modern\\",
+			"badge": "⚙️"
+		},
+		{
+			"folderPath": "Agenitix-2\\features\\business-logic-modern\\infrastructure\\node-core\\",
+			"badge": "🔳",
+			"color": "foldercolorizer.color_ccffff"
+		},
+		{
+			"folderPath": "Agenitix-2\\features\\business-logic-modern\\infrastructure\\sidebar\\",
+			"badge": "🔳",
+			"color": "foldercolorizer.color_ccffff"
+		},
+		{
+			"folderPath": "Agenitix-2\\features\\business-logic-modern\\infrastructure\\action-toolbar\\",
+			"badge": "🔳",
+			"color": "foldercolorizer.color_ccffff"
+		},
+		{
+			"folderPath": "Agenitix-2\\features\\business-logic-modern\\infrastructure\\node-inspector\\",
+			"badge": "🔳",
+			"color": "foldercolorizer.color_ccffff"
+		},
+		{
+			"folderPath": "Agenitix-2\\features\\business-logic-modern\\infrastructure\\telemetry\\",
+			"badge": "🛰️",
+			"color": "foldercolorizer.color_ff99ff"
+		},
+		{
+			"folderPath": "Agenitix-2\\features\\business-logic-modern\\infrastructure\\credentials\\",
+			"badge": "🛰️",
+			"color": "foldercolorizer.color_ff99ff"
+		},
+		{
+			"folderPath": "Agenitix-2\\features\\business-logic-modern\\infrastructure\\flow-engine\\",
+			"badge": "⚪",
+			"color": "foldercolorizer.color_cc6600"
+		},
+		{
+			"folderPath": "Agenitix-2\\features\\business-logic-modern\\infrastructure\\theming\\",
+			"badge": "⚪",
+			"color": "foldercolorizer.color_cc6600"
+		},
+		{
+			"folderPath": "Agenitix-2\\features\\business-logic-modern\\infrastructure\\workflow-manager\\",
+			"badge": "⚪",
+			"color": "foldercolorizer.color_cc6600"
+		},
+		{
+			"folderPath": "Agenitix-2\\features\\business-logic-modern\\infrastructure\\node-registry\\",
+			"badge": "⚪",
+			"color": "foldercolorizer.color_cc6600"
+		},
+		{
+			"folderPath": "Agenitix-2\\features\\business-logic-modern\\infrastructure\\run-history\\",
+			"badge": "⚪",
+			"color": "foldercolorizer.color_cc6600"
+		}
+	]
 }

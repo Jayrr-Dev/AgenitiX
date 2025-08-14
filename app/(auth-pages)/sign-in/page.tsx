@@ -205,9 +205,10 @@ export default function SignInPage() {
                 <>
                   {/* OAuth Sign-in Options */}
                   <div className="space-y-3 mb-6">
-                    <GoogleButton disabled={isLoading} />
-                    <GitHubButton disabled={isLoading} />
-
+                    <div className="grid grid-cols-1 gap-2">
+                    <GoogleButton disabled={isLoading} className="w-full" />
+                    <GitHubButton disabled={isLoading} className="w-full" />
+                    </div>
                     {/* Divider */}
                     <div className="relative">
                       <div className="absolute inset-0 flex items-center">

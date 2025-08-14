@@ -24,6 +24,8 @@ import "@arco-design/web-react/dist/css/arco.css";
 import Loading from "./loading";
 import { ConvexAuthNextjsServerProvider } from "@convex-dev/auth/nextjs/server";
 import { ConvexClientProvider } from "./provider";
+import { PieMenuProvider } from "@/components/ui/pie-menu";
+import { SetupPieMenuContextMenuClient } from "@/app/providers/setupPieMenuContextMenuClient";
 
 // Import why-did-you-render for development debugging
 import "@/lib/why-did-you-render";
@@ -124,9 +126,12 @@ export default function RootLayout({
           <AnubisProvider>
             <OptimisticVerificationProvider>
               <ConvexClientProvider>
-                <Suspense fallback={<Loading />}>
-                  <LayoutWrapper>{children}</LayoutWrapper>
-                </Suspense>
+                <PieMenuProvider>
+                  <Suspense fallback={<Loading />}>
+                    <LayoutWrapper>{children}</LayoutWrapper>
+                  </Suspense>
+                  <SetupPieMenuContextMenuClient />
+                </PieMenuProvider>
                 {/* {process.env.NODE_ENV === "development" && <MagicLinkTest />} */}
               </ConvexClientProvider>
               <PWAInstallPrompt />
