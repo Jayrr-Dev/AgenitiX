@@ -32,3 +32,6 @@ export { default as emailList, spec as emailListSpec } from "./emailList.node";
 export { default as emailData, spec as emailDataSpec } from "./emailData.node";
 export { default as emailBulk, spec as emailBulkSpec } from "./emailBulk.node";
 export { default as emailAnalytics, spec as emailAnalyticsSpec } from "./emailAnalytics.node";
+export { default as emailDraft, spec as emailDraftSpec } from "./emailDraft.node";
+export { default as emailFilter, spec as emailFilterSpec } from "./emailFilter.node";
+export { default as emailLabeler, spec as emailLabelerSpec } from "./emailLabeler.node";

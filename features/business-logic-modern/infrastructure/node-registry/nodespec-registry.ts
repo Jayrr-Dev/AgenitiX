@@ -57,6 +57,9 @@ import { spec as logicNotSpec } from "../../node-domain/logic/logicNot.node";
 import { spec as logicXorSpec } from "../../node-domain/logic/logicXor.node";
 import { spec as logicXnorSpec } from "../../node-domain/logic/logicXnor.node";
 import { spec as storeSheetSpec } from "../../node-domain/store/storeSheet.node";
+import { spec as emailDraftSpec } from "../../node-domain/email/emailDraft.node";
+import { spec as emailFilterSpec } from "../../node-domain/email/emailFilter.node";
+import { spec as emailLabelerSpec } from "../../node-domain/email/emailLabeler.node";
 import type { NodeSpec } from "../node-core/NodeSpec";
 
 // Collect all specs in one place
@@ -114,6 +117,9 @@ const nodeSpecs: Record<string, NodeSpec> = {
 	logicXor: logicXorSpec,
 	logicXnor: logicXnorSpec,
 	storeSheet: storeSheetSpec,
+	emailDraft: emailDraftSpec,
+	emailFilter: emailFilterSpec,
+	emailLabeler: emailLabelerSpec,
 };
 
 // Enhanced metadata that combines NodeSpec with additional UI properties
