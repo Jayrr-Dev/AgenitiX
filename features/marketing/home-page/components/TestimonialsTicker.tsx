@@ -15,8 +15,8 @@ const InfiniteMovingCards = dynamic(
 
 export const Testimonials = () => {
   const [isVisible, setIsVisible] = useState(false);
-  const { theme, setTheme } = useTheme();
-  // Theme logging removed for production
+  const { theme } = useTheme();
+  const isDarkTheme = theme === "dark";
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -27,16 +27,16 @@ export const Testimonials = () => {
   }, []);
 
   return (
-    <div className="h-full w-full">
+    <div className={`h-full w-full ${isDarkTheme ? 'bg-gray-900 dark' : 'bg-white'}`}>
       <div className="px-8">
         <h4
-          className={`${theme === "dark" ? "text-white mx-auto max-w-5xl text-center font-medium text-3xl tracking-tight lg:text-5xl lg:leading-tight dark:text-white" : "text-black mx-auto max-w-5xl text-center font-medium text-3xl tracking-tight lg:text-5xl lg:leading-tight dark:text-white"}`}
+          className={`mx-auto max-w-5xl text-center font-medium text-3xl tracking-tight lg:text-5xl lg:leading-tight ${isDarkTheme ? 'text-white' : 'text-black'}`}
         >
           What Our Clients Are Saying
         </h4>
 
         <p
-          className={`${theme === "dark" ? "text-white mx-auto my-4 max-w-2xl text-center font-normal text-neutral-500 text-sm lg:text-base dark:text-neutral-300" : "text-black mx-auto my-4 max-w-2xl text-center font-normal text-neutral-500 text-sm lg:text-base dark:text-neutral-300"}`}
+          className={`mx-auto my-4 max-w-2xl text-center font-normal text-sm lg:text-base ${isDarkTheme ? 'text-white' : 'text-neutral-500'}`}
         >
           Join the community of forward-thinking businesses and creators who
           rely on our AI solutions to transform their workflows and unlock new
@@ -51,6 +51,7 @@ export const Testimonials = () => {
           direction="right"
           speed="slow"
           pauseOnHover={true}
+          className={isDarkTheme ? 'dark' : ''}
         />
       </div>
     </div>

@@ -150,7 +150,7 @@ export default function Home() {
 			{/* <Main /> */}
 			{/* <BrandWordmark/> */}
 			{/* Features Section */}
-			<div id="features-section" className="col-span-8 col-start-3 h-full w-full ">
+			{/* <div id="features-section" className="col-span-8 col-start-3 h-full w-full ">
 				<div className="mb-12 text-center">
 					<h2 className={`text-3xl font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-black'}`}>
 						Powerful Features for Modern Developers
@@ -160,10 +160,10 @@ export default function Home() {
 					</p>
 				</div>
 				<FeatureBoxesPlain features={featureBoxesPlain} />
-			</div>
+			</div> */}
 
 			{/* Animated Testimonials */}
-			<div id="animated-testimonials" className="col-span-8 col-start-3 h-full w-full ">
+			{/* <div id="animated-testimonials" className="col-span-8 col-start-3 h-full w-full ">
 				<div className="mb-12 text-center">
 					<h2 className={`text-3xl font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-black'}`}>
 						What Our Users Are Saying
@@ -173,10 +173,10 @@ export default function Home() {
 					</p>
 				</div>
 				<AnimatedTestimonialsDemo />
-			</div>
+			</div> */}
 
 			{/* Features Section 2 */}
-			<div id="features-section-2" className="col-span-8 col-start-3 h-full w-full ">
+			{/* <div id="features-section-2" className="col-span-8 col-start-3 h-full w-full ">
 				<div className="mb-12 text-center">
 					<h2 className={`text-3xl font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-black'}`}>
 						Integrated Development Experience
@@ -186,10 +186,10 @@ export default function Home() {
 					</p>
 				</div>
 				<FeatureBoxesIconed features={featureBoxesIconed} />
-			</div>
+			</div> */}
 
 			{/* Canvas Reveal Effect */}
-			<div id="canvas-reveal-effect" className="col-span-8 col-start-3 h-full w-full ">
+			{/* <div id="canvas-reveal-effect" className="col-span-8 col-start-3 h-full w-full ">
 				<div className="mb-12 text-center">
 					<h2 className={`text-3xl font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-black'}`}>
 						Explore the Possibilities
@@ -199,7 +199,7 @@ export default function Home() {
 					</p>
 				</div>
 				<Revealer />
-			</div>
+			</div> */}
 
 			{/* FAQ */}
 			<div id="faq" className="col-span-8 col-start-3 h-full w-full ">
