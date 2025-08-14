@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils";
 
 /** Public props: extend native textarea props and add a variant. */
 interface TextareaProps extends React.ComponentProps<"textarea"> {
-  variant?: "default" | "barebones";
+  variant?: "default" | "barebones" | "node";
 }
 
 /** Internal type for selection bookkeeping. */
@@ -198,6 +198,9 @@ const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
           variant === "barebones"
             ? // ⬇️ KEEPING YOUR BAREBONES STYLING EXACT
               "w-full h-full resize-none outline-none bg-transparent border-none p-0 m-0 nodrag"
+            : variant === "node"
+            ? // ⬇️ NODE VARIANT STYLING - p-2 padding with text-[10px]
+              "field-sizing-content flex min-h-16 w-full rounded-md border border-input bg-transparent p-2 text-[10px] shadow-xs outline-none transition-[color,box-shadow] placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:bg-input/30 dark:aria-invalid:ring-destructive/40"
             : // ⬇️ KEEPING YOUR DEFAULT STYLING EXACT
               "field-sizing-content flex min-h-16 w-full rounded-md border border-input bg-transparent px-3 py-2 text-base shadow-xs outline-none transition-[color,box-shadow] placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 md:text-sm dark:bg-input/30 dark:aria-invalid:ring-destructive/40",
           className

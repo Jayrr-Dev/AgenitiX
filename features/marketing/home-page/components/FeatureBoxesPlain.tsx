@@ -2,6 +2,7 @@
 
 import type React from "react";
 import { useId } from "react";
+import { useTheme } from "next-themes";
 import type { typeFeatureBoxesPlain } from "../types";
 
 /* ✨ Types */
@@ -9,6 +10,7 @@ import type { typeFeatureBoxesPlain } from "../types";
 interface GridProps {
   pattern?: [number, number][];
   size?: number;
+  isDarkTheme?: boolean;
 }
 
 interface GridPatternProps extends React.SVGProps<SVGSVGElement> {
@@ -25,10 +27,14 @@ export default function FeaturesBoxesPlain({
 }: {
   features: typeFeatureBoxesPlain[];
 }) {
+  // Get current theme
+  const { theme } = useTheme();
+  const isDarkTheme = theme === "dark";
+  
   return (
-    <section className="relative py-20 lg:py-40">
+    <section className={`relative py-20 lg:py-40 ${isDarkTheme ? 'bg-gray-900' : 'bg-transparent'}`}>
       {/* Background gradient */}
-      <div className="absolute inset-0 bg-gradient-to-b from-white to-gray-50 dark:from-gray-900 dark:to-gray-800" />
+      <div className={`absolute inset-0 bg-gradient-to-b ${isDarkTheme ? 'from-gray-900 to-gray-800' : 'from-white to-gray-50'}`} />
 
       <div className="relative mx-auto max-w-7xl px-6">
         {/* Enhanced section header */}
@@ -40,11 +46,11 @@ export default function FeaturesBoxesPlain({
             </span>
           </div>
 
-          <h2 className="font-bold text-3xl text-gray-900 dark:text-white lg:text-4xl mb-4 tracking-tight">
+          <h2 className={`font-bold text-3xl lg:text-4xl mb-4 tracking-tight ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>
             Enterprise-grade automation features
           </h2>
 
-          <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+          <p className={`text-lg max-w-2xl mx-auto ${isDarkTheme ? 'text-white' : 'text-gray-600'}`}>
             Powerful capabilities designed for scale, security, and seamless
             business integration.
           </p>
@@ -55,22 +61,25 @@ export default function FeaturesBoxesPlain({
           {features.map((feature, index) => (
             <article
               key={feature.title}
-              className="group relative overflow-hidden rounded-2xl bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 p-6 transition-all duration-500 hover:shadow-xl hover:shadow-gray-900/10 dark:hover:shadow-gray-100/5 hover:-translate-y-1 hover:bg-white dark:hover:bg-gray-800"
+              className={`group relative overflow-hidden rounded-2xl backdrop-blur-sm p-6 transition-all duration-500 hover:-translate-y-1 ${isDarkTheme ? 
+                'bg-gray-800/70 border border-gray-700/50 hover:shadow-xl hover:shadow-gray-100/5 hover:bg-gray-800/90' : 
+                'bg-white/70 border border-gray-200/50 hover:shadow-xl hover:shadow-gray-900/10 hover:bg-white'
+              }`}
             >
-              <Grid size={20} pattern={generateDeterministicPattern(index)} />
+              <Grid size={20} pattern={generateDeterministicPattern(index)} isDarkTheme={isDarkTheme} />
 
               {/* Enhanced title with gradient accent */}
               <div className="relative z-20 mb-4">
                 <div className="flex items-start gap-3">
                   <div className="flex-shrink-0 h-2 w-2 rounded-full bg-gradient-to-r from-emerald-400 to-blue-400 mt-2 group-hover:scale-125 transition-transform duration-300" />
-                  <h3 className="font-bold text-lg text-gray-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors duration-300">
+                  <h3 className={`font-bold text-lg transition-colors duration-300 ${isDarkTheme ? 'text-white group-hover:text-emerald-400' : 'text-gray-900 group-hover:text-emerald-600'}`}>
                     {feature.title}
                   </h3>
                 </div>
               </div>
 
               {/* Enhanced description */}
-              <p className="relative z-20 text-gray-600 dark:text-gray-300 leading-relaxed group-hover:text-gray-700 dark:group-hover:text-gray-200 transition-colors duration-300">
+              <p className={`relative z-20 leading-relaxed transition-colors duration-300 ${isDarkTheme ? 'text-gray-300 group-hover:text-gray-200' : 'text-gray-600 group-hover:text-gray-700'}`}>
                 {feature.description}
               </p>
 
@@ -85,17 +94,17 @@ export default function FeaturesBoxesPlain({
 }
 
 /* 🟩 Grid Overlay */
-const Grid: React.FC<GridProps> = ({ pattern, size = 20 }) => {
+const Grid: React.FC<GridProps> = ({ pattern, size = 20, isDarkTheme = false }) => {
   return (
     <div className="-top-2 -translate-x-1/2 pointer-events-none absolute inset-0 left-1/2 h-full w-full [mask-image:linear-gradient(white,transparent)]">
-      <div className="absolute inset-0 bg-gradient-to-r from-zinc-100/30 to-zinc-300/30 opacity-100 [mask-image:radial-gradient(farthest-side_at_top,white,transparent)] dark:from-zinc-900/30 dark:to-zinc-900/30">
+      <div className={`absolute inset-0 opacity-100 [mask-image:radial-gradient(farthest-side_at_top,white,transparent)] ${isDarkTheme ? 'bg-gradient-to-r from-zinc-800/40 to-zinc-900/40' : 'bg-gradient-to-r from-zinc-100/30 to-zinc-300/30'}`}>
         <GridPattern
           width={size}
           height={size}
           x={-12}
           y={4}
           squares={pattern}
-          className="absolute inset-0 h-full w-full fill-black/10 stroke-black/10 mix-blend-overlay dark:fill-white/10 dark:stroke-white/10"
+          className={`absolute inset-0 h-full w-full mix-blend-overlay ${isDarkTheme ? 'fill-white/10 stroke-white/10' : 'fill-black/10 stroke-black/10'}`}
         />
       </div>
     </div>

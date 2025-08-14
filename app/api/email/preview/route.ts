@@ -14,9 +14,10 @@ import "server-only";
 import { NextResponse } from "next/server";
 
 // Import React Email templates from the starter folder
-import NotionMagicLinkEmail from "../../../../react-email-starter/emails/notion-magic-link";
-import PlaidVerifyIdentityEmail from "../../../../react-email-starter/emails/plaid-verify-identity";
-import VercelInviteUserEmail from "../../../../react-email-starter/emails/vercel-invite-user";
+// TODO: Fix React Email compatibility with React 19
+// import NotionMagicLinkEmail from "../../../../react-email-starter/emails/notion-magic-link";
+// import PlaidVerifyIdentityEmail from "../../../../react-email-starter/emails/plaid-verify-identity";
+// import VercelInviteUserEmail from "../../../../react-email-starter/emails/vercel-invite-user";
 
 async function renderEmailHtml(element: React.ReactElement): Promise<string> {
   const { renderToStaticMarkup } = await import("react-dom/server");
@@ -27,24 +28,8 @@ async function renderEmailHtml(element: React.ReactElement): Promise<string> {
  * [Explanation], basically a map of keys to components and default preview props
  */
 const TEMPLATE_REGISTRY = {
-  notion_magic_link: {
-    key: "notion_magic_link",
-    name: "Notion Magic Link",
-    Component: NotionMagicLinkEmail,
-    defaultProps: (NotionMagicLinkEmail as any).PreviewProps ?? {},
-  },
-  plaid_verify_identity: {
-    key: "plaid_verify_identity",
-    name: "Plaid Verify Identity",
-    Component: PlaidVerifyIdentityEmail,
-    defaultProps: (PlaidVerifyIdentityEmail as any).PreviewProps ?? {},
-  },
-    vercel_invite_user: {
-      key: "vercel_invite_user",
-      name: "Vercel Invite User",
-      Component: VercelInviteUserEmail,
-      defaultProps: (VercelInviteUserEmail as any).PreviewProps ?? {},
-    },
+  // TODO: Re-enable when React Email is compatible with React 19
+  // Currently empty due to React 19 compatibility issues
 } as const;
 
 type TemplateKey = keyof typeof TEMPLATE_REGISTRY;
@@ -54,11 +39,8 @@ type TemplateKey = keyof typeof TEMPLATE_REGISTRY;
  * Returns available templates and their default props.
  */
 export async function GET() {
-  const templates = Object.values(TEMPLATE_REGISTRY).map((t) => ({
-    key: t.key,
-    name: t.name,
-    defaultProps: t.defaultProps,
-  }));
+  // TODO: Re-enable when React Email is compatible with React 19
+  const templates: any[] = [];
   return NextResponse.json({ templates });
 }
 
@@ -74,6 +56,13 @@ export async function POST(request: Request) {
       props?: Record<string, unknown> | null;
     };
 
+    // TODO: Re-enable when React Email is compatible with React 19
+    return NextResponse.json(
+      { error: "Email preview temporarily disabled due to React 19 compatibility issues" },
+      { status: 503 },
+    );
+
+    /*
     const key = (body.template || "notion_magic_link") as TemplateKey;
     const entry = TEMPLATE_REGISTRY[key];
     if (!entry) {
@@ -93,6 +82,7 @@ export async function POST(request: Request) {
     const html = await renderEmailHtml(Component(props as any));
 
     return NextResponse.json({ html });
+    */
   } catch (error) {
     const message = error instanceof Error ? error.message : "Render failed";
     return NextResponse.json({ error: message }, { status: 500 });

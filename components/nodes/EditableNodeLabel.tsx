@@ -100,7 +100,7 @@ const EditableNodeLabel: React.FC<EditableNodeLabelProps> = ({
 				userSelect: editing ? "text" : "none",
 				whiteSpace: "nowrap",
 				minWidth: "60px",
-				borderBottom: editing ? "1px solid currentColor" : "1px solid transparent",
+				borderBottom: editing ? "1px  solid currentColor" : "1px solid transparent",
 			}}
 			title={editing ? "Enter to save, Escape to cancel" : "Double-click to edit label"}
 		>

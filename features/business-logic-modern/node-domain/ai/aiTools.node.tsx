@@ -140,7 +140,7 @@ function createDynamicSpec(data: AiToolsData): NodeSpec {
         code: "t",
         position: "top",
         type: "source",
-        dataType: "Tools",
+        dataType: "array",
       },
     ],
     inspector: { key: "AiToolsInspector" },

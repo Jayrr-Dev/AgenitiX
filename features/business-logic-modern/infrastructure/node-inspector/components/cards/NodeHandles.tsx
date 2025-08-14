@@ -14,6 +14,7 @@ import React from "react";
 import { HandlePositionEditor } from "../HandlePositionEditor";
 import type { AgenNode } from "@/features/business-logic-modern/infrastructure/flow-engine/types/nodeData";
 import type { InspectorNodeInfo } from "../../adapters/NodeInspectorAdapter";
+import type { NodeHandleSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
 import type { Edge } from "@xyflow/react";
 
 interface NodeHandlesProps {
@@ -29,6 +30,11 @@ export const NodeHandles: React.FC<NodeHandlesProps> = ({
 	edges,
 	updateNodeData,
 }) => {
+	// [Explanation], basically create type-safe wrapper for updateNodeData
+	const handleUpdateNodeData = React.useCallback((nodeId: string, patch: Record<string, unknown>) => {
+		updateNodeData(nodeId, patch);
+	}, [updateNodeData]);
+
 	return (
 		<>
 			{/* Handles Summary */}
@@ -36,7 +42,7 @@ export const NodeHandles: React.FC<NodeHandlesProps> = ({
 				<div className="mb-3 rounded border border-border/30 bg-muted/30 p-2">
 					<div className="flex items-center justify-between text-xs">
 						<span className="font-medium text-foreground">
-							{nodeInfo.handles.length} handle{nodeInfo.handles.length !== 1 ? "string" : ""}
+							{nodeInfo.handles.length} handle{nodeInfo.handles.length !== 1 ? "s" : ""}
 						</span>
 						<span className="text-muted-foreground">
 							{
@@ -50,7 +56,7 @@ export const NodeHandles: React.FC<NodeHandlesProps> = ({
 								(edge) =>
 									edge.source === selectedNode.id || edge.target === selectedNode.id
 							).length !== 1
-								? "string"
+								? "s"
 								: ""}
 						</span>
 					</div>
@@ -62,7 +68,7 @@ export const NodeHandles: React.FC<NodeHandlesProps> = ({
 				<div className="mb-4 rounded border border-border/30 bg-muted/10 p-3">
 					<HandlePositionEditor
 						node={selectedNode}
-						handles={nodeInfo.handles}
+						handles={nodeInfo.handles as any}
 						updateNodeData={updateNodeData}
 					/>
 				</div>

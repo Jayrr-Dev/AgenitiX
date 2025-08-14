@@ -13,6 +13,7 @@ import {
   IconTerminal2,
 } from "@tabler/icons-react";
 import type React from "react";
+import { useTheme } from "next-themes";
 import type { typeFeatureBoxesIconed } from "../types";
 
 const iconMap: Record<typeFeatureBoxesIconed["icon"], React.ReactNode> = {
@@ -31,20 +32,23 @@ export default function FeatureBoxesIconed({
 }: {
   features: typeFeatureBoxesIconed[];
 }) {
+  const { theme } = useTheme();
+  const isDarkTheme = theme === "dark";
+  
   return (
     <div className="relative z-10 mx-auto max-w-7xl py-16 lg:py-24">
       {/* Enhanced section header */}
       <div className="mb-16 text-center">
         <div className="inline-flex items-center gap-2 rounded-full bg-blue-500/10 px-4 py-2 mb-6 border border-blue-500/20">
           <div className="h-2 w-2 rounded-full bg-blue-400" />
-          <span className="font-medium text-sm text-blue-600 dark:text-blue-400 tracking-wider uppercase">
+          <span className={`font-medium text-sm tracking-wider uppercase ${isDarkTheme ? 'text-blue-400' : 'text-blue-600'}`}>
             Why Choose AgenitiX
           </span>
         </div>
-        <h2 className="font-bold text-3xl text-gray-900 dark:text-white lg:text-4xl mb-4">
+        <h2 className={`font-bold text-3xl lg:text-4xl mb-4 ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>
           Built for modern businesses
         </h2>
-        <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+        <p className={`text-lg max-w-2xl mx-auto ${isDarkTheme ? 'text-white' : 'text-gray-600'}`}>
           From enterprise security to seamless scaling, every feature is
           designed with your success in mind.
         </p>
@@ -71,25 +75,27 @@ const Feature = ({
   icon: typeFeatureBoxesIconed["icon"];
   index: number;
 }) => {
+  const { theme } = useTheme();
+  const isDarkTheme = theme === "dark";
   return (
-    <div className="group/feature relative bg-white dark:bg-gray-900 p-8 transition-all duration-500 hover:bg-gray-50 dark:hover:bg-gray-800/80 cursor-pointer">
+    <div className={`group/feature relative p-8 transition-all duration-500 cursor-pointer ${isDarkTheme ? 'bg-gray-900 hover:bg-gray-800/80' : 'bg-white hover:bg-gray-50'}`}>
       {/* Enhanced hover effect */}
       <div className="absolute inset-0 bg-gradient-to-br from-blue-500/0 to-purple-500/0 group-hover/feature:from-blue-500/5 group-hover/feature:to-purple-500/5 transition-all duration-500" />
 
       {/* Icon with enhanced styling */}
       <div className="relative z-10 mb-6">
-        <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 group-hover/feature:bg-blue-100 dark:group-hover/feature:bg-blue-900/30 group-hover/feature:text-blue-600 dark:group-hover/feature:text-blue-400 transition-all duration-300 group-hover/feature:scale-110">
+        <div className={`inline-flex h-12 w-12 items-center justify-center rounded-xl transition-all duration-300 group-hover/feature:scale-110 ${isDarkTheme ? 'bg-gray-800 text-gray-300 group-hover/feature:bg-blue-900/30 group-hover/feature:text-blue-400' : 'bg-gray-100 text-gray-600 group-hover/feature:bg-blue-100 group-hover/feature:text-blue-600'}`}>
           {iconMap[icon]}
         </div>
       </div>
 
       {/* Enhanced title */}
-      <h3 className="relative z-10 mb-3 font-bold text-lg text-gray-900 dark:text-white group-hover/feature:text-blue-600 dark:group-hover/feature:text-blue-400 transition-colors duration-300">
+      <h3 className={`relative z-10 mb-3 font-bold text-lg transition-colors duration-300 ${isDarkTheme ? 'text-white group-hover/feature:text-blue-400' : 'text-gray-900 group-hover/feature:text-blue-600'}`}>
         {title}
       </h3>
 
       {/* Enhanced description */}
-      <p className="relative z-10 text-gray-600 dark:text-gray-300 leading-relaxed group-hover/feature:text-gray-700 dark:group-hover/feature:text-gray-200 transition-colors duration-300">
+      <p className={`relative z-10 leading-relaxed transition-colors duration-300 ${isDarkTheme ? 'text-white group-hover/feature:text-gray-200' : 'text-gray-600 group-hover/feature:text-gray-700'}`}>
         {description}
       </p>
 

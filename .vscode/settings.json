@@ -6,5 +6,13 @@
 		"*.css": "tailwindcss"
 	},
 	"tailwindCSS.hovers": true,
-	"typescript.autoClosingTags": false
+	"typescript.autoClosingTags": false,
+	"files.watcherExclude": {
+		"**/.git/objects/**": true,
+		"**/.git/subtree-cache/**": true,
+		"**/.hg/store/**": true,
+		"**/.git/**": true,
+		"**/node_modules/**": true,
+		"**/.vscode/**": true
+	}
 }

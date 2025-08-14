@@ -14,7 +14,8 @@
 
 import { render } from "@react-email/render";
 import { v } from "convex/values";
-import { AgenitiXMagicLinkEmail } from "../react-email-starter/emails/agenitix-magic-link";
+// TODO: Fix React Email compatibility with React 19
+// import { AgenitiXMagicLinkEmail } from "../react-email-starter/emails/agenitix-magic-link";
 import { action } from "./_generated/server";
 import { resend } from "./sendEmails";
 
@@ -32,15 +33,17 @@ export const sendMagicLinkEmail = action({
   async handler(ctx, args) {
     try {
       // Generate HTML from React Email template, basically render JSX to email-safe HTML
-      const html = await render(
-        AgenitiXMagicLinkEmail({
-          name: args.name,
-          magicLinkUrl: args.magicLinkUrl,
-          type: args.type,
-          requestFromIp: args.requestFromIp,
-          requestFromLocation: args.requestFromLocation,
-        })
-      );
+      // TODO: Fix React Email compatibility with React 19
+      // const html = await render(
+      //   AgenitiXMagicLinkEmail({
+      //     name: args.name,
+      //     magicLinkUrl: args.magicLinkUrl,
+      //     type: args.type,
+      //     requestFromIp: args.requestFromIp,
+      //     requestFromLocation: args.requestFromLocation,
+      //   })
+      // );
+      const html = `<p>Magic link: ${args.magicLinkUrl}</p>`;
 
       // Determine subject based on type, basically contextual subject lines
       const subject =
@@ -73,15 +76,17 @@ export const sendTestEmail = action({
   args: {},
   async handler(ctx) {
     // Test email using React Email template, basically development verification
-    const html = await render(
-      AgenitiXMagicLinkEmail({
-        name: "Test User",
-        magicLinkUrl: "https://agenitix.com/auth/verify?token=test123",
-        type: "verification",
-        requestFromIp: "127.0.0.1",
-        requestFromLocation: "Local Development",
-      })
-    );
+    // TODO: Fix React Email compatibility with React 19
+    // const html = await render(
+    //   AgenitiXMagicLinkEmail({
+    //     name: "Test User",
+    //     magicLinkUrl: "https://agenitix.com/auth/verify?token=test123",
+    //     type: "verification",
+    //     requestFromIp: "127.0.0.1",
+    //     requestFromLocation: "Local Development",
+    //   })
+    // );
+    const html = `<p>Magic link: https://agenitix.com/auth/verify?token=test123</p>`;
 
     const emailId = await resend.sendEmail(ctx, {
       from: FROM_EMAIL,

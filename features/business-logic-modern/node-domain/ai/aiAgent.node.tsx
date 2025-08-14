@@ -450,7 +450,7 @@ function createDynamicSpec(data: AiAgentData): NodeSpec {
         code: "t",
         position: "bottom",
         type: "target",
-        dataType: "Tools",
+        dataType: "array",
       },
       {
         id: "output",
