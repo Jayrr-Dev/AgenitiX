@@ -4,7 +4,7 @@ import type {
 	EXPANDED_SIZES,
 } from "@/features/business-logic-modern/infrastructure/theming/sizing";
 import type { z } from "zod";
-import type { NodeMemoryConfig } from "./nodeMemory";
+import type { NodeMemoryConfig } from "./features/nodeMemory";
 
 /**
  * JSON SHAPE SPEC - Declarative per-handle JSON shape contract

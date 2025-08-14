@@ -8,7 +8,7 @@
  * Keywords: handle-output, scalable, multi-handle, dynamic-mapping
  */
 
-import type { NodeSpec } from "./NodeSpec";
+import type { NodeSpec } from "../NodeSpec";
 
 /**
  * CLEAN HANDLE OUTPUT SYSTEM

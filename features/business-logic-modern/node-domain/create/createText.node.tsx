@@ -26,17 +26,17 @@ import LabelNode from "@/components/nodes/labelNode";
 import { Textarea } from "@/components/ui/textarea";
 import { findEdgeByHandle } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/edgeUtils";
 import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
-import { normalizeHandleId } from "@/features/business-logic-modern/infrastructure/node-core/handleOutputUtils";
-import { renderLucideIcon } from "@/features/business-logic-modern/infrastructure/node-core/iconUtils";
+import { normalizeHandleId } from "@/features/business-logic-modern/infrastructure/node-core/utils/handleOutputUtils";
+import { renderLucideIcon } from "@/features/business-logic-modern/infrastructure/node-core/utils/iconUtils";
 import {
   SafeSchemas,
   createSafeInitialData,
-} from "@/features/business-logic-modern/infrastructure/node-core/schema-helpers";
+} from "@/features/business-logic-modern/infrastructure/node-core/utils/schema-helpers";
 import {
   createNodeValidator,
   reportValidationError,
   useNodeDataValidation,
-} from "@/features/business-logic-modern/infrastructure/node-core/validation";
+} from "@/features/business-logic-modern/infrastructure/node-core/utils/validation";
 import { withNodeScaffold } from "@/features/business-logic-modern/infrastructure/node-core/withNodeScaffold";
 import { CATEGORIES } from "@/features/business-logic-modern/infrastructure/theming/categories";
 import {

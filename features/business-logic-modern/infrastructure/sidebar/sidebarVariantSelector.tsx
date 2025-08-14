@@ -19,7 +19,7 @@
 
 import type React from "react";
 import { useEffect, useState, memo, useMemo } from "react";
-import { LucideIcon, COMMON_LUCIDE_ICONS } from "../node-core/iconUtils";
+import { LucideIcon, COMMON_LUCIDE_ICONS } from "../node-core/utils/iconUtils";
 import { type SidebarVariant, VARIANT_NAMES } from "./types";
 
 // ============================================================================

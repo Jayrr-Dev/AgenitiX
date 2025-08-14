@@ -13,7 +13,7 @@
 
 import type React from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { FeatureFlagConfig } from "./NodeSpec";
+import type { FeatureFlagConfig } from "../NodeSpec";
 
 // Global cache for feature flag results to prevent duplicate API calls, basically avoid spamming the API
 interface FlagCacheEntry {

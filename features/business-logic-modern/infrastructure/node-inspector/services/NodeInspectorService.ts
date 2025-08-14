@@ -12,7 +12,7 @@
 
 import type { AgenNode } from "../../flow-engine/types/nodeData";
 import type { ControlsConfig } from "../../node-core/NodeSpec";
-import { type SchemaFieldInfo, SchemaIntrospector } from "../../node-core/schema-helpers";
+import { type SchemaFieldInfo, SchemaIntrospector } from "../../node-core/utils/schema-helpers";
 import { getNodeSpecMetadata, hasNodeSpec, nodeSpecs } from "../../node-registry/nodespec-registry";
 import type { NodeType } from "../types";
 

@@ -12,11 +12,11 @@ import { memo, useCallback, useEffect, useMemo, useRef } from "react";
 import { z } from "zod";
 
 import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
-import { renderLucideIcon } from "@/features/business-logic-modern/infrastructure/node-core/iconUtils";
+import { renderLucideIcon } from "@/features/business-logic-modern/infrastructure/node-core/utils/iconUtils";
 import {
 	SafeSchemas,
 	createSafeInitialData,
-} from "@/features/business-logic-modern/infrastructure/node-core/schema-helpers";
+} from "@/features/business-logic-modern/infrastructure/node-core/utils/schema-helpers";
 import { withNodeScaffold } from "@/features/business-logic-modern/infrastructure/node-core/withNodeScaffold";
 import { CATEGORIES } from "@/features/business-logic-modern/infrastructure/theming/categories";
 import { COLLAPSED_SIZES } from "@/features/business-logic-modern/infrastructure/theming/sizing";

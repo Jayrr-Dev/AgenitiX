@@ -50,7 +50,7 @@ import EditableNodeDescription from "@/components/nodes/EditableNodeDescription"
 import EditableNodeLabel from "@/components/nodes/EditableNodeLabel";
 import { useFlowMetadataOptional } from "@/features/business-logic-modern/infrastructure/flow-engine/contexts/flow-metadata-context";
 import EditableNodeId from "@/components/nodes/editableNodeId";
-import { renderLucideIcon } from "@/features/business-logic-modern/infrastructure/node-core/iconUtils";
+import { renderLucideIcon } from "@/features/business-logic-modern/infrastructure/node-core/utils/iconUtils";
 import { NODE_TYPE_CONFIG } from "../flow-engine/constants";
 import type { AgenNode, NodeType } from "../flow-engine/types/nodeData";
 import { useComponentTheme } from "../theming/components";

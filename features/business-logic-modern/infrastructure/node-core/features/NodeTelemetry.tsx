@@ -11,7 +11,7 @@
 
 import type React from "react";
 import { useEffect } from "react";
-import { TelemetryClient } from "../telemetry/TelemetryClient";
+import { TelemetryClient } from "../../telemetry/TelemetryClient";
 
 interface NodeTelemetryProps {
 	nodeId: string;

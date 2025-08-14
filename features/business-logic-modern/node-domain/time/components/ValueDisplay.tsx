@@ -6,7 +6,7 @@
  */
 
 import React, { memo, useState } from 'react';
-import { renderLucideIcon } from '@/features/business-logic-modern/infrastructure/node-core/iconUtils';
+import { renderLucideIcon } from '@/features/business-logic-modern/infrastructure/node-core/utils/iconUtils';
 import { 
   detectDataType, 
   formatValueForDisplay, 

@@ -3,7 +3,7 @@
  * Shared types for logic gate nodes
  */
 
-import { SafeSchemas } from "@/features/business-logic-modern/infrastructure/node-core/schema-helpers";
+import { SafeSchemas } from "@/features/business-logic-modern/infrastructure/node-core/utils/schema-helpers";
 import { z } from "zod";
 
 /**

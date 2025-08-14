@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { ControlFieldConfig } from "./NodeSpec";
+import type { ControlFieldConfig } from "../NodeSpec";
 
 // Type definitions for schema introspection
 interface ControlField {

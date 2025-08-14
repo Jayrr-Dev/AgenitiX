@@ -21,11 +21,11 @@ import type { NodeProps, Position } from "@xyflow/react";
 import { useUpdateNodeInternals } from "@xyflow/react";
 import { useTheme } from "next-themes";
 import React from "react";
-import NodeErrorBoundary from "./ErrorBoundary";
+import NodeErrorBoundary from "./features/ErrorBoundary";
 import type { NodeSpec } from "./NodeSpec";
-import NodeTelemetry from "./NodeTelemetry";
-import { NodeToastContainer } from "./NodeToast";
-import { globalNodeMemoryManager } from "./nodeMemory";
+import NodeTelemetry from "./features/NodeTelemetry";
+import { NodeToastContainer } from "./features/NodeToast";
+import { globalNodeMemoryManager } from "./features/nodeMemory";
 import { getNodePlugins } from "./plugins/nodePluginRegistry";
 import { runServerActions } from "./serverActions/serverActionRegistry";
 

@@ -35,17 +35,17 @@ import { useFlowMetadataOptional } from "@/features/business-logic-modern/infras
 import {
   generateoutputField,
   normalizeHandleId,
-} from "@/features/business-logic-modern/infrastructure/node-core/handleOutputUtils";
+} from "@/features/business-logic-modern/infrastructure/node-core/utils/handleOutputUtils";
 import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
 import {
   SafeSchemas,
   createSafeInitialData,
-} from "@/features/business-logic-modern/infrastructure/node-core/schema-helpers";
+} from "@/features/business-logic-modern/infrastructure/node-core/utils/schema-helpers";
 import {
   createNodeValidator,
   reportValidationError,
   useNodeDataValidation,
-} from "@/features/business-logic-modern/infrastructure/node-core/validation";
+} from "@/features/business-logic-modern/infrastructure/node-core/utils/validation";
 import { withNodeScaffold } from "@/features/business-logic-modern/infrastructure/node-core/withNodeScaffold";
 import { CATEGORIES } from "@/features/business-logic-modern/infrastructure/theming/categories";
 import {

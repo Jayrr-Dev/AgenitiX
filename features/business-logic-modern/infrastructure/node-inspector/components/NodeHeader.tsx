@@ -14,7 +14,7 @@
 "use client";
 
 import { useNodeDisplay } from "@/features/business-logic-modern/infrastructure/flow-engine/contexts/node-display-context";
-import { renderLucideIcon } from "@/features/business-logic-modern/infrastructure/node-core/iconUtils";
+import { renderLucideIcon } from "@/features/business-logic-modern/infrastructure/node-core/utils/iconUtils";
 import { useTextInputShortcuts } from "@flow-engine/hooks/useTextInputShortcuts";
 import type React from "react";
 import { useCallback, useState } from "react";

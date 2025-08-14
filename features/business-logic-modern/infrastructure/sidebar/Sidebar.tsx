@@ -45,7 +45,7 @@ import type { Node as ReactFlowNode } from "@xyflow/react";
 import {
   COMMON_LUCIDE_ICONS,
   LucideIcon,
-} from "@/features/business-logic-modern/infrastructure/node-core/iconUtils";
+} from "@/features/business-logic-modern/infrastructure/node-core/utils/iconUtils";
 
 // Simple validation function to replace validateNode
 const validateNode = (nodeType: string) => ({

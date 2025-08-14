@@ -27,7 +27,7 @@ import React, {
 
 import EditableNodeId from "@/components/nodes/editableNodeId";
 import type { AgenNode } from "@/features/business-logic-modern/infrastructure/flow-engine/types/nodeData";
-import { LucideIcon } from "../../../node-core/iconUtils";
+import { LucideIcon } from "../../../node-core/utils/iconUtils";
 import type { InspectorNodeInfo } from "../../adapters/NodeInspectorAdapter";
 
 // Performance constants - extracted to prevent re-creation, basically avoid string concatenation on every render

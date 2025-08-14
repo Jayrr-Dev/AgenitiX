@@ -18,7 +18,7 @@ import { CSS } from "@dnd-kit/utilities";
 import type React from "react";
 import { memo, useCallback, useMemo, useRef } from "react";
 
-import { LucideIcon } from "@/features/business-logic-modern/infrastructure/node-core/iconUtils";
+import { LucideIcon } from "@/features/business-logic-modern/infrastructure/node-core/utils/iconUtils";
 import { getNodeSpecMetadata } from "@/features/business-logic-modern/infrastructure/node-registry/nodespec-registry";
 import type { HoveredStencil } from "./StencilInfoPanel";
 import type { NodeStencil } from "./types";

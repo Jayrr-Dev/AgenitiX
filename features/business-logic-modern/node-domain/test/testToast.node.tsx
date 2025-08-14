@@ -20,7 +20,7 @@ import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/n
 import {
   SafeSchemas,
   createSafeInitialData,
-} from "@/features/business-logic-modern/infrastructure/node-core/schema-helpers";
+} from "@/features/business-logic-modern/infrastructure/node-core/utils/schema-helpers";
 import { withNodeScaffold } from "@/features/business-logic-modern/infrastructure/node-core/withNodeScaffold";
 import { CATEGORIES } from "@/features/business-logic-modern/infrastructure/theming/categories";
 import {

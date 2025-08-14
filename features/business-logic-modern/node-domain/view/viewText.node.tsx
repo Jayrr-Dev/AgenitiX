@@ -16,17 +16,17 @@
 import { ExpandCollapseButton } from "@/components/nodes/ExpandCollapseButton";
 import LabelNode from "@/components/nodes/labelNode";
 import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
-import { generateoutputField } from "@/features/business-logic-modern/infrastructure/node-core/handleOutputUtils";
-import { renderLucideIcon } from "@/features/business-logic-modern/infrastructure/node-core/iconUtils";
+import { generateoutputField } from "@/features/business-logic-modern/infrastructure/node-core/utils/handleOutputUtils";
+import { renderLucideIcon } from "@/features/business-logic-modern/infrastructure/node-core/utils/iconUtils";
 import {
   SafeSchemas,
   createSafeInitialData,
-} from "@/features/business-logic-modern/infrastructure/node-core/schema-helpers";
+} from "@/features/business-logic-modern/infrastructure/node-core/utils/schema-helpers";
 import {
   createNodeValidator,
   reportValidationError,
   useNodeDataValidation,
-} from "@/features/business-logic-modern/infrastructure/node-core/validation";
+} from "@/features/business-logic-modern/infrastructure/node-core/utils/validation";
 import { withNodeScaffold } from "@/features/business-logic-modern/infrastructure/node-core/withNodeScaffold";
 import { CATEGORIES } from "@/features/business-logic-modern/infrastructure/theming/categories";
 import {
