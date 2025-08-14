@@ -56,6 +56,7 @@ import { spec as logicOrSpec } from "../../node-domain/logic/logicOr.node";
 import { spec as logicNotSpec } from "../../node-domain/logic/logicNot.node";
 import { spec as logicXorSpec } from "../../node-domain/logic/logicXor.node";
 import { spec as logicXnorSpec } from "../../node-domain/logic/logicXnor.node";
+import { spec as storeSheetSpec } from "../../node-domain/store/storeSheet.node";
 import type { NodeSpec } from "../node-core/NodeSpec";
 
 // Collect all specs in one place
@@ -112,6 +113,7 @@ const nodeSpecs: Record<string, NodeSpec> = {
 	logicNot: logicNotSpec,
 	logicXor: logicXorSpec,
 	logicXnor: logicXnorSpec,
+	storeSheet: storeSheetSpec,
 };
 
 // Enhanced metadata that combines NodeSpec with additional UI properties
