@@ -492,10 +492,29 @@ export const EmailAccountProvider = ({
         // Declare timeout ID first so it can be referenced in checkPopupClosed
         let timeoutId: NodeJS.Timeout;
 
-        // Fallback: Avoid window.closed checks due to COOP; rely on messages + timeout
+        // Enhanced popup closure detection - checks every 1 second for user-initiated closure
         const checkPopupClosed = setInterval(() => {
-          // no-op: exists only to be cleared when we get a message or timeout
-        }, 60000);
+          try {
+            // Check if popup was closed by user, basically detect manual window closure
+            if (popup.closed) {
+              console.log("🔍 POPUP: Detected popup closure by user");
+              clearInterval(checkPopupClosed);
+              clearTimeout(timeoutId);
+              window.removeEventListener("message", handlePopupMessage);
+              broadcastChannel.close();
+              updateNodeData({
+                isAuthenticating: false,
+                lastError: "", // Don't set error for user-initiated closure
+              });
+              showInfo("Authentication cancelled", "Popup window was closed");
+              return;
+            }
+          } catch (error) {
+            // COOP policy may block popup.closed access - this is expected
+            // Continue with message-based detection only
+            console.log("🔍 POPUP: Cannot access popup.closed (COOP policy)");
+          }
+        }, 1000); // Check every second
 
         // Timeout after 5 minutes
         timeoutId = setTimeout(() => {

@@ -72,6 +72,9 @@ export const EmailMessageCollapsed = memo(
       return "No message";
     }, [subject, messageContent, sentCount]);
 
+    // Determine if button should be in processing state
+    const isProcessing = connectionStatus === "composing" || connectionStatus === "sending";
+
     return (
       <div className={COLLAPSED_STYLES.container}>
         <div className={COLLAPSED_STYLES.content}>
@@ -81,6 +84,7 @@ export const EmailMessageCollapsed = memo(
               ariaLabel="Compose"
               title="Compose"
               checked={false}
+              processing={isProcessing}
               onCheckedChange={(checked) => {
                 if (checked) onComposeMessage?.();
               }}

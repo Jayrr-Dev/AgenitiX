@@ -17,6 +17,7 @@ import { FaMicrosoft } from "react-icons/fa";
 import { FcGoogle } from "react-icons/fc";
 import { MdEmail } from "react-icons/md";
 import { useEmailAccountContext } from "./EmailAccountProvider";
+import { SkueButton } from "@/components/ui/skue-button";
 // Local, minimal types to avoid cross-file circular deps while staying type-safe
 type EmailProviderType = "gmail" | "outlook" | "imap" | "smtp";
 type ConnectionStatus = "disconnected" | "connecting" | "connected" | "error";
@@ -38,6 +39,7 @@ interface EmailAccountCollapsedProps {
     provider?: EmailProviderType;
     email?: string;
     connectionStatus?: ConnectionStatus;
+    isAuthenticating?: boolean;
   };
   categoryStyles: { primary: string };
   onToggleExpand?: () => void;
@@ -49,7 +51,7 @@ export const EmailAccountCollapsed = memo(
     categoryStyles,
     onToggleExpand,
   }: EmailAccountCollapsedProps) => {
-    const { provider, email, connectionStatus } = nodeData;
+    const { provider, email, connectionStatus, isAuthenticating } = nodeData;
     const { handleOAuth2Auth } = useEmailAccountContext();
 
     // Provider information with icons
@@ -75,7 +77,7 @@ export const EmailAccountCollapsed = memo(
 
       return {
         eventActive: isConnected,
-        isProcessing: isConnecting,
+        isProcessing: isConnecting || isAuthenticating,
         hasError: isError,
         // Disconnected maps to gray (neutral/off)
         // Glow enabled; component will not glow when gray
@@ -83,7 +85,7 @@ export const EmailAccountCollapsed = memo(
         size: "sm" as const,
         titleText: isError
           ? "error"
-          : isConnecting
+          : (isConnecting || isAuthenticating)
             ? "processing"
             : isConnected
               ? "active"
@@ -91,7 +93,11 @@ export const EmailAccountCollapsed = memo(
                 ? "neutral"
                 : "neutral",
       };
-    }, [connectionStatus]);
+    }, [connectionStatus, isAuthenticating]);
+
+    // Determine if button should be in processing state
+    // [Explanation], basically show pressed state during OAuth popup and connection process
+    const isProcessing = isAuthenticating || connectionStatus === "connecting";
 
     // Display text
     const displayText = useMemo(() => {
@@ -121,8 +127,9 @@ export const EmailAccountCollapsed = memo(
         <div className={COLLAPSED_STYLES.content}>
           {/* Provider Icon */}
           <div className="flex justify-center">
-            <div
-              className={COLLAPSED_STYLES.providerIcon}
+            <SkueButton
+              checked={false}
+              processing={isProcessing}
               onClick={onPrimaryAction}
               role="button"
               tabIndex={0}
@@ -136,7 +143,7 @@ export const EmailAccountCollapsed = memo(
               <IconComponent
                 className={`w-6 h-6 ${providerInfo.color} ${COLLAPSED_STYLES.iconWrapper}`}
               />
-            </div>
+            </SkueButton>
           </div>
 
           {/* Email and Status */}
