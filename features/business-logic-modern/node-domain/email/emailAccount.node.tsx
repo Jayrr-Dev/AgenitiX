@@ -162,6 +162,7 @@ const createDynamicSpec = (
         position: "right",
         type: "source",
         dataType: "JSON",
+        iconKey: "account",
         tooltip: HANDLE_TOOLTIPS.ACCOUNT_OUT,
         // Declare emitted account JSON shape for downstream validation
         jsonShape: {

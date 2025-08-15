@@ -316,18 +316,18 @@ export function withNodeScaffold(
         const allHandles = spec.handles || [];
 
         // Create map for quick override lookup, basically a fast position finder
-        const overrideMap = new Map<string, string>();
+        const positionOverrideMap = new Map<string, string>();
         if (handleOverrides) {
           handleOverrides.forEach(
-            (override: { handleId: string; position: string }) => {
-              overrideMap.set(override.handleId, override.position);
+            (override: { handleId: string; position?: string; iconKey?: string }) => {
+              if (override.position) positionOverrideMap.set(override.handleId, override.position);
             }
           );
         }
 
         allHandles.forEach((handle) => {
           // Use override position if available, otherwise use default, basically the actual position to use
-          const pos = overrideMap.get(handle.id) || handle.position;
+          const pos = positionOverrideMap.get(handle.id) || handle.position;
           if (!grouped[pos]) {
             grouped[pos] = [];
           }
@@ -429,22 +429,27 @@ export function withNodeScaffold(
           const handleOverrides = (props.data as any)?.handleOverrides as
             | Array<{
                 handleId: string;
-                position: "top" | "bottom" | "left" | "right";
+                position?: "top" | "bottom" | "left" | "right";
+                iconKey?: string;
               }>
             | undefined;
 
-          // Create override map for quick lookup
-          const overrideMap = new Map<string, string>();
+          // Create override maps for quick lookup
+          const positionOverrideMap = new Map<string, string>();
+          const iconOverrideMap = new Map<string, string>();
           if (handleOverrides) {
             handleOverrides.forEach((override) => {
-              overrideMap.set(override.handleId, override.position);
+              if (override.position)
+                positionOverrideMap.set(override.handleId, override.position);
+              if (override.iconKey)
+                iconOverrideMap.set(override.handleId, override.iconKey);
             });
           }
 
           return allHandles.map((handle, _index) => {
             // Use override position if available, otherwise use default
             const actualPosition =
-              overrideMap.get(handle.id) || handle.position;
+              positionOverrideMap.get(handle.id) || handle.position;
             const handlesOnSameSide = handlesByPosition[actualPosition] || [];
             const handleIndex = handlesOnSameSide.findIndex(
               (h) => h.id === handle.id
@@ -464,6 +469,7 @@ export function withNodeScaffold(
                 handleIndex={handleIndex}
                 totalHandlesOnSide={totalHandlesOnSide}
                 customTooltip={handle.tooltip}
+                iconKey={iconOverrideMap.get(handle.id) || handle.iconKey}
          
               />
             );

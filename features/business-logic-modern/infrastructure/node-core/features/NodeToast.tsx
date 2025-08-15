@@ -1,16 +1,16 @@
 /**
  * Node Toast Component
- * 
+ *
  * A modular toast notification system that appears above nodes.
  * Provides contextual feedback for node operations like errors, success, and info messages.
- * 
+ *
  * Features:
  * - Positioned above the node
  * - Auto-dismiss with configurable duration
  * - Multiple toast types (error, success, info, warning)
  * - Smooth animations
  * - Queue management for multiple toasts
- * 
+ *
  * @example
  * const { showToast } = useNodeToast();
  * showToast({ type: 'error', message: 'Connection failed' });
@@ -50,8 +50,7 @@ const DEFAULT_DURATIONS: Record<ToastType, number> = {
 };
 
 /**
- * [Explanation], basically prevent double toasts caused by StrictMode re-mounts
- *
+ * Prevent double toasts caused by StrictMode re-mounts.
  * We keep a small global map of the last time a specific toast (by node + type + message + description)
  * was shown. If the same toast fires again within the dedupe window, we ignore it.
  */
@@ -59,13 +58,16 @@ const TOAST_DEDUPE_WINDOW_MS = 1500 as const;
 const globalToastDedupeMap: Map<string, number> = new Map();
 
 // Toast styling configuration - shadcn/sonner inspired
-const TOAST_STYLES: Record<ToastType, {
-  bg: string;
-  border: string;
-  text: string;
-  icon: React.ComponentType<{ className?: string }>;
-  iconColor: string;
-}> = {
+const TOAST_STYLES: Record<
+  ToastType,
+  {
+    bg: string;
+    border: string;
+    text: string;
+    icon: React.ComponentType<{ className?: string }>;
+    iconColor: string;
+  }
+> = {
   success: {
     bg: 'bg-background',
     border: 'border-border',
@@ -118,49 +120,52 @@ const Toast: React.FC<{
     }
   }, [toast.id, toast.duration, onDismiss]);
 
-  // Calculate stacking position (newest on top)
-  const isTop = index === total - 1; // Last toast (newest) is on top
-  const distanceFromTop = total - 1 - index; // How far this toast is from the top
-  const stackOffset = distanceFromTop * -4; // Negative offset to stack upward
-  const scaleOffset = distanceFromTop * 0.05; // Scale reduction for older toasts
-  const opacityOffset = Math.max(0.4, 1 - distanceFromTop * 0.15); // Fade older toasts
+  // Calculate stacking position (newest on bottom, closest to the node)
+  const isTop = index === total - 1; // newest is visually closest to the node bottom
+  const distanceFromBottom = total - 1 - index; // 0 for newest, grows for older
+  const verticalStep = 4; // px between stacked toasts
+  const stackOffset = distanceFromBottom * verticalStep; // upward offset
+  const scaleOffset = distanceFromBottom * 0.05; // scale reduction for older toasts
+  const opacityOffset = Math.max(0.4, 1 - distanceFromBottom * 0.15); // fade older toasts
 
   return (
     <motion.div
+      layout
       initial={{
         opacity: 0,
-        y: -10,
+        y: 8, // appear from just below the anchor before snapping to bottom
         scale: 0.95,
-        zIndex: index + 1 // Higher index = higher z-index (most recent on top)
+        zIndex: index + 1,
       }}
       animate={{
         opacity: isTop ? 1 : opacityOffset,
-        y: stackOffset,
+        y: -stackOffset, // move older toasts UP from the bottom anchor
         scale: isTop ? 1 : 1 - scaleOffset,
-        zIndex: index + 1 // Higher index = higher z-index (most recent on top)
+        zIndex: index + 1,
       }}
       exit={{
         opacity: 0,
-        y: -10,
+        y: 8,
         scale: 0.95,
-        transition: { duration: 0.15 }
+        transition: { duration: 0.15 },
       }}
       transition={{
         duration: 0.2,
         ease: 'easeOut',
         opacity: { duration: 0.15 },
-        scale: { duration: 0.2 }
+        scale: { duration: 0.2 },
       }}
       className={`
-        absolute top-0 -translate-y-6 left-0 flex items-center rounded-md border shadow-md
+        absolute bottom-0 left-0 flex items-center rounded-md border shadow-md origin-bottom
         ${style.bg} ${style.border} ${style.text}
-        ${nodeWidth < 150 ? 'gap-2 px-2 py-1.5' : 'gap-2 px-3 py-2 -translate-y-8'}
+        ${nodeWidth < 150 ? 'gap-2 px-2 py-1.5' : 'gap-2 px-3 py-2'}
         ${!isTop ? 'pointer-events-none' : ''}
       `}
       style={{
         width: `${nodeWidth}px`,
         minWidth: `${nodeWidth}px`,
-        maxWidth: `${nodeWidth}px`
+        maxWidth: `${nodeWidth}px`,
+        transformOrigin: 'bottom center',
       }}
     >
       {/* Icon */}
@@ -178,7 +183,7 @@ const Toast: React.FC<{
         )}
       </div>
 
-      {/* Dismiss button - only show on top toast */}
+      {/* Dismiss button - only show on newest toast */}
       {toast.dismissible !== false && nodeWidth > 150 && isTop && (
         <button
           onClick={() => onDismiss(toast.id)}
@@ -194,22 +199,22 @@ const Toast: React.FC<{
 
 // Fixed toast widths based on standardized sizing (normal sizing)
 const TOAST_WIDTHS = {
-  // Collapsed sizes (normal sizing)St
-  C1: 60,    // 60px
-  C1W: 120,  // 120px
-  C2: 120,   // 120px
-  C3: 180,   // 180px
+  // Collapsed sizes (normal sizing)
+  C1: 60, // 60px
+  C1W: 120, // 120px
+  C2: 120, // 120px
+  C3: 180, // 180px
 
   // Expanded sizes (normal sizing)
-  FE0: 60,   // 60px
-  FE1: 120,  // 120px
+  FE0: 60, // 60px
+  FE1: 120, // 120px
   FE1H: 120, // 120px
-  FE2: 180,  // 180px
-  FE3: 240,  // 240px
-  VE0: 60,   // 60px
-  VE1: 120,  // 120px
-  VE2: 180,  // 180px
-  VE3: 240,  // 240px
+  FE2: 180, // 180px
+  FE3: 240, // 240px
+  VE0: 60, // 60px
+  VE1: 120, // 120px
+  VE2: 180, // 180px
+  VE3: 240, // 240px
 } as const;
 
 // Helper function to get toast width from size key (for backwards compatibility)
@@ -244,27 +249,30 @@ export const NodeToastContainer: React.FC<{
   const DEBUG_WIDTH = process.env.NODE_ENV === 'development' && false; // Set to true to debug width matching
 
   // Add toast to queue
-  const addToast = useCallback((config: ToastConfig) => {
-    const id = `${nodeId}-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
-    const duration = config.duration ?? DEFAULT_DURATIONS[config.type];
+  const addToast = useCallback(
+    (config: ToastConfig) => {
+      const id = `${nodeId}-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+      const duration = config.duration ?? DEFAULT_DURATIONS[config.type];
 
-    const newToast: ToastMessage = {
-      id,
-      type: config.type,
-      message: config.message,
-      description: config.description,
-      duration,
-      dismissible: config.dismissible,
-    };
+      const newToast: ToastMessage = {
+        id,
+        type: config.type,
+        message: config.message,
+        description: config.description,
+        duration,
+        dismissible: config.dismissible,
+      };
 
-    setToasts(prev => [...prev, newToast]);
+      setToasts((prev) => [...prev, newToast]);
 
-    return id;
-  }, [nodeId]);
+      return id;
+    },
+    [nodeId]
+  );
 
   // Remove toast from queue
   const removeToast = useCallback((id: string) => {
-    setToasts(prev => prev.filter(toast => toast.id !== id));
+    setToasts((prev) => prev.filter((toast) => toast.id !== id));
   }, []);
 
   // Clear all toasts
@@ -279,7 +287,7 @@ export const NodeToastContainer: React.FC<{
         isExpanded,
         expandedSize,
         collapsedSize,
-        calculatedWidth: nodeWidth
+        calculatedWidth: nodeWidth,
       });
     }
   }, [nodeId, isExpanded, expandedSize, collapsedSize, nodeWidth, DEBUG_WIDTH]);
@@ -292,7 +300,7 @@ export const NodeToastContainer: React.FC<{
       const key = `${nodeId}|${detail.type}|${detail.message}|${detail.description ?? ''}`;
       const now = Date.now();
 
-      // [Explanation], basically skip if same toast fired too recently
+      // Skip if same toast fired too recently
       const last = globalToastDedupeMap.get(key);
       if (last && now - last < TOAST_DEDUPE_WINDOW_MS) {
         return;
@@ -325,11 +333,11 @@ export const NodeToastContainer: React.FC<{
 
   return (
     <div
-      className="absolute -top-2 left-1/2 transform -translate-x-1/2 -translate-y-full z-50"
+      className="absolute bottom-full translate-y-[-8px] origin-bottom left-1/2 -translate-x-1/2 z-50"
       style={{
         width: `${nodeWidth}px`,
         minWidth: `${nodeWidth}px`,
-        maxWidth: `${nodeWidth}px`
+        maxWidth: `${nodeWidth}px`,
       }}
     >
       <div className="relative">
@@ -352,12 +360,15 @@ export const NodeToastContainer: React.FC<{
 
 // Hook for using node toasts
 export const useNodeToast = (nodeId: string) => {
-  const showToast = useCallback((config: ToastConfig) => {
-    const event = new CustomEvent(`node-toast-show-${nodeId}`, {
-      detail: config,
-    });
-    window.dispatchEvent(event);
-  }, [nodeId]);
+  const showToast = useCallback(
+    (config: ToastConfig) => {
+      const event = new CustomEvent(`node-toast-show-${nodeId}`, {
+        detail: config,
+      });
+      window.dispatchEvent(event);
+    },
+    [nodeId]
+  );
 
   const clearToasts = useCallback(() => {
     const event = new CustomEvent(`node-toast-clear-${nodeId}`);
@@ -365,21 +376,33 @@ export const useNodeToast = (nodeId: string) => {
   }, [nodeId]);
 
   // Convenience methods for different toast types
-  const showSuccess = useCallback((message: string, description?: string, duration?: number) => {
-    showToast({ type: 'success', message, description, duration });
-  }, [showToast]);
+  const showSuccess = useCallback(
+    (message: string, description?: string, duration?: number) => {
+      showToast({ type: 'success', message, description, duration });
+    },
+    [showToast]
+  );
 
-  const showError = useCallback((message: string, description?: string, duration?: number) => {
-    showToast({ type: 'error', message, description, duration });
-  }, [showToast]);
+  const showError = useCallback(
+    (message: string, description?: string, duration?: number) => {
+      showToast({ type: 'error', message, description, duration });
+    },
+    [showToast]
+  );
 
-  const showWarning = useCallback((message: string, description?: string, duration?: number) => {
-    showToast({ type: 'warning', message, description, duration });
-  }, [showToast]);
+  const showWarning = useCallback(
+    (message: string, description?: string, duration?: number) => {
+      showToast({ type: 'warning', message, description, duration });
+    },
+    [showToast]
+  );
 
-  const showInfo = useCallback((message: string, description?: string, duration?: number) => {
-    showToast({ type: 'info', message, description, duration });
-  }, [showToast]);
+  const showInfo = useCallback(
+    (message: string, description?: string, duration?: number) => {
+      showToast({ type: 'info', message, description, duration });
+    },
+    [showToast]
+  );
 
   return {
     showToast,

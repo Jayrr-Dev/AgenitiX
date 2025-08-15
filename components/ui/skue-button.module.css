@@ -30,6 +30,7 @@
 	display: flex;
 	align-items: center;
 	justify-content: center;
+	transition: transform 0.15s ease-out, box-shadow 0.15s ease-out, border 0.15s ease-out;
 }
 
 .container input {
@@ -62,81 +63,119 @@
 	height: 100%;
 	width: 100%;
 	fill: #a5a5a5;
+	transition: fill 0.15s ease-out, transform 0.15s ease-out, filter 0.15s ease-out;
 }
 
 .container input:checked + .button {
 	box-shadow: inset -2px -2px 0 #5e5e5e, inset 2px 2px 0 #1c1c1c;
-	border: 4px solid rgba(77, 124, 255, 0.281);
-	animation: skueAnimeBorder .3s linear alternate-reverse infinite;
+	border: 1px solid #090909;
+	transition: border-color 0.2s ease-out, box-shadow 0.2s ease-out;
 }
 
 .container input:checked + .button .icon svg {
 	fill: rgb(77, 124, 255);
-	animation: skueAnimeFill .3s linear alternate-reverse infinite;
+	transition: fill 0.2s ease-out;
 }
 
-/* Click down effect when button is pressed */
+/* ••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••• */
+/* Button hold down effect - enhanced press feedback for auth interactions     */
+/* ••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••• */
+
 .button:active {
-	transform: scale(0.95);
-	box-shadow: inset 3px 1px 0 #1c1c1c, inset -1px -1px 0px #7d7c7e;
-	transition: transform 0.1s ease-out, box-shadow 0.1s ease-out;
-	border: 1px solid #090909;
-	background-image: linear-gradient(145deg, #171717, #444245);
+	transform: scale(0.92) translateY(1px);
+	box-shadow: inset 4px 4px 8px #1c1c1c, inset -2px -2px 4px #7d7c7e;
+	transition: transform 0.15s ease-out, box-shadow 0.15s ease-out;
+	border: 2px solid #090909;
+	background-image: linear-gradient(145deg, #0f0f0f, #3a3a3a);
 }
 
 .button:active::before {
-	box-shadow: 6px 6px 12px color-mix(in srgb, var(--skue-surface-bg) 30%, black),
-		-6px -6px 12px color-mix(in srgb, var(--skue-surface-bg) 30%, white);
-		transition: box-shadow 0.1s ease-out;
-		border: 1px solid #090909;
-		border-radius: inherit;
-		background-image: linear-gradient(145deg, #262626, #606060);
+	transform: scale(0.95);
+	box-shadow: 4px 4px 8px color-mix(in srgb, var(--skue-surface-bg) 40%, black),
+		-4px -4px 8px color-mix(in srgb, var(--skue-surface-bg) 20%, white);
+	transition: transform 0.15s ease-out, box-shadow 0.15s ease-out;
+	background-image: linear-gradient(145deg, #1a1a1a, #505050);
 }
 
-@keyframes skueAnimeFill {
-	to {
-		fill: rgba(77, 124, 255, 0.642);
-	}
+/* Enhanced hold effect when checked and pressed */
+.container input:checked + .button:active {
+	transform: scale(0.88) translateY(2px);
+	box-shadow: inset 6px 6px 12px #1c1c1c, inset -3px -3px 6px #5e5e5e;
+	border: 2px solid #090909;
+	background-image: linear-gradient(145deg, #0a0a0a, #2a2a2a);
 }
 
-@keyframes skueAnimeBorder {
-	to {
-		border-color: rgba(77, 124, 255, 0.137);
-	}
+.container input:checked + .button:active .icon svg {
+	fill: rgba(77, 124, 255, 0.8);
+	transform: scale(0.9);
+	transition: fill 0.15s ease-out, transform 0.15s ease-out;
 }
 
-/* Activated state - makes icon glow with enhanced visual effects */
+/* ••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••• */
+/* Processing state - keeps button pressed down during async operations      */
+/* ••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••• */
+
+.processing .button {
+	transform: scale(0.94) translateY(1px);
+	box-shadow: inset 4px 4px 8px #1c1c1c, inset -2px -2px 4px #7d7c7e;
+	border: 2px solid #090909;
+	background-image: linear-gradient(145deg, #0f0f0f, #3a3a3a);
+	transition: transform 0.3s ease-out, box-shadow 0.3s ease-out;
+}
+
+.processing .button::before {
+	transform: scale(0.96);
+	box-shadow: 6px 6px 12px color-mix(in srgb, var(--skue-surface-bg) 40%, black),
+		-6px -6px 12px color-mix(in srgb, var(--skue-surface-bg) 20%, white);
+	transition: transform 0.3s ease-out, box-shadow 0.3s ease-out;
+	background-image: linear-gradient(145deg, #1a1a1a, #505050);
+}
+
+.processing .icon svg {
+	transform: scale(0.95);
+	transition: transform 0.3s ease-out;
+}
+
+/* ••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••• */
+/* Activated state - static glow effects without pulsing animation            */
+/* ••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••• */
+
 .activated .icon svg {
 	fill: rgb(255, 215, 0);
-	filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.8)) 
-	        drop-shadow(0 0 16px rgba(255, 215, 0, 0.6))
-	        drop-shadow(0 0 24px rgba(255, 215, 0, 0.4));
-	animation: skueGlowPulse 2s ease-in-out infinite alternate;
+	filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.9)) 
+	        drop-shadow(0 0 20px rgba(255, 215, 0, 0.7))
+	        drop-shadow(0 0 30px rgba(255, 215, 0, 0.5));
+	transition: fill 0.3s ease-out, filter 0.3s ease-out;
 }
 
 .activated .button {
-	border: 2px solid rgba(255, 215, 0, 0.5);
+	border: 2px solid rgba(255, 215, 0, 0.6);
 	box-shadow: inset 2px 2px 0 #7d7c7e, inset -2px -2px 0px #1c1c1c,
-	            0 0 20px rgba(255, 215, 0, 0.3);
+	            0 0 25px rgba(255, 215, 0, 0.4);
+	transition: border-color 0.3s ease-out, box-shadow 0.3s ease-out;
 }
 
 .activated .button::before {
 	box-shadow: 11px 11px 22px color-mix(in srgb, var(--skue-surface-bg) 30%, black),
 		-11px -11px 22px color-mix(in srgb, var(--skue-surface-bg) 30%, white),
-		0 0 30px rgba(255, 215, 0, 0.2);
+		0 0 35px rgba(255, 215, 0, 0.3);
+	transition: box-shadow 0.3s ease-out;
 }
 
-@keyframes skueGlowPulse {
-	0% {
-		filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.8)) 
-		        drop-shadow(0 0 16px rgba(255, 215, 0, 0.6))
-		        drop-shadow(0 0 24px rgba(255, 215, 0, 0.4));
-	}
-	100% {
-		filter: drop-shadow(0 0 12px rgba(255, 215, 0, 1)) 
-		        drop-shadow(0 0 24px rgba(255, 215, 0, 0.8))
-		        drop-shadow(0 0 36px rgba(255, 215, 0, 0.6));
-	}
+/* Enhanced hold effect for activated button */
+.activated .button:active {
+	transform: scale(0.90) translateY(1px);
+	border: 3px solid rgba(255, 215, 0, 0.9);
+	box-shadow: inset 5px 5px 10px #1c1c1c, inset -2px -2px 5px #7d7c7e,
+	            0 0 15px rgba(255, 215, 0, 0.6);
+}
+
+.activated .button:active .icon svg {
+	fill: rgba(255, 215, 0, 0.9);
+	transform: scale(0.92);
+	filter: drop-shadow(0 0 8px rgba(255, 215, 0, 1)) 
+	        drop-shadow(0 0 16px rgba(255, 215, 0, 0.8))
+	        drop-shadow(0 0 24px rgba(255, 215, 0, 0.6));
 }
 
 

@@ -23,14 +23,30 @@ import React, {
   useState,
 } from "react";
 import { MdRefresh } from "react-icons/md";
+import { Bot, Brain, Sparkles, Settings, AlertCircle, RotateCcw } from "lucide-react";
 import { z } from "zod";
 
 import { Loading } from "@/components/Loading";
 import { ExpandCollapseButton } from "@/components/nodes/ExpandCollapseButton";
 import LabelNode from "@/components/nodes/labelNode";
+import RenderStatusDot from "@/components/RenderStatusDot";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { ButtonIconed } from "@/components/ui/button-iconed";
 import { ButtonToggle } from "@/components/ui/button-toggle";
 import { Textarea } from "@/components/ui/textarea";
+import SkueButton from "@/components/ui/skue-button";
 import { api } from "@/convex/_generated/api";
 import { findEdgeByHandle } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/edgeUtils";
 import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
@@ -50,6 +66,7 @@ import {
   EXPANDED_SIZES,
 } from "@/features/business-logic-modern/infrastructure/theming/sizing";
 import { useNodeData } from "@/hooks/useNodeData";
+import { useNodeToast } from "@/hooks/useNodeToast";
 import { useStore } from "@xyflow/react";
 import { useAction } from "convex/react";
 
@@ -383,7 +400,7 @@ const extractCleanText = (value: unknown): string => {
 };
 
 // -----------------------------------------------------------------------------
-// 5️⃣  UI Constants
+// 5️⃣  UI Constants - Following EmailMessage design principles
 // -----------------------------------------------------------------------------
 
 const CATEGORY_TEXT = {
@@ -392,13 +409,29 @@ const CATEGORY_TEXT = {
   },
 } as const;
 
-const CONTENT = {
-  expanded: "p-4 w-full h-full flex flex-col",
-  collapsed: "flex items-center justify-center w-full h-full",
-  header: "flex items-center justify-between mb-3",
-  body: "flex-1 flex items-center justify-center",
-  disabled:
-    "opacity-75 bg-zinc-100 dark:bg-zinc-500 rounded-md transition-all duration-300",
+// Consistent styling with EmailMessage nodes - matching exact patterns
+const AI_STYLES = {
+  container: "flex flex-col h-full bg-background border border-border rounded-lg",
+  header: "pl-2",
+  content: "flex-1 flex flex-col min-h-0 border-border p-2",
+  footer: "p-3 border-t border-border bg-muted/30",
+  disabled: "opacity-75 pointer-events-none",
+} as const;
+
+const INPUT_STYLES = {
+  field: "text-xs",
+  label: "text-[10px] text-muted-foreground flex items-center pl-1",
+  input: "h-6 text-[10px]",
+  textarea: "text-[10px] resize-none",
+  select: "h-6 text-[10px]",
+} as const;
+
+const COLLAPSED_STYLES = {
+  container: "flex items-center justify-center w-full h-full",
+  content: "p-3 text-center space-y-3 mt-2",
+  textInfo: "space-y-1",
+  primaryText: "font-medium text-[10px] truncate",
+  statusIndicator: "flex items-center justify-center gap-1",
 } as const;
 
 // -----------------------------------------------------------------------------
@@ -596,6 +629,7 @@ const AiAgentNode = memo(
     const lastStoreRef = useRef<string | null>(null);
 
     const categoryStyles = CATEGORY_TEXT.AI;
+    const { showSuccess, showError } = useNodeToast(id);
 
     // Memoized message processing - moved to top level to follow Rules of Hooks
     const processedMessages = useMemo(() => {
@@ -1051,26 +1085,26 @@ const AiAgentNode = memo(
 
       // Show error icon when error state
       if (processingState === PROCESSING_STATE.ERROR) {
-        return "❌";
+        return <AlertCircle className="h-4 w-4" />;
       }
 
       // Show success icon when completed
       if (processingState === PROCESSING_STATE.SUCCESS) {
-        return "✅";
+        return renderLucideIcon("LuCheckCircle", "", 16);
       }
 
-      // Default provider icons
+      // Dynamic provider icons using Lucide
       switch (selectedProvider) {
         case "openai":
-          return "🤖";
+          return <Bot className="h-4 w-4" />;
         case "anthropic":
-          return "🧠";
+          return <Brain className="h-4 w-4" />;
         case "google":
-          return "💎";
+          return <Sparkles className="h-4 w-4" />;
         case "custom":
-          return "⚙️";
+          return <Settings className="h-4 w-4" />;
         default:
-          return "🤖";
+          return <Bot className="h-4 w-4" />;
       }
     }, [selectedProvider, processingState]);
 
@@ -1739,349 +1773,434 @@ const AiAgentNode = memo(
         )}
 
         {isExpanded ? (
-          <div
-            className={`${CONTENT.expanded} ${isEnabled ? "" : CONTENT.disabled}`}
-          >
-            <div className="space-y-2">
-              {/* Header with Provider & Status */}
-              <div className="flex items-center justify-between gap-2 pt-2">
-                <div className="flex items-center gap-2 flex-1">
-                  <div className="flex items-center gap-1">
-                    {(() => {
-                      const configStatus = getConfigurationStatus();
-                      return configStatus.isValid ? (
-                        <span className="text-xs text-green-500">
-                          {getProviderIcon()}
-                        </span>
-                      ) : (
-                        <span
-                          className="text-xs text-red-500"
-                          title={configStatus.errors.join(", ")}
-                        >
-                          ⚠️
-                        </span>
-                      );
-                    })()}
+          <div className={`${AI_STYLES.container} ${isEnabled ? "" : AI_STYLES.disabled}`}>
+            {/* Content Area */}
+            <div className={AI_STYLES.content}>
+              <Tabs variant="node" value="chat" className="h-full flex flex-col overflow-auto nowheel">
+                <div className="flex items-center justify-between mt-2">
+                  <TabsList variant="node" className="">
+                    <TabsTrigger variant="node" value="chat" className="">
+                      Chat
+                    </TabsTrigger>
+                    <TabsTrigger variant="node" value="settings" className="">
+                      Settings
+                    </TabsTrigger>
+                  </TabsList>
+
+                  {/* Header with Status */}
+                  <div className={AI_STYLES.header}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        {processingState === PROCESSING_STATE.SUCCESS && (
+                          <Badge variant="icon" className="text-[8px] font-light mr-2">
+                            Response ready
+                          </Badge>
+                        )}
+                        {processingState === PROCESSING_STATE.ERROR && (
+                          <Badge variant="destructive" className="text-[8px] font-light mr-2">
+                            Error
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        {threadId && (
+                          <>
+                            <Button
+                              onClick={viewThreadHistory}
+                              variant="node"
+                              size="node"
+                              className="mr-1"
+                            >
+                              <Bot className="h-3 w-3 mr-1" />
+                              History
+                            </Button>
+                            <Button
+                              onClick={resetThread}
+                              variant="outline"
+                              size="node"
+                            >
+                              <RotateCcw className="h-3 w-3" />
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                  <select
-                    value={selectedProvider}
-                    onChange={handleProviderChange}
-                    className="text-xs bg-background border rounded px-1 py-0.5 flex-1 min-w-0 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    disabled={!isEnabled}
-                  >
-                    <option value="openai">OpenAI</option>
-                    <option value="anthropic">Anthropic</option>
-                    <option value="google">Google Gemini</option>
-                    <option value="custom">Custom</option>
-                  </select>
                 </div>
-              </div>
 
-              {/* Model Selection - Compact */}
-              <select
-                value={selectedModel}
-                onChange={handleModelChange}
-                className="text-xs bg-background border rounded px-1 py-0.5 w-full focus:outline-none focus:ring-1 focus:ring-blue-500"
-                disabled={!isEnabled}
-              >
-                <optgroup label="Google Gemini">
-                  <option value="gemini-2.0-flash-exp">
-                    Gemini 2.0 Flash (Experimental)
-                  </option>
-                  <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
-                  <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
-                  <option value="gemini-1.5-flash-8b">
-                    Gemini 1.5 Flash 8B (Cheap)
-                  </option>
-                  <option value="gemini-1.0-pro">Gemini 1.0 Pro</option>
-                </optgroup>
-                <optgroup label="OpenAI">
-                  <option value="gpt-4o">GPT-4o</option>
-                  <option value="gpt-4o-mini">GPT-4o Mini</option>
-                  <option value="gpt-4-turbo">GPT-4 Turbo</option>
-                  <option value="gpt-4">GPT-4</option>
-                  <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
-                  <option value="o1-preview">o1-preview</option>
-                  <option value="o1-mini">o1-mini</option>
-                </optgroup>
-                <optgroup label="Claude">
-                  <option value="claude-sonnet-4-20250514">
-                    Claude Sonnet 4
-                  </option>
-                  <option value="claude-opus-4">Claude Opus 4</option>
-                  <option value="claude-3-5-sonnet-20241022">
-                    Claude 3.5 Sonnet
-                  </option>
-                  <option value="claude-3-5-haiku-20241022">
-                    Claude 3.5 Haiku
-                  </option>
-                  <option value="claude-3-opus-20240229">Claude 3 Opus</option>
-                </optgroup>
-              </select>
+                <TabsContent variant="node" value="chat" className="flex-1">
+                  {/* Provider Selection */}
+                  <div className="space-y-0">
+                    <div className="min-h-6 border rounded-md border-border px-2">
+                      <Label className="text-[10px] self-start pt-1 pl-1 text-muted-foreground w-16 flex items-center">
+                        Provider
+                        <div className="ml-2">
+                          <RenderStatusDot
+                            eventActive={processingState === PROCESSING_STATE.SUCCESS}
+                            isProcessing={processingState === PROCESSING_STATE.PROCESSING}
+                            hasError={processingState === PROCESSING_STATE.ERROR}
+                            enableGlow
+                            size="sm"
+                            titleText={processingState}
+                          />
+                        </div>
+                      </Label>
+                      <div className="flex flex-wrap items-center flex-1 min-w-0">
+                        <Select
+                          value={selectedProvider}
+                          onValueChange={(value) => {
+                            handleProviderChange({
+                              target: { value },
+                            } as React.ChangeEvent<HTMLSelectElement>);
+                          }}
+                          disabled={!isEnabled}
+                        >
+                          <SelectTrigger className="border-0 shadow-none bg-transparent p-0 h-6 text-[10px] min-w-32 flex-1 focus-visible:ring-0">
+                            <SelectValue placeholder="Select AI provider..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="openai">OpenAI</SelectItem>
+                            <SelectItem value="anthropic">Anthropic</SelectItem>
+                            <SelectItem value="google">Google Gemini</SelectItem>
+                            <SelectItem value="custom">Custom</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </div>
 
-              {/* System Prompt - Compact */}
-              <div>
-                <label
-                  htmlFor="ai-system-prompt"
-                  className="text-xs font-medium text-muted-foreground mb-0.5 block"
-                >
-                  System Prompt
-                </label>
-                <Textarea
-                  id="ai-system-prompt"
-                  value={systemPrompt}
-                  onChange={handleSystemPromptChange}
-                  placeholder="You are a helpful assistant..."
-                  className={`resize-none nowheel bg-background p-1.5 text-xs h-12 w-full overflow-y-auto ${categoryStyles.primary}`}
-                  disabled={!isEnabled}
-                />
-              </div>
+                  <Separator className="mb-1" />
 
-              {/* Settings Row - Compact horizontal layout */}
-              <div
-                className="flex items-center gap-2"
-                style={{ fontSize: "10px" }}
-              >
-                <div className="flex items-center gap-1">
-                  <label
-                    htmlFor="ai-temperature"
-                    className="text-muted-foreground"
-                    style={{ fontSize: "10px" }}
-                  >
-                    Temp:
-                  </label>
-                  <input
-                    id="ai-temperature"
-                    type="text"
-                    value={temperature}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      const parsed = Number.parseFloat(value);
-                      if (!Number.isNaN(parsed) && parsed >= 0 && parsed <= 2) {
-                        updateNodeData({ temperature: parsed });
-                      } else if (value === "" || value === ".") {
-                        // Allow empty or just decimal point for typing
-                        updateNodeData({ temperature: 0 });
-                      }
-                    }}
-                    placeholder="0.7"
-                    className="bg-background border rounded px-1 py-0.5 w-8 h-6 text-center focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    style={{ fontSize: "10px" }}
-                    disabled={!isEnabled}
-                  />
-                </div>
-                <div className="flex items-center gap-1">
-                  <label
-                    htmlFor="ai-max-steps"
-                    className="text-muted-foreground"
-                    style={{ fontSize: "10px" }}
-                  >
-                    Steps:
-                  </label>
-                  <input
-                    id="ai-max-steps"
-                    type="text"
-                    value={maxSteps}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      const parsed = Number.parseInt(value);
-                      if (
-                        !Number.isNaN(parsed) &&
-                        parsed >= 1 &&
-                        parsed <= 10
-                      ) {
-                        updateNodeData({ maxSteps: parsed });
-                      } else if (value === "") {
-                        // Allow empty for typing
-                        updateNodeData({ maxSteps: 1 });
-                      }
-                    }}
-                    placeholder="10"
-                    className="bg-background border rounded px-1 py-0.5 w-8 h-6 text-center focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    style={{ fontSize: "10px" }}
-                    disabled={!isEnabled}
-                  />
-                </div>
-              </div>
-
-              {/* BYOK Section for Custom Provider */}
-              {selectedProvider === "custom" && (
-                <div className="space-y-1">
-                  <input
-                    type="password"
-                    value={customApiKey || ""}
-                    onChange={(e) =>
-                      updateNodeData({ customApiKey: e.target.value })
-                    }
-                    placeholder="API Key"
-                    className="text-xs bg-background border rounded px-1 py-0.5 w-full focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    disabled={!isEnabled}
-                  />
-                  <input
-                    type="text"
-                    value={customEndpoint || ""}
-                    onChange={(e) =>
-                      updateNodeData({ customEndpoint: e.target.value })
-                    }
-                    placeholder="Custom Endpoint URL"
-                    className="text-xs bg-background border rounded px-1 py-0.5 w-full focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    disabled={!isEnabled}
-                  />
-                </div>
-              )}
-
-              {/* Status & Actions - Compact Row */}
-              <div className="flex items-center justify-between text-xs">
-                <div className="flex items-center gap-1">
-                  {processingState === PROCESSING_STATE.ERROR && (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        updateNodeData({
-                          processingState: PROCESSING_STATE.IDLE,
-                          processingError: null,
-                          isActive: true,
-                        })
-                      }
-                      className="text-blue-500 hover:text-blue-700 underline text-xs"
+                  {/* Model Selection */}
+                  <div id="model" className="border border-border rounded-md flex flex-row items-center">
+                    <Label className="text-[10px] self-start pt-1 pl-1 text-muted-foreground w-16 flex items-center">Model</Label>
+                    <Select
+                      value={selectedModel}
+                      onValueChange={(value) => {
+                        handleModelChange({
+                          target: { value },
+                        } as React.ChangeEvent<HTMLSelectElement>);
+                      }}
                       disabled={!isEnabled}
                     >
-                      Retry
-                    </button>
-                  )}
-                  {threadId && (
-                    <>
-                      <ButtonToggle
-                        isActive={showHistoryModal}
-                        initialText="Chat"
-                        activeText="Close"
-                        className="bg-green-500 text-black"
-                        variant="outline"
-                        size="xs"
-                        width="xs"
-                        onToggle={(isActive) => {
-                          if (isActive) {
-                            viewThreadHistory();
-                          } else {
-                            setShowHistoryModal(false);
+                      <SelectTrigger className="border-0 shadow-none bg-transparent p-0 h-6 text-[10px] min-w-32 flex-1 focus-visible:ring-0 ml-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="gemini-2.0-flash-exp">Gemini 2.0 Flash (Experimental)</SelectItem>
+                        <SelectItem value="gemini-1.5-pro">Gemini 1.5 Pro</SelectItem>
+                        <SelectItem value="gemini-1.5-flash">Gemini 1.5 Flash</SelectItem>
+                        <SelectItem value="gemini-1.5-flash-8b">Gemini 1.5 Flash 8B (Cheap)</SelectItem>
+                        <SelectItem value="gemini-1.0-pro">Gemini 1.0 Pro</SelectItem>
+                        <SelectItem value="gpt-4o">GPT-4o</SelectItem>
+                        <SelectItem value="gpt-4o-mini">GPT-4o Mini</SelectItem>
+                        <SelectItem value="gpt-4-turbo">GPT-4 Turbo</SelectItem>
+                        <SelectItem value="gpt-4">GPT-4</SelectItem>
+                        <SelectItem value="gpt-3.5-turbo">GPT-3.5 Turbo</SelectItem>
+                        <SelectItem value="o1-preview">o1-preview</SelectItem>
+                        <SelectItem value="o1-mini">o1-mini</SelectItem>
+                        <SelectItem value="claude-sonnet-4-20250514">Claude Sonnet 4</SelectItem>
+                        <SelectItem value="claude-opus-4">Claude Opus 4</SelectItem>
+                        <SelectItem value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet</SelectItem>
+                        <SelectItem value="claude-3-5-haiku-20241022">Claude 3.5 Haiku</SelectItem>
+                        <SelectItem value="claude-3-opus-20240229">Claude 3 Opus</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <Separator className="mb-1" />
+
+                  {/* System Prompt */}
+                  <div className="space-y-1 flex-1 flex flex-col">
+                    <Label className={INPUT_STYLES.label}>System Prompt</Label>
+                    <textarea
+                      value={systemPrompt}
+                      onChange={handleSystemPromptChange}
+                      placeholder="You are a helpful assistant..."
+                      className={`${INPUT_STYLES.textarea} w-full min-h-[50px] border border-border rounded-md px-2 py-1`}
+                      disabled={!isEnabled}
+                    />
+                  </div>
+
+                  <Separator className="mb-1" />
+
+                  {/* Message Input - Keep original with airplane icon */}
+                  <div className="space-y-1">
+                    <Label className={INPUT_STYLES.label}>Message</Label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={userInput || ""}
+                        onChange={(e) => {
+                          console.log("Input change:", e.target.value);
+                          updateNodeData({ userInput: e.target.value });
+                        }}
+                        placeholder={isActive ? "Message" : "Type your message..."}
+                        className="w-full pr-8 pl-2 py-1.5 text-[10px] bg-background border border-border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        disabled={false}
+                        readOnly={false}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && !e.shiftKey) {
+                            e.preventDefault();
+                            if (
+                              userInput?.trim() &&
+                              isEnabled &&
+                              processingState !== PROCESSING_STATE.PROCESSING
+                            ) {
+                              updateNodeData({
+                                isActive: true,
+                                processingState: PROCESSING_STATE.IDLE,
+                              });
+                            }
                           }
                         }}
-                        disabled={!isEnabled}
                       />
-                      <ButtonIconed
-                        icon={MdRefresh as React.ComponentType<any>}
-                        text="Reset"
-                        variant="outline"
-                        className="bg-red-500 text-black"
-                        size="xs"
-                        width="xs"
-                        onClick={resetThread}
-                        disabled={!isEnabled}
-                      />
-                    </>
-                  )}
-                </div>
-              </div>
-
-              {/* Chat Interface */}
-              <div className="space-y-2">
-                {/* Message Input */}
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={userInput || ""}
-                    onChange={(e) => {
-                      console.log("Input change:", e.target.value);
-                      updateNodeData({ userInput: e.target.value });
-                    }}
-                    placeholder={isActive ? "Message" : "Inactive"}
-                    className="w-full pr-8 pl-2 py-1.5 text-xs bg-background border rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    disabled={false}
-                    readOnly={false}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && !e.shiftKey) {
-                        e.preventDefault();
-                        if (
-                          userInput?.trim() &&
-                          isEnabled &&
-                          processingState !== PROCESSING_STATE.PROCESSING
-                        ) {
-                          updateNodeData({
-                            isActive: true,
-                            processingState: PROCESSING_STATE.IDLE,
-                          });
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (
+                            userInput?.trim() &&
+                            isEnabled &&
+                            processingState !== PROCESSING_STATE.PROCESSING
+                          ) {
+                            updateNodeData({
+                              isActive: true,
+                              processingState: PROCESSING_STATE.IDLE,
+                            });
+                          }
+                        }}
+                        disabled={
+                          !userInput?.trim() ||
+                          processingState === PROCESSING_STATE.PROCESSING
                         }
-                      }
-                    }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (
-                        userInput?.trim() &&
-                        isEnabled &&
-                        processingState !== PROCESSING_STATE.PROCESSING
-                      ) {
-                        updateNodeData({
-                          isActive: true,
-                          processingState: PROCESSING_STATE.IDLE,
-                        });
-                      }
-                    }}
-                    disabled={
-                      !userInput?.trim() ||
-                      processingState === PROCESSING_STATE.PROCESSING
-                    }
-                    className="absolute right-1 top-1/2 transform -translate-y-1/2 p-1 text-blue-500 hover:text-blue-700 disabled:text-gray-400 disabled:cursor-not-allowed transition-colors"
-                    title="Send message"
-                  >
-                    <svg
-                      width="12"
-                      height="12"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M22 2L11 13" />
-                      <path d="M22 2L15 22L11 13L2 9L22 2Z" />
-                    </svg>
-                  </button>
-                </div>
-
-                {/* AI Response Preview */}
-                {output && (
-                  <div className="text-xs bg-gray-50 dark:bg-gray-800 rounded p-2">
-                    <span className="text-muted-foreground block mb-1">
-                      AI Response:
-                    </span>
-                    <span className="font-mono text-foreground">
-                      {output.length > 100
-                        ? `${output.substring(0, 100)}...`
-                        : output}
-                    </span>
+                        className="absolute right-1 top-1/2 transform -translate-y-1/2 p-1 text-blue-500 hover:text-blue-700 disabled:text-gray-400 disabled:cursor-not-allowed transition-colors"
+                        title="Send message"
+                      >
+                        <svg
+                          width="12"
+                          height="12"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <path d="M22 2L11 13" />
+                          <path d="M22 2L15 22L11 13L2 9L22 2Z" />
+                        </svg>
+                      </button>
+                    </div>
                   </div>
-                )}
-              </div>
 
-              {/* Error Details - Only if error */}
-              {processingState === PROCESSING_STATE.ERROR &&
-                processingError && (
-                  <div className="text-xs text-red-500 bg-red-50 dark:bg-red-950/20 p-1.5 rounded border">
-                    {processingError.length > 80
-                      ? `${processingError.substring(0, 80)}...`
-                      : processingError}
+                  {/* AI Response Preview */}
+                  {output && (
+                    <div className="space-y-1">
+                      <Label className={INPUT_STYLES.label}>AI Response</Label>
+                      <div className="text-[10px] bg-muted/30 rounded p-2 border border-border">
+                        <span className="font-mono text-foreground">
+                          {output.length > 150
+                            ? `${output.substring(0, 150)}...`
+                            : output}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </TabsContent>
+
+                <TabsContent variant="node" value="settings" className="pt-3 space-y-3 m-0">
+                  {/* Temperature and Steps */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <Label className={INPUT_STYLES.label}>Temperature</Label>
+                      <Input
+                        variant="node"
+                        type="number"
+                        value={temperature}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          const parsed = Number.parseFloat(value);
+                          if (!Number.isNaN(parsed) && parsed >= 0 && parsed <= 2) {
+                            updateNodeData({ temperature: parsed });
+                          } else if (value === "" || value === ".") {
+                            updateNodeData({ temperature: 0 });
+                          }
+                        }}
+                        min="0"
+                        max="2"
+                        step="0.1"
+                        className={INPUT_STYLES.input}
+                        disabled={!isEnabled}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className={INPUT_STYLES.label}>Max Steps</Label>
+                      <Input
+                        variant="node"
+                        type="number"
+                        value={maxSteps}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          const parsed = Number.parseInt(value);
+                          if (!Number.isNaN(parsed) && parsed >= 1 && parsed <= 10) {
+                            updateNodeData({ maxSteps: parsed });
+                          } else if (value === "") {
+                            updateNodeData({ maxSteps: 1 });
+                          }
+                        }}
+                        min="1"
+                        max="10"
+                        className={INPUT_STYLES.input}
+                        disabled={!isEnabled}
+                      />
+                    </div>
                   </div>
-                )}
+
+                  {/* BYOK Section for Custom Provider */}
+                  {selectedProvider === "custom" && (
+                    <div className="space-y-2">
+                      <div className="space-y-1">
+                        <Label className={INPUT_STYLES.label}>API Key</Label>
+                        <Input
+                          variant="node"
+                          type="password"
+                          value={customApiKey || ""}
+                          onChange={(e) => updateNodeData({ customApiKey: e.target.value })}
+                          placeholder="Enter your API key..."
+                          className={INPUT_STYLES.input}
+                          disabled={!isEnabled}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className={INPUT_STYLES.label}>Custom Endpoint</Label>
+                        <Input
+                          variant="node"
+                          type="text"
+                          value={customEndpoint || ""}
+                          onChange={(e) => updateNodeData({ customEndpoint: e.target.value })}
+                          placeholder="https://api.example.com/v1"
+                          className={INPUT_STYLES.input}
+                          disabled={!isEnabled}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Status Information */}
+                  <div className="space-y-2">
+                    <Label className={INPUT_STYLES.label}>Status</Label>
+                    <div className="p-2 bg-muted/30 rounded text-[10px] space-y-1">
+                      <div className="flex justify-between">
+                        <span>State:</span>
+                        <span className="capitalize">{processingState}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Provider:</span>
+                        <span className="capitalize">{selectedProvider}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Model:</span>
+                        <span>{selectedModel}</span>
+                      </div>
+                      {threadId && (
+                        <div className="flex justify-between">
+                          <span>Thread:</span>
+                          <span className="font-mono">{threadId.substring(0, 8)}...</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="space-y-2">
+                    {processingState === PROCESSING_STATE.ERROR && (
+                      <Button
+                        onClick={() =>
+                          updateNodeData({
+                            processingState: PROCESSING_STATE.IDLE,
+                            processingError: null,
+                            isActive: true,
+                          })
+                        }
+                        variant="outline"
+                        size="node"
+                        className="w-full"
+                        disabled={!isEnabled}
+                      >
+                        <RotateCcw className="h-3 w-3 mr-1" />
+                        Retry
+                      </Button>
+                    )}
+                  </div>
+                </TabsContent>
+              </Tabs>
             </div>
+
+            {/* Footer with Error */}
+            {processingState === PROCESSING_STATE.ERROR && processingError && (
+              <div className={AI_STYLES.footer}>
+                <div className="flex items-center gap-2 text-xs text-destructive">
+                  <AlertCircle className="h-3 w-3" />
+                  <span>{processingError.length > 60 ? `${processingError.substring(0, 60)}...` : processingError}</span>
+                </div>
+              </div>
+            )}
           </div>
         ) : (
-          <div
-            className={`${CONTENT.collapsed} ${isEnabled ? "" : CONTENT.disabled}`}
-          >
-            <div className="text-2xl">{getProviderIcon()}</div>
+          <div className={COLLAPSED_STYLES.container}>
+            <div className={COLLAPSED_STYLES.content}>
+              {/* Icon */}
+              <div className="flex justify-center">
+                <SkueButton
+                  ariaLabel="AI Agent"
+                  title="AI Agent"
+                  checked={false}
+                  processing={processingState === PROCESSING_STATE.PROCESSING}
+                  onCheckedChange={(checked) => {
+                    if (checked && userInput?.trim() && isEnabled) {
+                      updateNodeData({
+                        isActive: true,
+                        processingState: PROCESSING_STATE.IDLE,
+                      });
+                    }
+                  }}
+                  size="sm"
+                  className="cursor-pointer translate-y-2"
+                  style={{ transform: "scale(1.1)", transformOrigin: "center" }}
+                  surfaceBgVar="--node-ai-bg"
+                  disabled={!isEnabled}
+                >
+                  {getProviderIcon()}
+                </SkueButton>
+              </div>
+
+              {/* Text and Status */}
+              <div className={COLLAPSED_STYLES.textInfo}>
+                <div
+                  className={`${COLLAPSED_STYLES.primaryText} ${categoryStyles.primary}`}
+                >
+                  {output ? "Response ready" : "No response"}
+                </div>
+                <div className={COLLAPSED_STYLES.statusIndicator}>
+                  <RenderStatusDot
+                    eventActive={processingState === PROCESSING_STATE.SUCCESS}
+                    isProcessing={processingState === PROCESSING_STATE.PROCESSING}
+                    hasError={processingState === PROCESSING_STATE.ERROR}
+                    enableGlow={true}
+                    size="sm"
+                    titleText={
+                      processingState === PROCESSING_STATE.ERROR
+                        ? "error"
+                        : processingState === PROCESSING_STATE.PROCESSING
+                          ? "processing"
+                          : processingState === PROCESSING_STATE.SUCCESS
+                            ? "success"
+                            : "neutral"
+                    }
+                  />
+                </div>
+              </div>
+            </div>
           </div>
         )}
 

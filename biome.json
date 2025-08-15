@@ -1,33 +1,4 @@
 {
-  "$schema": "https://biomejs.dev/schemas/1.8.3/schema.json",
-  "files": {
-    "include": [
-      "**/*"
-    ],
-    "ignore": [
-      "**/node_modules/**",
-      "**/.next/**",
-      "**/.turbo/**",
-      "**/dist/**",
-      "**/build/**",
-      "backups/**",
-      "public/**",
-      "generated/**",
-      "convex/_generated/**",
-      "react-email-starter/**"
-    ]
-  },
-  "linter": {
-    "enabled": true,
-    "rules": {
-      "recommended": true
-    }
-  },
-  "formatter": {
-    "enabled": true
-  }
-}
-{
 	"$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
 	"vcs": {
 		"enabled": true,
@@ -57,7 +28,8 @@
 			"backups/**",
 			"app/styles/_generated_tokens.css",
 			"public/sw.js",
-			"public/workbox-*.js"
+			"public/workbox-*.js",
+			"react-email-starter/**"
 		]
 	},
 	"formatter": {

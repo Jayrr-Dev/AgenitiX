@@ -55,6 +55,8 @@ export interface SkueButtonProps
   surfaceBgVar?: string;
 	/** When true, makes the icon glow with enhanced visual effects */
 	activated?: boolean;
+	/** When true, keeps the button in a pressed-down state for processing feedback */
+	processing?: boolean;
 }
 
 export const SkueButton = React.forwardRef<HTMLDivElement, SkueButtonProps>(
@@ -70,6 +72,7 @@ export const SkueButton = React.forwardRef<HTMLDivElement, SkueButtonProps>(
 			id,
         surfaceBgVar,
 			activated = false,
+			processing = false,
 			...rest
 		},
 		ref
@@ -99,6 +102,7 @@ export const SkueButton = React.forwardRef<HTMLDivElement, SkueButtonProps>(
 					skueButtonContainerVariants({ size }), 
 					styles.container, 
 					activated && styles.activated,
+					processing && styles.processing,
 					className
 				)}
           style={surfaceBgVar ? ({

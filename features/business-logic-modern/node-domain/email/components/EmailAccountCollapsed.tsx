@@ -17,6 +17,7 @@ import { FaMicrosoft } from "react-icons/fa";
 import { FcGoogle } from "react-icons/fc";
 import { MdEmail } from "react-icons/md";
 import { useEmailAccountContext } from "./EmailAccountProvider";
+import { SkueButton } from "@/components/ui/skue-button";
 // Local, minimal types to avoid cross-file circular deps while staying type-safe
 type EmailProviderType = "gmail" | "outlook" | "imap" | "smtp";
 type ConnectionStatus = "disconnected" | "connecting" | "connected" | "error";
@@ -24,7 +25,7 @@ type ConnectionStatus = "disconnected" | "connecting" | "connected" | "error";
 // Collapsed view styling constants
 const COLLAPSED_STYLES = {
   container: "flex items-center justify-center w-full h-full",
-  content: "p-3 text-center space-y-3 mt-4",
+  content: "p-3 text-center space-y-1 mt-4 z-9999",
   providerIcon:
     "relative w-12 h-12 bg-gradient-to-br from-white to-gray-50 dark:from-gray-100 dark:to-gray-400 inner-shadow  rounded-full flex items-center justify-center transform transition-all duration-300 hover:scale-105 active:scale-95 shadow-[0_8px_32px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.3)] before:absolute before:inset-0 before:rounded-full before:bg-gradient-to-br before:from-white/80 before:to-transparent before:opacity-60 after:absolute after:inset-0 after:rounded-full after:bg-gradient-to-br after:from-transparent after:to-black/5 after:opacity-40 cursor-pointer",
   iconWrapper: "relative z-10",
@@ -38,6 +39,7 @@ interface EmailAccountCollapsedProps {
     provider?: EmailProviderType;
     email?: string;
     connectionStatus?: ConnectionStatus;
+    isAuthenticating?: boolean;
   };
   categoryStyles: { primary: string };
   onToggleExpand?: () => void;
@@ -49,7 +51,7 @@ export const EmailAccountCollapsed = memo(
     categoryStyles,
     onToggleExpand,
   }: EmailAccountCollapsedProps) => {
-    const { provider, email, connectionStatus } = nodeData;
+    const { provider, email, connectionStatus, isAuthenticating } = nodeData;
     const { handleOAuth2Auth } = useEmailAccountContext();
 
     // Provider information with icons
@@ -75,7 +77,7 @@ export const EmailAccountCollapsed = memo(
 
       return {
         eventActive: isConnected,
-        isProcessing: isConnecting,
+        isProcessing: isConnecting || isAuthenticating,
         hasError: isError,
         // Disconnected maps to gray (neutral/off)
         // Glow enabled; component will not glow when gray
@@ -83,7 +85,7 @@ export const EmailAccountCollapsed = memo(
         size: "sm" as const,
         titleText: isError
           ? "error"
-          : isConnecting
+          : (isConnecting || isAuthenticating)
             ? "processing"
             : isConnected
               ? "active"
@@ -91,7 +93,11 @@ export const EmailAccountCollapsed = memo(
                 ? "neutral"
                 : "neutral",
       };
-    }, [connectionStatus]);
+    }, [connectionStatus, isAuthenticating]);
+
+    // Determine if button should be in processing state
+    // [Explanation], basically show pressed state during OAuth popup and connection process
+    const isProcessing = isAuthenticating || connectionStatus === "connecting";
 
     // Display text
     const displayText = useMemo(() => {
@@ -121,8 +127,10 @@ export const EmailAccountCollapsed = memo(
         <div className={COLLAPSED_STYLES.content}>
           {/* Provider Icon */}
           <div className="flex justify-center">
-            <div
-              className={COLLAPSED_STYLES.providerIcon}
+            <SkueButton
+              
+              checked={false}
+              processing={isProcessing}
               onClick={onPrimaryAction}
               role="button"
               tabIndex={0}
@@ -136,7 +144,7 @@ export const EmailAccountCollapsed = memo(
               <IconComponent
                 className={`w-6 h-6 ${providerInfo.color} ${COLLAPSED_STYLES.iconWrapper}`}
               />
-            </div>
+            </SkueButton> 
           </div>
 
           {/* Email and Status */}

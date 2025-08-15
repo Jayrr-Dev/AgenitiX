@@ -116,6 +116,16 @@ export interface NodeHandleSpec {
 	type: "source" | "target";
 	/** Optional custom tooltip text to append to default tooltip */
 	tooltip?: string;
+	/**
+	 * Optional icon override for this handle (does not affect compatibility or color)
+	 *
+	 * Technical: Looks up a memoized icon component by key in the handle icon cache,
+	 * basically swaps the glyph while preserving the semantic token color derived
+	 * from `dataType`/`tsSymbol`.
+	 *
+	 * Basic: Change the little handle picture without changing how it connects.
+	 */
+	iconKey?: string;
   /** Optional JSON shape contract for JSON target handles */
   jsonShape?: JsonShapeSpec;
   /** If true, skip JSON shape enforcement for this handle */
