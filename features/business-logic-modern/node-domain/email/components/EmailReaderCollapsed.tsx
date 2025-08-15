@@ -1,26 +1,25 @@
 "use client";
 /**
  * Route: features/business-logic-modern/node-domain/email/components/EmailReaderCollapsed.tsx
- * EMAIL READER – Collapsed view UI
+ * EMAIL READER – Collapsed view UI following EmailMessage design principles
  *
- * • Compact status with message count
+ * • Compact status with message count and read status
  * • Status dot with glow and processing states
  * • Center button triggers read action (Enter/Space supported)
+ * • Consistent 10px text size and spacing with EmailMessage
  *
  * Keywords: email-reader, collapsed, status-dot, compact
  */
 
 import RenderStatusDot from "@/components/RenderStatusDot";
 import { memo, useMemo } from "react";
-import { MdMailOutline } from "react-icons/md";
+import { MdOutlineMailOutline } from "react-icons/md";
+import SkueButton from "@/components/ui/skue-button";
 import type { EmailReaderData } from "../emailReader.node";
 
 const COLLAPSED_STYLES = {
   container: "flex items-center justify-center w-full h-full",
   content: "p-3 text-center space-y-3 mt-2",
-  iconButton:
-    "relative w-10 h-10 bg-gradient-to-br from-white to-gray-50 dark:from-gray-100 dark:to-gray-200 rounded-full flex items-center justify-center transform transition-all duration-300 hover:scale-105 active:scale-95 shadow-[0_8px_32px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.3)] cursor-pointer",
-  iconWrapper: "relative z-10 text-white dark:text-black opacity-75",
   textInfo: "space-y-1",
   primaryText: "font-medium text-[10px] truncate",
   statusIndicator: "flex items-center justify-center gap-1",
@@ -44,55 +43,55 @@ export const EmailReaderCollapsed = memo(
 
     const statusProps = useMemo(() => {
       const isConnected = connectionStatus === "connected";
-      const isConnecting =
-        connectionStatus === "connecting" || connectionStatus === "reading";
+      const isReading = connectionStatus === "reading" || connectionStatus === "processing";
       const isError = connectionStatus === "error";
 
       return {
         eventActive: isConnected,
-        isProcessing: isConnecting,
+        isProcessing: isReading,
         hasError: isError,
         enableGlow: true,
         size: "sm" as const,
         titleText: isError
           ? "error"
-          : isConnecting
+          : isReading
             ? "processing"
             : isConnected
-              ? "active"
+              ? "connected"
               : "neutral",
       };
     }, [connectionStatus]);
 
     const displayText = useMemo(() => {
-      if (accountId) {
+      if (accountId && messageCount > 0) {
         return `${messageCount} messages`;
       }
-      return "No account";
+      return "No messages";
     }, [accountId, messageCount]);
+
+    // Determine if button should be in processing state
+    const isProcessing = connectionStatus === "reading" || connectionStatus === "processing";
 
     return (
       <div className={COLLAPSED_STYLES.container}>
         <div className={COLLAPSED_STYLES.content}>
           {/* Icon */}
           <div className="flex justify-center">
-            <div
-              className={COLLAPSED_STYLES.iconButton}
-              onClick={onReadMessages}
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  // [Explanation], basically trigger read action from collapsed center button
-                  onReadMessages?.();
-                }
+            <SkueButton
+              ariaLabel="Read"
+              title="Read"
+              checked={false}
+              processing={isProcessing}
+              onCheckedChange={(checked) => {
+                if (checked) onReadMessages?.();
               }}
+              size="sm"
+              className="cursor-pointer translate-y-2"
+              style={{ transform: "scale(1.1)", transformOrigin: "center" }}
+              surfaceBgVar="--node-email-bg"
             >
-              <MdMailOutline
-                className={`w-5 h-5 ${COLLAPSED_STYLES.iconWrapper}`}
-              />
-            </div>
+              <MdOutlineMailOutline />
+            </SkueButton>
           </div>
 
           {/* Text and Status */}

@@ -12,7 +12,7 @@
  */
 
 import type { NodeProps, Node as RFNode } from "@xyflow/react";
-import {
+import React, {
   type ChangeEvent,
   memo,
   useCallback,
@@ -218,7 +218,7 @@ function createDynamicSpec(data: EmailReaderData): NodeSpec {
       },
       {
         id: "account-input",
-        code: "json",
+        code: "account",
         position: "left",
         type: "target",
         dataType: "JSON",
@@ -412,7 +412,7 @@ const EmailReaderNode = memo(
     // Keep last emitted output to avoid redundant writes
     const _lastOutputRef = useRef<string | null>(null);
     const _prevIsConnectedRef = useRef<boolean>(
-      (nodeData as EmailReaderData).isConnected
+      Boolean((nodeData as EmailReaderData).isConnected)
     );
 
     // -------------------------------------------------------------------------
@@ -747,7 +747,7 @@ const EmailReaderNode = memo(
           connectionStatus: "error",
           lastError:
             error instanceof Error ? error.message : "Failed to read messages",
-          retryCount: retryCount + 1,
+          retryCount: (retryCount || 0) + 1,
         });
         showError(
           "Failed to read messages",
@@ -888,7 +888,7 @@ const EmailReaderNode = memo(
         } catch {}
       }
 
-      _prevIsConnectedRef.current = isConnected;
+      _prevIsConnectedRef.current = Boolean(isConnected);
     }, [isConnected, nodeData, updateNodeData, flowId, id]);
 
     // -------------------------------------------------------------------------

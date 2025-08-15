@@ -1213,7 +1213,6 @@ const EmailSenderNode = memo(
         />
 
         {isExpanded ? (
-          <div >
           <EmailSenderExpanded
             nodeId={id}
             nodeData={nodeData as EmailSenderData}
@@ -1238,8 +1237,7 @@ const EmailSenderNode = memo(
                 showSuccess("Connection status refreshed");
                 }
               }}
-            />
-          </div>
+          />
         ) : (
           <EmailSenderCollapsed
             nodeData={nodeData as EmailSenderData}
