@@ -37,6 +37,7 @@ import {
   LuSend,
   LuType,
   LuWrench,
+  LuUser,
 } from "react-icons/lu";
 import { VscJson } from "react-icons/vsc";
 import { toast } from "sonner";
@@ -85,6 +86,10 @@ const initializeHandleIcons = () => {
     emailaccount: LuMail,
     emailtemplate: LuFileText,
     composedemail: LuSend,
+    // Domain-friendly aliases (override keys)
+    account: LuUser,
+    mail: LuMail,
+    message: LuMail,
   };
 
   Object.entries(handleIconComponents).forEach(([typeName, IconComponent]) => {
@@ -110,6 +115,31 @@ const initializeHandleIcons = () => {
 
 // Initialize handle icons on module load
 initializeHandleIcons();
+
+/**
+ * Register or override a handle icon by key, basically plug-in custom glyphs.
+ *
+ * Technical: Stores raw icon in a lookup and memoized component in the cache.
+ * Basic: Add a new picture for a handle key like "account" or "mail".
+ */
+export function registerHandleIcon(key: string, Icon: IconType): void {
+  const typeName = key.toLowerCase();
+  HANDLE_ICON_LOOKUP_CACHE.set(typeName, Icon);
+
+  const MemoizedHandleIcon = memo<{
+    width?: number;
+    height?: number;
+    style?: React.CSSProperties;
+  }>(({ width = 8, height = 8, style }) =>
+    React.createElement(Icon as React.ComponentType<any>, {
+      width,
+      height,
+      style,
+    })
+  );
+  MemoizedHandleIcon.displayName = `HandleIcon_${typeName}`;
+  HANDLE_ICON_CACHE.set(typeName, MemoizedHandleIcon);
+}
 
 /**
  * Gets a cached handle icon component with memoization, basically prevent component recreation for handles
@@ -711,6 +741,8 @@ interface UltimateTypesafeHandleProps {
   id?: string;
   /** Optional custom tooltip text to append to default tooltip */
   customTooltip?: string;
+  /** Optional icon override key (uses cache); does not affect color or type */
+  iconKey?: string;
   /** Optional JSON shape for target validation */
   // JSON shape options removed
 }
@@ -725,6 +757,7 @@ const UltimateTypesafeHandle: React.FC<UltimateTypesafeHandleProps> = memo(
     handleIndex = 0,
     totalHandlesOnSide = 1,
     customTooltip,
+    iconKey,
     ...props
   }) => {
     // Memoize handle type name calculation, basically prevent recalculation on re-renders
@@ -927,10 +960,13 @@ const UltimateTypesafeHandle: React.FC<UltimateTypesafeHandleProps> = memo(
     );
 
     // Memoize the icon component to prevent re-creation on re-renders, basically stable icon reference
-    const MemoizedIconComponent = useMemo(
-      () => typeDisplay.iconComponent,
-      [typeDisplay.iconComponent]
-    );
+    const MemoizedIconComponent = useMemo(() => {
+      if (iconKey) {
+        const customIcon = getCachedHandleIcon(iconKey);
+        if (customIcon) return customIcon;
+      }
+      return typeDisplay.iconComponent;
+    }, [iconKey, typeDisplay.iconComponent]);
 
     // Memoize position offset calculation, basically prevent recalculation of positioning
     const positionOffset = useMemo(

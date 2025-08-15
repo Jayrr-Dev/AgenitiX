@@ -209,6 +209,7 @@ function createDynamicSpec(data: EmailMessageData): NodeSpec {
         position: "left",
         type: "target",
         dataType: "JSON",
+        iconKey: "account",
         tooltip: HANDLE_TOOLTIPS.EMAIL_INPUT,
       },
       {
@@ -225,6 +226,7 @@ function createDynamicSpec(data: EmailMessageData): NodeSpec {
         position: "right",
         type: "source",
         dataType: "JSON",
+        iconKey: "mail",
         tooltip: HANDLE_TOOLTIPS.JSON_OUT,
       },
       {
