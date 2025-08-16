@@ -24,7 +24,7 @@ const GMAIL_OAUTH_CONFIG = {
 	clientSecret: process.env.GMAIL_CLIENT_SECRET || "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",
 	redirectUri: "http://localhost:3000/api/auth/email/gmail/callback",
 	scope:
-		"https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/gmail.readonly",
+		"https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/spreadsheets",
 	authUrl: "https://accounts.google.com/o/oauth2/v2/auth",
 	tokenUrl: "https://oauth2.googleapis.com/token",
 };
