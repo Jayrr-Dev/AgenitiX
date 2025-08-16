@@ -28,18 +28,18 @@ import { z } from "zod";
 import { ExpandCollapseButton } from "@/components/nodes/ExpandCollapseButton";
 import LabelNode from "@/components/nodes/labelNode";
 import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
-import { renderLucideIcon } from "@/features/business-logic-modern/infrastructure/node-core/iconUtils";
+import { renderLucideIcon } from "@/features/business-logic-modern/infrastructure/node-core/utils/iconUtils";
 import {
     SafeSchemas,
     createSafeInitialData,
-} from "@/features/business-logic-modern/infrastructure/node-core/schema-helpers";
+} from "@/features/business-logic-modern/infrastructure/node-core/utils/schema-helpers";
 import {
     createNodeValidator,
     reportValidationError,
     useNodeDataValidation,
-} from "@/features/business-logic-modern/infrastructure/node-core/validation";
+} from "@/features/business-logic-modern/infrastructure/node-core/utils/validation";
 import { withNodeScaffold } from "@/features/business-logic-modern/infrastructure/node-core/withNodeScaffold";
-import { useNodeFeatureFlag } from "@/features/business-logic-modern/infrastructure/node-core/useNodeFeatureFlag";
+import { useNodeFeatureFlag } from "@/features/business-logic-modern/infrastructure/node-core/features/useNodeFeatureFlag";
 import { CATEGORIES } from "@/features/business-logic-modern/infrastructure/theming/categories";
 import {
     COLLAPSED_SIZES,
@@ -344,9 +344,9 @@ const TriggerWebhookNode = memo(
         } = typedNodeData;
 
         // Local state for inputs to prevent focus loss
-        const [localWebhookPath, setLocalWebhookPath] = useState(webhookPath);
-        const [localAllowedOrigins, setLocalAllowedOrigins] = useState(allowedOrigins);
-        const [localIpWhitelist, setLocalIpWhitelist] = useState(ipWhitelist);
+        const [localWebhookPath, setLocalWebhookPath] = useState(webhookPath as string);
+        const [localAllowedOrigins, setLocalAllowedOrigins] = useState(allowedOrigins as string);
+        const [localIpWhitelist, setLocalIpWhitelist] = useState(ipWhitelist as string);
         const [localBinaryProperty, setLocalBinaryProperty] = useState(binaryProperty);
         const [localResponseHeaders, setLocalResponseHeaders] = useState(responseHeaders);
 
@@ -728,7 +728,7 @@ const TriggerWebhookNode = memo(
                         {spec.icon && renderLucideIcon(spec.icon, "", 16)}
                     </div>
                 ) : (
-                    <LabelNode nodeId={id} label={(nodeData as TriggerWebhookData).label || spec.displayName} />
+                    <LabelNode nodeId={id} label={typedNodeData.label || spec.displayName} />
                 )}
 
                 {!isExpanded ? (
