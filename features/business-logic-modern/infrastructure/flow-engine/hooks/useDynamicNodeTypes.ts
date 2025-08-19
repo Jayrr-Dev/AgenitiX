@@ -7,6 +7,8 @@ import timeThrottle from '../../../node-domain/time/timeThrottle.node';
 import timeDebounce from '../../../node-domain/time/timeDebounce.node';
 import timeStopwatch from '../../../node-domain/time/timeStopwatch.node';
 import timeTimeout from '../../../node-domain/time/timeTimeout.node';
+// TRIGGER nodes
+import triggerWebhook from '../../../node-domain/trigger/triggerWebhook.node';
 // EMAIL nodes
 import emailMessage from '../../../node-domain/email/emailMessage.node';
 // Add new node imports here (Plop can auto-inject these)
@@ -73,6 +75,8 @@ export function useDynamicNodeTypes() {
 			timeDebounce,
 			timeStopwatch,
 			timeTimeout,
+			// TRIGGER nodes
+			triggerWebhook,
 			// EMAIL nodes
 			emailMessage,
 			emailDraft,

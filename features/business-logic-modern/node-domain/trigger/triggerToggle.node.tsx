@@ -10,7 +10,7 @@
 
 import type { NodeProps } from "@xyflow/react";
 import { useStore } from "@xyflow/react";
-import { memo, useCallback, useEffect, useRef } from "react";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { z } from "zod";
 
 import { ExpandCollapseButton } from "@/components/nodes/ExpandCollapseButton";
@@ -193,6 +193,12 @@ const TriggerToggleNode = memo(
     // keep last emitted output to avoid redundant writes
     const lastOutputRef = useRef<boolean | null>(null);
 
+    // Local state for inputs to prevent focus loss (if needed)
+    const [localValue, setLocalValue] = useState(store);
+
+    // Ref to track if we're currently editing
+    const isEditingRef = useRef(false);
+
     // -----------------------------------------------------------------------
     // 4.3  Helpers
     // -----------------------------------------------------------------------
@@ -307,8 +313,8 @@ const TriggerToggleNode = memo(
       <>
         {/* Label (hidden for 60×60 icons) */}
         {!isExpanded &&
-        spec.size.collapsed.width === 60 &&
-        spec.size.collapsed.height === 60 ? (
+          spec.size.collapsed.width === 60 &&
+          spec.size.collapsed.height === 60 ? (
           <div className="absolute inset-0 flex justify-center p-1 text-foreground/80 text-lg">
             {/* {spec.icon && renderLucideIcon(spec.icon)} */}
           </div>
@@ -325,13 +331,12 @@ const TriggerToggleNode = memo(
             <div className={CONTENT.body}>
               <div className="flex flex-col items-center gap-0">
                 <button
-                  className={`${CONTENT.toggle} ${
-                    isEnabled
-                      ? isToggled
-                        ? CONTENT.toggleOn
-                        : CONTENT.toggleOff
-                      : CONTENT.toggleDisabled
-                  }`}
+                  className={`${CONTENT.toggle} ${isEnabled
+                    ? isToggled
+                      ? CONTENT.toggleOn
+                      : CONTENT.toggleOff
+                    : CONTENT.toggleDisabled
+                    }`}
                   onClick={toggleState}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" || e.key === " ") {
@@ -359,13 +364,12 @@ const TriggerToggleNode = memo(
           /* Collapsed view */
           <div className={CONTENT.collapsed}>
             <button
-              className={`${CONTENT.toggle} ${
-                isEnabled
-                  ? isToggled
-                    ? CONTENT.toggleOn
-                    : CONTENT.toggleOff
-                  : CONTENT.toggleDisabled
-              }`}
+              className={`${CONTENT.toggle} ${isEnabled
+                ? isToggled
+                  ? CONTENT.toggleOn
+                  : CONTENT.toggleOff
+                : CONTENT.toggleDisabled
+                }`}
               onClick={toggleState}
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") {

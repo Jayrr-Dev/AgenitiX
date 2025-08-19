@@ -29,9 +29,12 @@ import { spec as timeThrottleSpec } from "../../node-domain/time/timeThrottle.no
 import { spec as timeDebounceSpec } from "../../node-domain/time/timeDebounce.node";
 import { spec as timeStopwatchSpec } from "../../node-domain/time/timeStopwatch.node";
 import { spec as timeTimeoutSpec } from "../../node-domain/time/timeTimeout.node";
+// TRIGGER node specs
+import { spec as triggerWebhookSpec } from "../../node-domain/trigger/triggerWebhook.node";
 // EMAIL node specs
 import { spec as emailMessageSpec } from "../../node-domain/email/emailMessage.node";
-import { spec as emailDraftSpec } from "../../node-domain/email/emailDraft.node";
+
+import { spec as storeSheetSpec } from "../../node-domain/store/storeSheet.node";
 import { spec as createTextSpec } from "../../node-domain/create/createText.node";
 import { spec as storeInMemorySpec } from "../../node-domain/create/storeInMemory.node";
 import { spec as emailAccountSpec } from "../../node-domain/email/emailAccount.node";
@@ -86,9 +89,12 @@ const nodeSpecs: Record<string, NodeSpec> = {
 	timeDebounce: timeDebounceSpec,
 	timeStopwatch: timeStopwatchSpec,
 	timeTimeout: timeTimeoutSpec,
+	// TRIGGER nodes
+	triggerWebhook: triggerWebhookSpec,
 	// EMAIL nodes
 	emailMessage: emailMessageSpec,
-	emailDraft: emailDraftSpec,
+
+	storeSheet: storeSheetSpec,
 	// Add new node specs here (auto-updated by Plop)
 	createText: createTextSpec,
 	aiAgent: aiAgentSpec,

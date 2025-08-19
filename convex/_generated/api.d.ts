@@ -22,6 +22,7 @@ import type * as emailTemplates from "../emailTemplates.js";
 import type * as emails from "../emails.js";
 import type * as flowHistory from "../flowHistory.js";
 import type * as flows from "../flows.js";
+import type * as googleSheets from "../googleSheets.js";
 import type * as http from "../http.js";
 import type * as manageFlowOps from "../manageFlowOps.js";
 import type * as runUserFlowWorkflow from "../runUserFlowWorkflow.js";
@@ -60,6 +61,7 @@ declare const fullApi: ApiFromModules<{
   emails: typeof emails;
   flowHistory: typeof flowHistory;
   flows: typeof flows;
+  googleSheets: typeof googleSheets;
   http: typeof http;
   manageFlowOps: typeof manageFlowOps;
   runUserFlowWorkflow: typeof runUserFlowWorkflow;
