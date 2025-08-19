@@ -118,14 +118,14 @@ function createDynamicSpec(data: MergeNodeData): NodeSpec {
     handles: [
       {
         id: "input",
-        code: "s",
+        code: "string", // Changed from "s" to "string" to match dataType
         position: "left",
         type: "target",
         dataType: "string",
       },
       {
         id: "output",
-        code: "s",
+        code: "string", // Changed from "s" to "string" to match dataType
         position: "right",
         type: "source",
         dataType: "string",
@@ -241,16 +241,16 @@ const MergeNodeNode = memo(
     const rfEdges = useStore((state) => state.edges);
     const rfNodes = useStore((state) => state.nodes);
     
-    // Get all input values from connected nodes
+    // Get all input values from connected nodes with type detection
     const inputValues = useMemo(() => {
       // Find all edges that connect to this node's input handle
       const inputEdges = rfEdges.filter(edge => edge.target === id && edge.targetHandle?.startsWith('input'));
       if (inputEdges.length === 0) return [];
       
-      // Get values from all source nodes
+      // Get values from all source nodes with their detected types
       const values = inputEdges.map(edge => {
         const sourceNode = rfNodes.find(n => n.id === edge.source);
-        if (!sourceNode) return '';
+        if (!sourceNode) return { type: 'string', value: '' };
         
         // Try to get output from source node
         const sourceOutput = sourceNode.data?.output;
@@ -258,69 +258,145 @@ const MergeNodeNode = memo(
         // Log the raw source output to debug
         console.log(`Source node [${sourceNode.id}] raw output:`, sourceOutput, typeof sourceOutput);
         
-        // Handle different types of output
-        if (typeof sourceOutput === "string") {
-          try {
-            if (sourceOutput.trim().startsWith('{') && sourceOutput.includes('"output"')) {
-              const parsed = JSON.parse(sourceOutput);
-              if (parsed && typeof parsed === 'object' && 'output' in parsed) {
-                console.log(`Extracted output from JSON string:`, parsed.output);
-                return String(parsed.output);
-              }
-            }
-            return sourceOutput;
-          } catch (e) {
-            console.log("Not valid JSON, using as plain string", sourceOutput);
-            return sourceOutput;
-          }
-        } else if (typeof sourceOutput === "object") {
-          try {
-            // If it's an object with an output property, use that
-            if (sourceOutput && 'output' in sourceOutput) {
-              return String(sourceOutput.output);
-            }
-            // If it's an object with a text or value property, use that
-            else if (sourceOutput && 'text' in sourceOutput) {
-              return String(sourceOutput.text);
-            } else if (sourceOutput && 'value' in sourceOutput) {
-              return String(sourceOutput.value);
-            } else {
-              // Try to extract meaningful text from the object
-              const jsonStr = JSON.stringify(sourceOutput);
-              return jsonStr !== '{}' && jsonStr !== 'null' ? jsonStr : '';
-            }
-          } catch (e) {
-            console.error("Error extracting text from object:", e);
-            return '';
-          }
-        } else if (sourceOutput === undefined || sourceOutput === null) {
-          return '';
+        // Detect and extract the value with its type
+        if (sourceOutput === undefined || sourceOutput === null) {
+          return { type: 'string', value: '' };
         }
         
-        // Convert any other types to string
-        return String(sourceOutput);
-      }).filter(Boolean); // Remove any empty strings
+        // Handle string type
+        if (typeof sourceOutput === "string") {
+          try {
+            // Check if it's a stringified object
+            if (sourceOutput.trim().startsWith('{') && !sourceOutput.includes('\n')) {
+              try {
+                const parsed = JSON.parse(sourceOutput);
+                return { type: 'object', value: parsed };
+              } catch {
+                // Not valid JSON, treat as string
+                return { type: 'string', value: sourceOutput };
+              }
+            }
+            
+            // Check if it's a stringified array
+            if (sourceOutput.trim().startsWith('[') && !sourceOutput.includes('\n')) {
+              try {
+                const parsed = JSON.parse(sourceOutput);
+                if (Array.isArray(parsed)) {
+                  return { type: 'array', value: parsed };
+                }
+              } catch {
+                // Not valid JSON array, treat as string
+              }
+            }
+            
+            // Default to string
+            return { type: 'string', value: sourceOutput };
+          } catch (e) {
+            console.log("Error processing string input", e);
+            return { type: 'string', value: sourceOutput };
+          }
+        } 
+        // Handle object type
+        else if (typeof sourceOutput === "object") {
+          // Check if it's an array
+          if (Array.isArray(sourceOutput)) {
+            return { type: 'array', value: sourceOutput };
+          }
+          
+          // Handle null
+          if (sourceOutput === null) {
+            return { type: 'string', value: '' };
+          }
+          
+          // Handle object with special properties
+          if ('output' in sourceOutput) {
+            // Recursively detect type of the output property
+            const outputValue = sourceOutput.output;
+            if (typeof outputValue === 'string') {
+              return { type: 'string', value: outputValue };
+            } else if (Array.isArray(outputValue)) {
+              return { type: 'array', value: outputValue };
+            } else if (typeof outputValue === 'object' && outputValue !== null) {
+              return { type: 'object', value: outputValue };
+            }
+          }
+          
+          // Default object handling
+          return { type: 'object', value: sourceOutput };
+        }
+        
+        // Handle other primitive types
+        return { type: 'string', value: String(sourceOutput) };
+      }).filter(item => item.value !== undefined && item.value !== null);
       
-      // Log input values
+      // Log input values with their detected types
       console.log(`MergeNode [${id}] Input Values:`, values);
       
       return values;
     }, [rfEdges, rfNodes, id]);
     
-    // Process the inputs by concatenating them
+    // Process the inputs by merging them according to their types
     const processedOutput = useMemo(() => {
       if (inputValues.length === 0) {
         return undefined;
       }
 
       try {
-        // Concatenate all input strings
-        const result = inputValues.join('');
+        // Group values by type
+        const stringValues: string[] = [];
+        const arrayValues: any[][] = [];
+        const objectValues: Record<string, any>[] = [];
         
-        // Log processed output
-        console.log(`MergeNode [${id}] Processed Output:`, result);
+        // Categorize values by their detected types
+        inputValues.forEach(item => {
+          if (item.type === 'string') {
+            stringValues.push(item.value);
+          } else if (item.type === 'array') {
+            arrayValues.push(item.value);
+          } else if (item.type === 'object') {
+            objectValues.push(item.value);
+          }
+        });
         
-        return result;
+        // Determine the dominant type for output
+        let result: any;
+        let displayText: string;
+        
+        if (objectValues.length > 0) {
+          // Merge objects if we have any
+          result = objectValues.reduce((merged, obj) => {
+            return { ...merged, ...obj };
+          }, {});
+          
+          // Convert merged object to string for display
+          displayText = JSON.stringify(result);
+          
+          // Log merged object
+          console.log(`MergeNode [${id}] Merged objects:`, result);
+          console.log(`MergeNode [${id}] Display text:`, displayText);
+        } else if (arrayValues.length > 0) {
+          // Merge arrays if we have any
+          result = arrayValues.reduce((merged, arr) => {
+            return [...merged, ...arr];
+          }, []);
+          
+          // Convert merged array to string for display
+          displayText = JSON.stringify(result);
+          
+          // Log merged array
+          console.log(`MergeNode [${id}] Merged arrays:`, result);
+          console.log(`MergeNode [${id}] Display text:`, displayText);
+        } else {
+          // Concatenate strings as fallback
+          result = stringValues.join('');
+          displayText = result; // Strings don't need conversion
+          
+          // Log concatenated string
+          console.log(`MergeNode [${id}] Concatenated strings:`, result);
+        }
+        
+        // Return the display text for proper rendering
+        return displayText;
       } catch (error) {
         console.error("Error processing values:", error);
         return undefined;
