@@ -17,6 +17,7 @@ import type * as authHelpers from "../authHelpers.js";
 import type * as crons from "../crons.js";
 import type * as devHelpers from "../devHelpers.js";
 import type * as emailAccounts from "../emailAccounts.js";
+import type * as emailDrafts from "../emailDrafts.js";
 import type * as emailTemplates from "../emailTemplates.js";
 import type * as emails from "../emails.js";
 import type * as flowHistory from "../flowHistory.js";
@@ -55,6 +56,7 @@ declare const fullApi: ApiFromModules<{
   crons: typeof crons;
   devHelpers: typeof devHelpers;
   emailAccounts: typeof emailAccounts;
+  emailDrafts: typeof emailDrafts;
   emailTemplates: typeof emailTemplates;
   emails: typeof emails;
   flowHistory: typeof flowHistory;

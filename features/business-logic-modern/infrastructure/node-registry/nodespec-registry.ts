@@ -33,6 +33,7 @@ import { spec as timeTimeoutSpec } from "../../node-domain/time/timeTimeout.node
 import { spec as triggerWebhookSpec } from "../../node-domain/trigger/triggerWebhook.node";
 // EMAIL node specs
 import { spec as emailMessageSpec } from "../../node-domain/email/emailMessage.node";
+
 import { spec as storeSheetSpec } from "../../node-domain/store/storeSheet.node";
 import { spec as createTextSpec } from "../../node-domain/create/createText.node";
 import { spec as storeInMemorySpec } from "../../node-domain/create/storeInMemory.node";
@@ -92,6 +93,7 @@ const nodeSpecs: Record<string, NodeSpec> = {
 	triggerWebhook: triggerWebhookSpec,
 	// EMAIL nodes
 	emailMessage: emailMessageSpec,
+
 	storeSheet: storeSheetSpec,
 	// Add new node specs here (auto-updated by Plop)
 	createText: createTextSpec,

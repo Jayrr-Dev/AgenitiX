@@ -25,6 +25,7 @@ export { default as emailBrand } from "./email/emailBrand.node";
 export { default as emailAnalytics } from "./email/emailAnalytics.node";
 export { default as emailBulk } from "./email/emailBulk.node";
 export { default as emailData } from "./email/emailData.node";
+export { default as emailDraft } from "./email/emailDraft.node";
 export { default as emailList } from "./email/emailList.node";
 export { default as emailUpdater } from "./email/emailUpdater.node";
 export { default as emailMessenger } from "./email/emailMessenger.node";
