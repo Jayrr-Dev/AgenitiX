@@ -39,6 +39,7 @@ import emailBrand from "../../../node-domain/email/emailBrand.node";
 import emailAnalytics from "../../../node-domain/email/emailAnalytics.node";
 import emailBulk from "../../../node-domain/email/emailBulk.node";
 import emailData from "../../../node-domain/email/emailData.node";
+import emailDraft from "../../../node-domain/email/emailDraft.node";
 import emailList from "../../../node-domain/email/emailList.node";
 import emailUpdater from "../../../node-domain/email/emailUpdater.node";
 import testNode from "../../../node-domain/test/testNode.node";
@@ -74,6 +75,7 @@ export function useDynamicNodeTypes() {
 			timeTimeout,
 			// EMAIL nodes
 			emailMessage,
+			emailDraft,
 			// Add new node types here
 			flowConditional,
 			viewBoolean,

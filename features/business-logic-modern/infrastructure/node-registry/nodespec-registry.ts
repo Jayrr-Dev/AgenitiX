@@ -31,6 +31,7 @@ import { spec as timeStopwatchSpec } from "../../node-domain/time/timeStopwatch.
 import { spec as timeTimeoutSpec } from "../../node-domain/time/timeTimeout.node";
 // EMAIL node specs
 import { spec as emailMessageSpec } from "../../node-domain/email/emailMessage.node";
+import { spec as emailDraftSpec } from "../../node-domain/email/emailDraft.node";
 import { spec as createTextSpec } from "../../node-domain/create/createText.node";
 import { spec as storeInMemorySpec } from "../../node-domain/create/storeInMemory.node";
 import { spec as emailAccountSpec } from "../../node-domain/email/emailAccount.node";
@@ -87,6 +88,7 @@ const nodeSpecs: Record<string, NodeSpec> = {
 	timeTimeout: timeTimeoutSpec,
 	// EMAIL nodes
 	emailMessage: emailMessageSpec,
+	emailDraft: emailDraftSpec,
 	// Add new node specs here (auto-updated by Plop)
 	createText: createTextSpec,
 	aiAgent: aiAgentSpec,
