@@ -29,6 +29,8 @@ import { spec as timeThrottleSpec } from "../../node-domain/time/timeThrottle.no
 import { spec as timeDebounceSpec } from "../../node-domain/time/timeDebounce.node";
 import { spec as timeStopwatchSpec } from "../../node-domain/time/timeStopwatch.node";
 import { spec as timeTimeoutSpec } from "../../node-domain/time/timeTimeout.node";
+// TRIGGER node specs
+import { spec as triggerWebhookSpec } from "../../node-domain/trigger/triggerWebhook.node";
 // EMAIL node specs
 import { spec as emailMessageSpec } from "../../node-domain/email/emailMessage.node";
 import { spec as storeSheetSpec } from "../../node-domain/store/storeSheet.node";
@@ -86,6 +88,8 @@ const nodeSpecs: Record<string, NodeSpec> = {
 	timeDebounce: timeDebounceSpec,
 	timeStopwatch: timeStopwatchSpec,
 	timeTimeout: timeTimeoutSpec,
+	// TRIGGER nodes
+	triggerWebhook: triggerWebhookSpec,
 	// EMAIL nodes
 	emailMessage: emailMessageSpec,
 	storeSheet: storeSheetSpec,
