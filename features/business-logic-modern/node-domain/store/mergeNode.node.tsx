@@ -14,14 +14,7 @@
  */
 
 import type { NodeProps } from "@xyflow/react";
-import React, {
-  memo,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  ChangeEvent,
-} from "react";
+import { memo, useCallback, useEffect, useMemo, useRef } from "react";
 import { z } from "zod";
 
 import { ExpandCollapseButton } from "@/components/nodes/ExpandCollapseButton";
@@ -41,57 +34,67 @@ import { withNodeScaffold } from "@/features/business-logic-modern/infrastructur
 import { useNodeFeatureFlag } from "@/features/business-logic-modern/infrastructure/node-core/features/useNodeFeatureFlag";
 import { CATEGORIES } from "@/features/business-logic-modern/infrastructure/theming/categories";
 import {
-  COLLAPSED_SIZES,
-  EXPANDED_SIZES,
+	COLLAPSED_SIZES,
+	EXPANDED_SIZES,
 } from "@/features/business-logic-modern/infrastructure/theming/sizing";
 import { useNodeData } from "@/hooks/useNodeData";
-import { useReactFlow, useStore } from "@xyflow/react";
-import { findEdgeByHandle } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/edgeUtils";
+import { useStore } from "@xyflow/react";
 
 // -----------------------------------------------------------------------------
 // 1️⃣  Data schema & validation
 // -----------------------------------------------------------------------------
 
 export const MergeNodeDataSchema = z
-  .object({
-    input: z.string().optional(),
-    output: SafeSchemas.optionalText(),
-    
-    // Node state
-    isEnabled: SafeSchemas.boolean(true),
-    isActive: SafeSchemas.boolean(false),
-    isExpanded: SafeSchemas.boolean(false),
-    
-    // UI configuration
-    expandedSize: SafeSchemas.text("FE3"),
-    collapsedSize: SafeSchemas.text("C2"),
-    label: z.string().optional(), // User-editable node label
-  })
-  .passthrough();
+	.object({
+		input: z.string().optional(),
+		output: SafeSchemas.optionalText(),
+
+		// Node state
+		isEnabled: SafeSchemas.boolean(true),
+		isActive: SafeSchemas.boolean(false),
+		isExpanded: SafeSchemas.boolean(false),
+
+		// UI configuration
+		expandedSize: SafeSchemas.text("FE3"),
+		collapsedSize: SafeSchemas.text("C2"),
+		label: z.string().optional(), // User-editable node label
+	})
+	.passthrough();
 
 export type MergeNodeData = z.infer<typeof MergeNodeDataSchema>;
 
-const validateNodeData = createNodeValidator(
-  MergeNodeDataSchema,
-  "MergeNode",
-);
+const validateNodeData = createNodeValidator(MergeNodeDataSchema, "MergeNode");
 
 // -----------------------------------------------------------------------------
 // 2️⃣  Constants
 // -----------------------------------------------------------------------------
 
 const CATEGORY_TEXT = {
-  STORE: {
-    primary: "text-[--node--s-t-o-r-e-text]",
-  },
+	STORE: {
+		primary: "text-[--node-store-text]",
+		secondary: "text-[--node-store-text-secondary]",
+	},
 } as const;
 
 const CONTENT = {
-  expanded: "p-4 w-full h-full flex flex-col",
-  collapsed: "flex items-center justify-center w-full h-full",
-  header: "flex items-center justify-between mb-3",
-  body: "flex-1 flex items-center justify-center",
-  disabled: "opacity-75 bg-zinc-100 dark:bg-zinc-500 rounded-md transition-all duration-300",
+	// Professional layouts matching STORE theming
+	expanded: "p-3 w-full h-full flex flex-col bg-gradient-to-br from-teal-50 to-cyan-100 dark:from-teal-900/30 dark:to-cyan-900/30 rounded-lg border border-teal-200 dark:border-teal-700 shadow-sm",
+	collapsed: "flex items-center justify-center w-full h-full bg-gradient-to-br from-teal-50 to-cyan-100 dark:from-teal-900/30 dark:to-cyan-900/30 rounded-lg border border-teal-200 dark:border-teal-700 shadow-sm",
+	header: "flex items-center justify-between mb-2",
+	body: "flex-1 flex items-center justify-center",
+	disabled: "opacity-60 grayscale transition-all duration-300",
+	
+	// Professional configuration sections matching STORE theming
+	configSection:
+		"bg-white dark:bg-slate-800 rounded-lg p-2 border border-teal-200 dark:border-teal-700 shadow-sm",
+	configHeader:
+		"text-[8px] font-semibold text-teal-700 dark:text-teal-300 mb-1 flex items-center gap-1",
+	
+	// Professional collapsed view with STORE theming
+	collapsedIcon: "text-lg mb-1 text-teal-600 dark:text-teal-400",
+	collapsedTitle:
+		"text-[10px] font-semibold text-slate-700 dark:text-slate-300 mb-1",
+	collapsedSubtitle: "text-[8px] text-slate-500 dark:text-slate-400",
 } as const;
 
 // -----------------------------------------------------------------------------
@@ -168,8 +171,8 @@ function createDynamicSpec(data: MergeNodeData): NodeSpec {
 
 /** Static spec for registry (uses default size keys) */
 export const spec: NodeSpec = createDynamicSpec({
-  expandedSize: "FE3",
-  collapsedSize: "C2",
+	expandedSize: "FE3",
+	collapsedSize: "C2",
 } as MergeNodeData);
 
 // -----------------------------------------------------------------------------
@@ -559,27 +562,21 @@ const MergeNodeNode = memo(
  * stays stable across renders unless the *spec itself* really changes.
  */
 const MergeNodeNodeWithDynamicSpec = (props: NodeProps) => {
-  const { nodeData } = useNodeData(props.id, props.data);
+	const { nodeData } = useNodeData(props.id, props.data);
 
-  // Recompute spec only when the size keys change
-  const dynamicSpec = useMemo(
-    () => createDynamicSpec(nodeData as MergeNodeData),
-    [
-      (nodeData as MergeNodeData).expandedSize,
-      (nodeData as MergeNodeData).collapsedSize,
-    ],
-  );
+	// Recompute spec only when the size keys change
+	const dynamicSpec = useMemo(
+		() => createDynamicSpec(nodeData as MergeNodeData),
+		[(nodeData as MergeNodeData).expandedSize, (nodeData as MergeNodeData).collapsedSize]
+	);
 
-  // Memoise the scaffolded component to keep focus
-  const ScaffoldedNode = useMemo(
-    () =>
-      withNodeScaffold(dynamicSpec, (p) => (
-        <MergeNodeNode {...p} spec={dynamicSpec} />
-      )),
-    [dynamicSpec],
-  );
+	// Memoise the scaffolded component to keep focus
+	const ScaffoldedNode = useMemo(
+		() => withNodeScaffold(dynamicSpec, (p) => <MergeNodeNode {...p} spec={dynamicSpec} />),
+		[dynamicSpec]
+	);
 
-  return <ScaffoldedNode {...props} />;
+	return <ScaffoldedNode {...props} />;
 };
 
 export default MergeNodeNodeWithDynamicSpec;

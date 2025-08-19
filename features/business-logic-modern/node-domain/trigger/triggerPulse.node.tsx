@@ -20,6 +20,7 @@ import {
   useEffect,
   useMemo,
   useRef,
+  useState,
 } from "react";
 import { z } from "zod";
 
@@ -213,6 +214,12 @@ const TriggerPulseNode = memo(
     const lastOutputRef = useRef<boolean | null>(null);
     // timer ref for pulse timeout
     const pulseTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+    // Local state for inputs to prevent focus loss
+    const [localPulseDuration, setLocalPulseDuration] = useState(pulseDuration);
+
+    // Ref to track if we're currently editing
+    const isEditingRef = useRef(false);
 
     // -----------------------------------------------------------------------
     // 4.3  Helpers
@@ -489,13 +496,12 @@ const TriggerPulseNode = memo(
             <div className={CONTENT.body}>
               <div className="flex flex-col items-center gap-2">
                 <button
-                  className={`${CONTENT.pulse} ${
-                    isEnabled
-                      ? isPulsing
-                        ? CONTENT.pulsePulsing
-                        : CONTENT.pulseIdle
-                      : CONTENT.pulseDisabled
-                  }`}
+                  className={`${CONTENT.pulse} ${isEnabled
+                    ? isPulsing
+                      ? CONTENT.pulsePulsing
+                      : CONTENT.pulseIdle
+                    : CONTENT.pulseDisabled
+                    }`}
                   onClick={triggerPulse}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" || e.key === " ") {
@@ -554,13 +560,12 @@ const TriggerPulseNode = memo(
           /* Collapsed view */
           <div className={CONTENT.collapsed}>
             <button
-              className={`${CONTENT.pulse} ${
-                isEnabled
-                  ? isPulsing
-                    ? CONTENT.pulsePulsing
-                    : CONTENT.pulseIdle
-                  : CONTENT.pulseDisabled
-              }`}
+              className={`${CONTENT.pulse} ${isEnabled
+                ? isPulsing
+                  ? CONTENT.pulsePulsing
+                  : CONTENT.pulseIdle
+                : CONTENT.pulseDisabled
+                }`}
               onClick={triggerPulse}
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") {

@@ -20,6 +20,7 @@ import {
   useEffect,
   useMemo,
   useRef,
+  useState,
 } from "react";
 import { z } from "zod";
 
@@ -313,6 +314,13 @@ const TimeSchedulerNode = memo(
 
     // keep last emitted output to avoid redundant writes
     const lastOutputRef = useRef<string | null>(null);
+
+    // Local state for inputs to prevent focus loss
+    const [localInterval, setLocalInterval] = useState(intervalMinutes);
+    const [localStartTime, setLocalStartTime] = useState(startTime);
+    
+    // Ref to track if we're currently editing
+    const isEditingRef = useRef(false);
 
     const categoryStyles = CATEGORY_TEXT.TRIGGER;
 

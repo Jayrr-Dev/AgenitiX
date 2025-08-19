@@ -465,3 +465,6 @@ export interface EmailContent {
   html: string;
   mode: "text" | "html" | "rich";
 }
+
+// Re-export draft types for convenience
+export * from "./types/emailDraft";
