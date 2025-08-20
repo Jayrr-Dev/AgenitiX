@@ -60,6 +60,7 @@ export const TimeSchedulerDataSchema = z
     isEnabled: SafeSchemas.boolean(true),
     isActive: SafeSchemas.boolean(false),
     isExpanded: SafeSchemas.boolean(false),
+    showSetupModal: SafeSchemas.boolean(false), // Add modal state
 
     // Schedule configuration
     scheduleType: z.enum(["interval", "daily", "once"]).default("interval"),
@@ -72,7 +73,7 @@ export const TimeSchedulerDataSchema = z
     // I/O
     store: SafeSchemas.text("Schedule configuration"),
     inputs: SafeSchemas.optionalText().nullable().default(null),
-    output: SafeSchemas.optionalText(),
+    output: SafeSchemas.boolean(false),
 
     // UI
     expandedSize: SafeSchemas.text("FE3"),
@@ -189,10 +190,10 @@ function createDynamicSpec(data: TimeSchedulerData): NodeSpec {
       },
       {
         id: "output",
-        code: "string",
+        code: "boolean",
         position: "right",
         type: "source",
-        dataType: "string",
+        dataType: "boolean",
       },
       {
         id: "input",
@@ -208,13 +209,14 @@ function createDynamicSpec(data: TimeSchedulerData): NodeSpec {
     initialData: createSafeInitialData(TimeSchedulerDataSchema, {
       store: "Schedule configuration",
       inputs: null,
-      output: "",
+      output: false,
       scheduleType: "interval",
       intervalMinutes: 5,
       startTime: "",
       lastTriggered: null,
       nextTrigger: null,
       manualTrigger: false,
+      showSetupModal: false, // Initialize modal as closed
       expandedSize: "FE3",
       collapsedSize: "C3",
     }),
@@ -230,6 +232,7 @@ function createDynamicSpec(data: TimeSchedulerData): NodeSpec {
         "lastTriggered",
         "nextTrigger",
         "manualTrigger",
+        "showSetupModal", // Exclude modal state from inspector
       ],
       customFields: [
         { key: "isEnabled", type: "boolean", label: "Enable Scheduler" },
@@ -299,6 +302,7 @@ const TimeSchedulerNode = memo(
       isExpanded,
       isEnabled,
       isActive,
+      showSetupModal,
       store,
       scheduleType,
       intervalMinutes,
@@ -313,12 +317,12 @@ const TimeSchedulerNode = memo(
     const edges = useStore((s) => s.edges);
 
     // keep last emitted output to avoid redundant writes
-    const lastOutputRef = useRef<string | null>(null);
+    const lastOutputRef = useRef<boolean | null>(null);
 
     // Local state for inputs to prevent focus loss
     const [localInterval, setLocalInterval] = useState(intervalMinutes);
     const [localStartTime, setLocalStartTime] = useState(startTime);
-    
+
     // Ref to track if we're currently editing
     const isEditingRef = useRef(false);
 
@@ -330,7 +334,18 @@ const TimeSchedulerNode = memo(
     const flagState = useNodeFeatureFlag(spec.featureFlag);
 
     // -------------------------------------------------------------------------
-    // 4.4  Callbacks
+    // 4.4  Convex hooks (must be declared before callbacks that use them)
+    // -------------------------------------------------------------------------
+    
+    // Durable scheduling via Convex
+    const scheduleDoc = useQuery(api.scheduleTime.getScheduleForNode, {
+      nodeId: id,
+    });
+    const upsertSchedule = useMutation(api.scheduleTime.upsertTimeSchedule);
+    const triggerSchedule = useMutation(api.scheduleTime.manualTrigger);
+
+    // -------------------------------------------------------------------------
+    // 4.5  Callbacks
     // -------------------------------------------------------------------------
 
     /** Toggle between collapsed / expanded */
@@ -338,17 +353,56 @@ const TimeSchedulerNode = memo(
       updateNodeData({ isExpanded: !isExpanded });
     }, [isExpanded, updateNodeData]);
 
+    /** Toggle setup modal */
+    const toggleSetupModal = useCallback(() => {
+      updateNodeData({ showSetupModal: !showSetupModal });
+    }, [showSetupModal, updateNodeData]);
+
+    /** Save schedule configuration to Convex */
+    const saveScheduleConfiguration = useCallback(async () => {
+      console.log("Save button clicked!"); // Debug log
+      try {
+        const payload = {
+          nodeId: id,
+          flowId: undefined as string | undefined,
+          scheduleType,
+          intervalMinutes,
+          startTime,
+          isEnabled,
+        };
+
+        console.log("Saving schedule configuration:", payload);
+
+        await upsertSchedule(payload);
+
+        // Close modal after successful save
+        updateNodeData({ showSetupModal: false });
+
+        // Optional: Show success feedback
+        console.log("Schedule configuration saved successfully");
+      } catch (error) {
+        console.error("Failed to save schedule configuration:", error);
+        // Optional: Show error feedback to user
+      }
+    }, [
+      id,
+      scheduleType,
+      intervalMinutes,
+      startTime,
+      isEnabled,
+      upsertSchedule,
+      updateNodeData,
+    ]);
+
     /** Propagate output ONLY when node is active AND enabled */
     const propagate = useCallback(
-      (value: string) => {
-        const shouldSend = isActive && isEnabled;
-        const out = shouldSend ? value : null;
-        if (out !== lastOutputRef.current) {
-          lastOutputRef.current = out;
-          updateNodeData({ output: out });
+      (value: boolean) => {
+        if (value !== lastOutputRef.current) {
+          lastOutputRef.current = value;
+          updateNodeData({ output: value });
         }
       },
-      [isActive, isEnabled, updateNodeData]
+      [updateNodeData]
     );
 
     /** Clear JSON‑ish fields when inactive or disabled */
@@ -399,7 +453,7 @@ const TimeSchedulerNode = memo(
     );
 
     // -------------------------------------------------------------------------
-    // 4.5  Effects
+    // 4.6  Effects
     // -------------------------------------------------------------------------
 
     /* 🔄 Whenever nodes/edges change, recompute inputs. */
@@ -424,50 +478,72 @@ const TimeSchedulerNode = memo(
       }
     }, [nodeData, isEnabled, updateNodeData]);
 
-    // Durable scheduling via Convex
-    const scheduleDoc = useQuery(api.scheduleTime.getScheduleForNode, { nodeId: id });
-    const upsertSchedule = useMutation(api.scheduleTime.upsertTimeSchedule);
-    const triggerSchedule = useMutation(api.scheduleTime.manualTrigger);
-
     // Keep server schedule and local node state in sync; server is source of truth
     const lastServerTriggeredRef = useRef<number | null>(null);
 
+    // Initialize output as false when component mounts
+    useEffect(() => {
+      if ((nodeData as TimeSchedulerData).output === undefined) {
+        updateNodeData({ output: false });
+      }
+    }, [updateNodeData, nodeData]);
+
     useEffect(() => {
       if (!scheduleDoc) return;
+
       // Sync enable flag
-      if (typeof scheduleDoc.is_enabled === "boolean" && scheduleDoc.is_enabled !== isEnabled) {
+      if (
+        typeof scheduleDoc.is_enabled === "boolean" &&
+        scheduleDoc.is_enabled !== isEnabled
+      ) {
         updateNodeData({ isEnabled: scheduleDoc.is_enabled });
       }
+
       // Sync timestamps to node data for UI
-      if (scheduleDoc.last_triggered && scheduleDoc.last_triggered !== lastTriggered) {
+      if (
+        scheduleDoc.last_triggered &&
+        scheduleDoc.last_triggered !== lastTriggered
+      ) {
         updateNodeData({ lastTriggered: scheduleDoc.last_triggered });
       }
-      if (scheduleDoc.next_trigger_at && scheduleDoc.next_trigger_at !== nextTrigger) {
+
+      if (
+        scheduleDoc.next_trigger_at &&
+        scheduleDoc.next_trigger_at !== nextTrigger
+      ) {
         updateNodeData({ nextTrigger: scheduleDoc.next_trigger_at });
       }
 
-      // Emit output once per new trigger
+      // Emit output once per new trigger using scheduled function approach
       if (
         typeof scheduleDoc.last_triggered === "number" &&
         scheduleDoc.last_triggered !== lastServerTriggeredRef.current &&
         scheduleDoc.is_enabled
       ) {
         lastServerTriggeredRef.current = scheduleDoc.last_triggered;
-        const nowTs = scheduleDoc.last_triggered;
-        updateNodeData({
-          isActive: true,
-          output: JSON.stringify({
-            triggered: true,
-            timestamp: nowTs,
-            scheduleType,
-            triggerType: "automatic",
-          }),
-        });
-        setTimeout(() => {
+
+        // Push true output immediately
+        propagate(true);
+        updateNodeData({ isActive: true });
+
+        // Schedule function to reset output to false after 1 second
+        const resetTimer = setTimeout(() => {
+          propagate(false);
           updateNodeData({ isActive: false });
         }, 1000);
+
+        // Cleanup function
+        return () => clearTimeout(resetTimer);
       }
-    }, [scheduleDoc, isEnabled, scheduleType, lastTriggered, nextTrigger, updateNodeData]);
+    }, [
+      scheduleDoc,
+      isEnabled,
+      scheduleType,
+      lastTriggered,
+      nextTrigger,
+      updateNodeData,
+      propagate,
+    ]);
 
     // Push local config changes to server (upsert durable schedule)
     const lastUpsertPayloadRef = useRef<string>("");
@@ -487,14 +563,25 @@ const TimeSchedulerNode = memo(
           // swallow errors in UI; consider toast elsewhere
         });
       }
-    }, [id, scheduleType, intervalMinutes, startTime, isEnabled, upsertSchedule]);
+    }, [
+      id,
+      scheduleType,
+      intervalMinutes,
+      startTime,
+      isEnabled,
+      upsertSchedule,
+    ]);
 
     // Update node active state based on enabled status
     useEffect(() => {
-      if (!isEnabled && isActive) {
-        updateNodeData({ isActive: false });
+      if (!isEnabled) {
+        // When disabled, immediately set output to false using propagate
+        propagate(false);
+        if (isActive) {
+          updateNodeData({ isActive: false });
+        }
       }
-    }, [isEnabled, isActive, updateNodeData]);
+    }, [isEnabled, isActive, updateNodeData, propagate]);
 
     // Format time for display
     const formatTime = useCallback((timestamp: number | null): string => {
@@ -595,7 +682,7 @@ const TimeSchedulerNode = memo(
         )}
 
         {/* Always show expand/collapse button */}
-        <ExpandCollapseButton showUI={isExpanded} onToggle={toggleExpand} size="sm" />
+        {/* <ExpandCollapseButton showUI={isExpanded} onToggle={toggleExpand} size="sm" /> */}
 
         {isExpanded ? (
           <div
@@ -608,8 +695,14 @@ const TimeSchedulerNode = memo(
               {/* Schedule Configuration Section */}
               <div className={CONTENT.configSection}>
                 <div className={CONTENT.configHeader}>
-                  {renderLucideIcon("LuSettings", "text-slate-500", 10)}
-                  Schedule
+                  <button
+                    onClick={toggleSetupModal}
+                    className="flex items-center gap-1 hover:bg-slate-200 dark:hover:bg-slate-600 p-1 rounded transition-colors"
+                    title="Open Schedule Setup Modal"
+                  >
+                    {renderLucideIcon("LuSettings", "text-slate-500", 10)}
+                    <span>Schedule</span>
+                  </button>
                 </div>
                 <div className={CONTENT.configGrid}>
                   {/* Schedule Type */}
@@ -676,6 +769,66 @@ const TimeSchedulerNode = memo(
                       </div>
                     </div>
                   )}
+
+                  {/* Schedule Preview */}
+                  <div className={CONTENT.formGroup}>
+                    <div className="bg-blue-50 dark:bg-blue-900/20 rounded-md p-2 border border-blue-200 dark:border-blue-800">
+                      <div className="flex items-center gap-1 mb-1">
+                        {renderLucideIcon(
+                          "LuClock",
+                          "text-blue-600 dark:text-blue-400",
+                          10
+                        )}
+                        <span className="text-[8px] font-medium text-blue-700 dark:text-blue-300">
+                          Schedule Preview
+                        </span>
+                      </div>
+                      <div className="text-[8px] text-blue-600 dark:text-blue-400">
+                        {scheduleType === "interval" && (
+                          <span>
+                            Runs every {intervalMinutes} minute
+                            {intervalMinutes !== 1 ? "s" : ""}
+                          </span>
+                        )}
+                        {scheduleType === "daily" && (
+                          <span>
+                            Runs daily at {startTime || "00:00"}
+                            {startTime && (
+                              <span className="text-blue-500 dark:text-blue-300 ml-1">
+                                (
+                                {new Date(
+                                  `2000-01-01T${startTime}`
+                                ).toLocaleTimeString([], {
+                                  hour: "numeric",
+                                  minute: "2-digit",
+                                  hour12: true,
+                                })}
+                                )
+                              </span>
+                            )}
+                          </span>
+                        )}
+                        {scheduleType === "once" && (
+                          <span>
+                            Runs once at {startTime || "00:00"}
+                            {startTime && (
+                              <span className="text-blue-500 dark:text-blue-300 ml-1">
+                                (
+                                {new Date(
+                                  `2000-01-01T${startTime}`
+                                ).toLocaleTimeString([], {
+                                  hour: "numeric",
+                                  minute: "2-digit",
+                                  hour12: true,
+                                })}
+                                )
+                              </span>
+                            )}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -719,7 +872,21 @@ const TimeSchedulerNode = memo(
                 disabled={!isEnabled || isActive || !scheduleDoc?._id}
                 onClick={() => {
                   if (scheduleDoc?._id) {
-                    void triggerSchedule({ scheduleId: scheduleDoc._id as Id<"trigger_time_schedules"> });
+                    // Manual trigger using scheduled function approach
+                    propagate(true);
+                    updateNodeData({ isActive: true });
+
+                    // Call the backend trigger
+                    void triggerSchedule({
+                      scheduleId:
+                        scheduleDoc._id as Id<"trigger_time_schedules">,
+                    });
+
+                    // Schedule function to reset output to false after 1 second
+                    setTimeout(() => {
+                      propagate(false);
+                      updateNodeData({ isActive: false });
+                    }, 1000);
                   }
                 }}
               >
@@ -733,9 +900,16 @@ const TimeSchedulerNode = memo(
           >
             <div className="flex flex-col items-center justify-center w-full h-full p-2">
               {/* Icon */}
-              <div className={CONTENT.collapsedIcon}>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleSetupModal();
+                }}
+                className={`${CONTENT.collapsedIcon} cursor-pointer hover:scale-110 transition-transform`}
+                title="Open Schedule Setup"
+              >
                 {spec.icon && renderLucideIcon(spec.icon, "", 18)}
-              </div>
+              </button>
 
               {/* Title */}
               <div className={CONTENT.collapsedTitle}>
@@ -758,6 +932,141 @@ const TimeSchedulerNode = memo(
                 className={`${CONTENT.collapsedStatus} ${isEnabled ? CONTENT.collapsedActive : CONTENT.collapsedInactive}`}
               >
                 {isEnabled ? "Active" : "Disabled"}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Setup Schedule Modal */}
+        {showSetupModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-white dark:bg-slate-800 rounded-lg p-4 w-80 max-w-[90vw] shadow-xl border border-slate-200 dark:border-slate-700">
+              {/* Modal Header */}
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                  Schedule Setup
+                </h2>
+                <button
+                  onClick={toggleSetupModal}
+                  className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition-colors"
+                >
+                  {renderLucideIcon("LuX", "text-slate-500", 14)}
+                </button>
+              </div>
+
+              {/* Modal Content */}
+              <div className="space-y-3">
+                {/* Schedule Type */}
+                <div>
+                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+                    Schedule Type
+                  </label>
+                  <select
+                    className="w-full px-2.5 py-1.5 text-xs border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent"
+                    value={scheduleType}
+                    onChange={(e) =>
+                      updateNodeData({
+                        scheduleType: e.target.value as any,
+                      })
+                    }
+                  >
+                    <option value="interval">Interval</option>
+                    <option value="daily">Daily</option>
+                    <option value="once">One-time</option>
+                  </select>
+                </div>
+
+                {/* Interval Settings */}
+                {scheduleType === "interval" && (
+                  <div>
+                    <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+                      Run Every
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        className="flex-1 px-2.5 py-1.5 text-xs border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent"
+                        value={intervalMinutes}
+                        min={0.1}
+                        max={1440}
+                        step={0.1}
+                        onChange={(e) =>
+                          updateNodeData({
+                            intervalMinutes:
+                              Number.parseFloat(e.target.value) || 1,
+                          })
+                        }
+                      />
+                      <span className="text-xs text-slate-500 dark:text-slate-400">
+                        minutes
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Time Settings */}
+                {(scheduleType === "daily" || scheduleType === "once") && (
+                  <div>
+                    <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+                      {scheduleType === "daily" ? "Daily at" : "Run once at"}
+                    </label>
+                    <input
+                      type="time"
+                      className="w-full px-2.5 py-1.5 text-xs border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent"
+                      value={startTime}
+                      onChange={(e) =>
+                        updateNodeData({ startTime: e.target.value })
+                      }
+                    />
+                  </div>
+                )}
+
+                {/* Enable/Disable */}
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                    Enable Scheduler
+                  </label>
+                  <input
+                    type="checkbox"
+                    checked={isEnabled}
+                    onChange={(e) =>
+                      updateNodeData({ isEnabled: e.target.checked })
+                    }
+                    className="w-3.5 h-3.5 text-blue-600 border-slate-300 rounded focus:ring-blue-500 focus:ring-1"
+                  />
+                </div>
+
+                {/* Schedule Summary */}
+                <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-2.5">
+                  <h3 className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+                    Summary
+                  </h3>
+                  <p className="text-[10px] text-slate-600 dark:text-slate-400">
+                    {scheduleType === "interval" &&
+                      `Runs every ${intervalMinutes} minutes`}
+                    {scheduleType === "daily" &&
+                      `Runs daily at ${startTime || "00:00"}`}
+                    {scheduleType === "once" &&
+                      `Runs once at ${startTime || "00:00"}`}
+                    {isEnabled ? " (Active)" : " (Disabled)"}
+                  </p>
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="flex justify-end gap-2 mt-4">
+                <button
+                  onClick={toggleSetupModal}
+                  className="px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-md transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={saveScheduleConfiguration}
+                  className="px-3 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors"
+                >
+                  Save Schedule
+                </button>
               </div>
             </div>
           </div>
