@@ -105,61 +105,68 @@ const CONTENT = {
  * Builds a NodeSpec whose size keys can change at runtime via node data.
  */
 function createDynamicSpec(data: MergeNodeData): NodeSpec {
-	const expanded =
-		EXPANDED_SIZES[data.expandedSize as keyof typeof EXPANDED_SIZES] ?? EXPANDED_SIZES.FE1;
-	const collapsed =
-		COLLAPSED_SIZES[data.collapsedSize as keyof typeof COLLAPSED_SIZES] ?? COLLAPSED_SIZES.C1;
+  const expanded =
+    EXPANDED_SIZES[data.expandedSize as keyof typeof EXPANDED_SIZES] ??
+    EXPANDED_SIZES.FE1;
+  const collapsed =
+    COLLAPSED_SIZES[data.collapsedSize as keyof typeof COLLAPSED_SIZES] ??
+    COLLAPSED_SIZES.C1;
 
-	return {
-		kind: "mergeNode",
-		displayName: "MergeNode",
-		label: "MergeNode",
-		category: CATEGORIES.STORE,
-		size: { expanded, collapsed },
-		handles: [
-			{
-				id: "input",
-				code: "s",
-				position: "left",
-				type: "target",
-				dataType: "string",
-			},
-			{
-				id: "output",
-				code: "s",
-				position: "right",
-				type: "source",
-				dataType: "string",
-			},
-		],
-		inspector: { key: "MergeNodeInspector" },
-		version: 1,
-		runtime: { execute: "mergeNode_execute_v1" },
-		initialData: createSafeInitialData(MergeNodeDataSchema, {
-			isEnabled: true,
-		}),
-		dataSchema: MergeNodeDataSchema,
-		controls: {
-			autoGenerate: true,
-			excludeFields: ["isActive", "output", "expandedSize", "collapsedSize"],
-			customFields: [
-				{ key: "isEnabled", type: "boolean", label: "Enable" },
-				{ key: "isExpanded", type: "boolean", label: "Expand" },
-			],
-		},
-		icon: "LuLink",
-		author: "Agenitix Team",
-		description: "merging input values",
-		feature: "base",
-		tags: ["store", "mergeNode"],
-		featureFlag: {
-			flag: "test",
-			fallback: true,
-			disabledMessage: "This mergeNode node is currently disabled",
-			hideWhenDisabled: false,
-		},
-		theming: {},
-	};
+  return {
+    kind: "mergeNode",
+    displayName: "MergeNode",
+    label: "MergeNode",
+    category: CATEGORIES.STORE,
+    size: { expanded, collapsed },
+    handles: [
+      {
+        id: "input",
+        code: "string", // Changed from "s" to "string" to match dataType
+        position: "left",
+        type: "target",
+        dataType: "string",
+      },
+      {
+        id: "output",
+        code: "string", // Changed from "s" to "string" to match dataType
+        position: "right",
+        type: "source",
+        dataType: "string",
+      },
+    ],
+    inspector: { key: "MergeNodeInspector" },
+    version: 1,
+    runtime: { execute: "mergeNode_execute_v1" },
+    initialData: createSafeInitialData(MergeNodeDataSchema, {
+      isEnabled: true,
+    }),
+    dataSchema: MergeNodeDataSchema,
+    controls: {
+      autoGenerate: true,
+      excludeFields: [
+        "isActive",
+        "output",
+        "expandedSize",
+        "collapsedSize",
+      ],
+      customFields: [
+        { key: "isEnabled", type: "boolean", label: "Enable" },
+        { key: "isExpanded", type: "boolean", label: "Expand" },
+      ],
+    },
+    icon: "LuLink",
+    author: "Agenitix Team",
+    description: "merging input values",
+    feature: "base",
+    tags: ["store", "mergeNode"],
+    featureFlag: {
+      flag: "test",
+      fallback: true,
+      disabledMessage: "This mergeNode node is currently disabled",
+      hideWhenDisabled: false,
+    },
+    theming: {},
+  };
 }
 
 /** Static spec for registry (uses default size keys) */
@@ -172,282 +179,375 @@ export const spec: NodeSpec = createDynamicSpec({
 // 4️⃣  React component – data propagation & rendering
 // -----------------------------------------------------------------------------
 
-const MergeNodeNode = memo(({ id, data, spec }: NodeProps & { spec: NodeSpec }) => {
-	// -------------------------------------------------------------------------
-	// 4.1  Sync with React‑Flow store
-	// -------------------------------------------------------------------------
-	const { nodeData, updateNodeData } = useNodeData(id, data);
+const MergeNodeNode = memo(
+  ({ id, data, spec }: NodeProps & { spec: NodeSpec }) => {
+    // -------------------------------------------------------------------------
+    // 4.1  Sync with React‑Flow store
+    // -------------------------------------------------------------------------
+    const { nodeData, updateNodeData } = useNodeData(id, data);
 
-	// -------------------------------------------------------------------------
-	// 4.2  Derived state
-	// -------------------------------------------------------------------------
-	const { isEnabled = true, isActive = false, isExpanded = false } = nodeData as MergeNodeData;
+    // -------------------------------------------------------------------------
+    // 4.2  Derived state
+    // -------------------------------------------------------------------------
+    const {
+      isEnabled = true,
+      isActive = false,
+      isExpanded = false,
+    } = nodeData as MergeNodeData;
 
-	// 4.2  Global React‑Flow store (nodes & edges) – triggers re‑render on change
-	const nodes = useStore((s) => s.nodes);
-	const edges = useStore((s) => s.edges);
+    // 4.2  Global React‑Flow store (nodes & edges) – triggers re‑render on change
+    const nodes = useStore((s) => s.nodes);
+    const edges = useStore((s) => s.edges);
 
-	// keep last emitted output to avoid redundant writes
-	const lastOutputRef = useRef<string | null>(null);
+    // keep last emitted output to avoid redundant writes
+    const lastOutputRef = useRef<string | null>(null);
 
-	const categoryStyles = CATEGORY_TEXT.STORE;
+    const categoryStyles = CATEGORY_TEXT.STORE;
 
-	// -------------------------------------------------------------------------
-	// 4.3  Feature flag evaluation (after all hooks)
-	// -------------------------------------------------------------------------
-	const flagState = useNodeFeatureFlag(spec.featureFlag);
+    // -------------------------------------------------------------------------
+    // 4.3  Feature flag evaluation (after all hooks)
+    // -------------------------------------------------------------------------
+    const flagState = useNodeFeatureFlag(spec.featureFlag);
 
-	// -------------------------------------------------------------------------
-	// 4.4  Callbacks
-	// -------------------------------------------------------------------------
+    // -------------------------------------------------------------------------
+    // 4.4  Callbacks
+    // -------------------------------------------------------------------------
 
-	/** Toggle between collapsed / expanded */
-	const toggleExpand = useCallback(() => {
-		updateNodeData({ isExpanded: !isExpanded });
-	}, [isExpanded, updateNodeData]);
+    /** Toggle between collapsed / expanded */
+    const toggleExpand = useCallback(() => {
+      updateNodeData({ isExpanded: !isExpanded });
+    }, [isExpanded, updateNodeData]);
 
-	/** Propagate output ONLY when node is active AND enabled */
-	const propagate = useCallback(
-		(value: string) => {
-			const shouldSend = isActive && isEnabled;
-			const out = shouldSend ? value : null;
-			if (out !== lastOutputRef.current) {
-				lastOutputRef.current = out;
-				updateNodeData({ output: out });
-			}
-		},
-		[isActive, isEnabled, updateNodeData]
-	);
+    /** Propagate output ONLY when node is active AND enabled */
+    const propagate = useCallback(
+      (value: string) => {
+        const shouldSend = isActive && isEnabled;
+        const out = shouldSend ? value : null;
+        if (out !== lastOutputRef.current) {
+          lastOutputRef.current = out;
+          updateNodeData({ output: out });
+        }
+      },
+      [isActive, isEnabled, updateNodeData],
+    );
 
-	/** Clear JSON‑ish fields when inactive or disabled */
-	const blockJsonWhenInactive = useCallback(() => {
-		if (!isActive || !isEnabled) {
-			updateNodeData({
-				output: "",
-			});
-		}
-	}, [isActive, isEnabled, updateNodeData]);
+    /** Clear JSON‑ish fields when inactive or disabled */
+    const blockJsonWhenInactive = useCallback(() => {
+      if (!isActive || !isEnabled) {
+        updateNodeData({
+          output: ""
+        });
+      }
+    }, [isActive, isEnabled, updateNodeData]);
 
-	// Get the edges and nodes from React Flow store
-	const rfEdges = useStore((state) => state.edges);
-	const rfNodes = useStore((state) => state.nodes);
+    // Get the edges and nodes from React Flow store
+    const rfEdges = useStore((state) => state.edges);
+    const rfNodes = useStore((state) => state.nodes);
+    
+    // Get all input values from connected nodes with type detection
+    const inputValues = useMemo(() => {
+      // Find all edges that connect to this node's input handle
+      const inputEdges = rfEdges.filter(edge => edge.target === id && edge.targetHandle?.startsWith('input'));
+      if (inputEdges.length === 0) return [];
+      
+      // Get values from all source nodes with their detected types
+      const values = inputEdges.map(edge => {
+        const sourceNode = rfNodes.find(n => n.id === edge.source);
+        if (!sourceNode) return { type: 'string', value: '' };
+        
+        // Try to get output from source node
+        const sourceOutput = sourceNode.data?.output;
+        
+        // Log the raw source output to debug
+        console.log(`Source node [${sourceNode.id}] raw output:`, sourceOutput, typeof sourceOutput);
+        
+        // Detect and extract the value with its type
+        if (sourceOutput === undefined || sourceOutput === null) {
+          return { type: 'string', value: '' };
+        }
+        
+        // Handle string type
+        if (typeof sourceOutput === "string") {
+          try {
+            // Check if it's a stringified object
+            if (sourceOutput.trim().startsWith('{') && !sourceOutput.includes('\n')) {
+              try {
+                const parsed = JSON.parse(sourceOutput);
+                return { type: 'object', value: parsed };
+              } catch {
+                // Not valid JSON, treat as string
+                return { type: 'string', value: sourceOutput };
+              }
+            }
+            
+            // Check if it's a stringified array
+            if (sourceOutput.trim().startsWith('[') && !sourceOutput.includes('\n')) {
+              try {
+                const parsed = JSON.parse(sourceOutput);
+                if (Array.isArray(parsed)) {
+                  return { type: 'array', value: parsed };
+                }
+              } catch {
+                // Not valid JSON array, treat as string
+              }
+            }
+            
+            // Default to string
+            return { type: 'string', value: sourceOutput };
+          } catch (e) {
+            console.log("Error processing string input", e);
+            return { type: 'string', value: sourceOutput };
+          }
+        } 
+        // Handle object type
+        else if (typeof sourceOutput === "object") {
+          // Check if it's an array
+          if (Array.isArray(sourceOutput)) {
+            return { type: 'array', value: sourceOutput };
+          }
+          
+          // Handle null
+          if (sourceOutput === null) {
+            return { type: 'string', value: '' };
+          }
+          
+          // Handle object with special properties
+          if ('output' in sourceOutput) {
+            // Recursively detect type of the output property
+            const outputValue = sourceOutput.output;
+            if (typeof outputValue === 'string') {
+              return { type: 'string', value: outputValue };
+            } else if (Array.isArray(outputValue)) {
+              return { type: 'array', value: outputValue };
+            } else if (typeof outputValue === 'object' && outputValue !== null) {
+              return { type: 'object', value: outputValue };
+            }
+          }
+          
+          // Default object handling
+          return { type: 'object', value: sourceOutput };
+        }
+        
+        // Handle other primitive types
+        return { type: 'string', value: String(sourceOutput) };
+      }).filter(item => item.value !== undefined && item.value !== null);
+      
+      // Log input values with their detected types
+      console.log(`MergeNode [${id}] Input Values:`, values);
+      
+      return values;
+    }, [rfEdges, rfNodes, id]);
+    
+    // Process the inputs by merging them according to their types
+    const processedOutput = useMemo(() => {
+      if (inputValues.length === 0) {
+        return undefined;
+      }
 
-	// Get all input values from connected nodes
-	const inputValues = useMemo(() => {
-		// Find all edges that connect to this node's input handle
-		const inputEdges = rfEdges.filter(
-			(edge) => edge.target === id && edge.targetHandle?.startsWith("input")
-		);
-		if (inputEdges.length === 0) return [];
+      try {
+        // Group values by type
+        const stringValues: string[] = [];
+        const arrayValues: any[][] = [];
+        const objectValues: Record<string, any>[] = [];
+        
+        // Categorize values by their detected types
+        inputValues.forEach(item => {
+          if (item.type === 'string') {
+            stringValues.push(item.value);
+          } else if (item.type === 'array') {
+            arrayValues.push(item.value);
+          } else if (item.type === 'object') {
+            objectValues.push(item.value);
+          }
+        });
+        
+        // Determine the dominant type for output
+        let result: any;
+        let displayText: string;
+        
+        if (objectValues.length > 0) {
+          // Merge objects if we have any
+          result = objectValues.reduce((merged, obj) => {
+            return { ...merged, ...obj };
+          }, {});
+          
+          // Convert merged object to string for display
+          displayText = JSON.stringify(result);
+          
+          // Log merged object
+          console.log(`MergeNode [${id}] Merged objects:`, result);
+          console.log(`MergeNode [${id}] Display text:`, displayText);
+        } else if (arrayValues.length > 0) {
+          // Merge arrays if we have any
+          result = arrayValues.reduce((merged, arr) => {
+            return [...merged, ...arr];
+          }, []);
+          
+          // Convert merged array to string for display
+          displayText = JSON.stringify(result);
+          
+          // Log merged array
+          console.log(`MergeNode [${id}] Merged arrays:`, result);
+          console.log(`MergeNode [${id}] Display text:`, displayText);
+        } else {
+          // Concatenate strings as fallback
+          result = stringValues.join('');
+          displayText = result; // Strings don't need conversion
+          
+          // Log concatenated string
+          console.log(`MergeNode [${id}] Concatenated strings:`, result);
+        }
+        
+        // Return the display text for proper rendering
+        return displayText;
+      } catch (error) {
+        console.error("Error processing values:", error);
+        return undefined;
+      }
+    }, [inputValues, id]);
 
-		// Get values from all source nodes
-		const values = inputEdges
-			.map((edge) => {
-				const sourceNode = rfNodes.find((n) => n.id === edge.source);
-				if (!sourceNode) return "";
+    // Propagate processed output to node data
+    useEffect(() => {
+      // Only update if output actually changed
+      if (data.output !== processedOutput) {
+        console.log(`MergeNode [${id}] Updating Output:`, { 
+          previous: data.output, 
+          new: processedOutput 
+        });
+        
+        // Output as a simple string without any JSON formatting
+        console.log(`MergeNode [${id}] Plain Output:`, processedOutput);
+        
+        updateNodeData({ output: processedOutput });
+      }
+    }, [processedOutput, data.output, updateNodeData, id]);
 
-				// Try to get output from source node
-				const sourceOutput = sourceNode.data?.output;
+    // Monitor inputs and update active state
+    useEffect(() => {
+      const hasValidInput = inputValues.length > 0;
 
-				// Log the raw source output to debug
-				console.log(
-					`Source node [${sourceNode.id}] raw output:`,
-					sourceOutput,
-					typeof sourceOutput
-				);
+      // If disabled, always set isActive to false
+      if (!isEnabled) {
+        updateNodeData({ isActive: false });
+      } else {
+        if (isActive !== hasValidInput) {
+          updateNodeData({ isActive: Boolean(hasValidInput) });
+        }
+      }
+    }, [inputValues, isEnabled, isActive, updateNodeData]);
 
-				// Handle different types of output
-				if (typeof sourceOutput === "string") {
-					try {
-						if (sourceOutput.trim().startsWith("{") && sourceOutput.includes('"output"')) {
-							const parsed = JSON.parse(sourceOutput);
-							if (parsed && typeof parsed === "object" && "output" in parsed) {
-								console.log(`Extracted output from JSON string:`, parsed.output);
-								return String(parsed.output);
-							}
-						}
-						return sourceOutput;
-					} catch (e) {
-						console.log("Not valid JSON, using as plain string", sourceOutput);
-						return sourceOutput;
-					}
-				} else if (typeof sourceOutput === "object") {
-					try {
-						// If it's an object with an output property, use that
-						if (sourceOutput && "output" in sourceOutput) {
-							return String(sourceOutput.output);
-						}
-						// If it's an object with a text or value property, use that
-						else if (sourceOutput && "text" in sourceOutput) {
-							return String(sourceOutput.text);
-						} else if (sourceOutput && "value" in sourceOutput) {
-							return String(sourceOutput.value);
-						} else {
-							// Try to extract meaningful text from the object
-							const jsonStr = JSON.stringify(sourceOutput);
-							return jsonStr !== "{}" && jsonStr !== "null" ? jsonStr : "";
-						}
-					} catch (e) {
-						console.error("Error extracting text from object:", e);
-						return "";
-					}
-				} else if (sourceOutput === undefined || sourceOutput === null) {
-					return "";
-				}
+    // Sync output with active and enabled state
+    useEffect(() => {
+      const output = (nodeData as MergeNodeData).output;
+      if (isActive && isEnabled && output !== undefined) {
+        propagate(output);
+      } else {
+        blockJsonWhenInactive();
+      }
+    }, [isActive, isEnabled, nodeData, propagate, blockJsonWhenInactive]);
 
-				// Convert any other types to string
-				return String(sourceOutput);
-			})
-			.filter(Boolean); // Remove any empty strings
+    // -------------------------------------------------------------------------
+    // 4.6  Validation
+    // -------------------------------------------------------------------------
+    const validation = validateNodeData(nodeData);
+    if (!validation.success) {
+      reportValidationError("MergeNode", id, validation.errors, {
+        originalData: validation.originalData,
+        component: "MergeNodeNode",
+      });
+    }
 
-		// Log input values
-		console.log(`MergeNode [${id}] Input Values:`, values);
+    useNodeDataValidation(
+      MergeNodeDataSchema,
+      "MergeNode",
+      validation.data,
+      id,
+    );
 
-		return values;
-	}, [rfEdges, rfNodes, id]);
+    // -------------------------------------------------------------------------
+    // 4.7  Feature flag conditional rendering
+    // -------------------------------------------------------------------------
 
-	// Process the inputs by concatenating them
-	const processedOutput = useMemo(() => {
-		if (inputValues.length === 0) {
-			return undefined;
-		}
+    // If flag is loading, show loading state
+    if (flagState.isLoading) {
+      return (
+        <div className="flex items-center justify-center p-4 text-sm text-muted-foreground">
+          Loading mergeNode feature...
+        </div>
+      );
+    }
 
-		try {
-			// Concatenate all input strings
-			const result = inputValues.join("");
+    // If flag is disabled and should hide, return null
+    if (!flagState.isEnabled && flagState.hideWhenDisabled) {
+      return null;
+    }
 
-			// Log processed output
-			console.log(`MergeNode [${id}] Processed Output:`, result);
+    // If flag is disabled, show disabled message
+    if (!flagState.isEnabled) {
+      return (
+        <div className="flex items-center justify-center p-4 text-sm text-muted-foreground border border-dashed border-muted-foreground/20 rounded-lg">
+          {flagState.disabledMessage}
+        </div>
+      );
+    }
 
-			return result;
-		} catch (error) {
-			console.error("Error processing values:", error);
-			return undefined;
-		}
-	}, [inputValues, id]);
+    // -------------------------------------------------------------------------
+    // 4.8  Render
+    // -------------------------------------------------------------------------
+    return (
+      <>
+        {/* Editable label or icon */}
+        {!data.isExpanded &&
+        spec.size.collapsed.width === 60 &&
+        spec.size.collapsed.height === 60 ? (
+          <div className="absolute inset-0 flex justify-center text-lg p-1 text-foreground/80">
+            {spec.icon && renderLucideIcon(spec.icon, "", 16)}
+          </div>
+        ) : (
+          <LabelNode nodeId={id} label={(nodeData as MergeNodeData).label || spec.displayName} />
+        )}
 
-	// Propagate processed output to node data
-	useEffect(() => {
-		// Only update if output actually changed
-		if (data.output !== processedOutput) {
-			console.log(`MergeNode [${id}] Updating Output:`, {
-				previous: data.output,
-				new: processedOutput,
-			});
+        {!data.isExpanded ? (
+          <div className={`${CONTENT.collapsed} ${!isEnabled ? CONTENT.disabled : ''}`}>
+            <div className="flex justify-center items-center h-full">
+              🔗
+            </div>
+          </div>
+        ) : (
+          <div className={`${CONTENT.expanded} ${!isEnabled ? CONTENT.disabled : ''}`}>
+            <div className={`${CONTENT.body} flex flex-col gap-2`}>
+              <div className="flex flex-col gap-1">
+                <div className="text-xs font-medium text-muted-foreground">
+                  Input:
+                </div>
+                <div className="h-6 overflow-hidden text-ellipsis whitespace-nowrap rounded bg-muted/30 px-2 py-1 text-xs">
+                  {inputValues.length > 0
+                    ? inputValues.join(', ')
+                    : "(no input)"}
+                </div>
+              </div>
+              
+              <div className="flex flex-col gap-1 mt-2">
+                <div className="text-xs font-medium text-muted-foreground">
+                  Output (Processed):
+                </div>
+                <div className="h-6 overflow-hidden text-ellipsis whitespace-nowrap rounded bg-muted/30 px-2 py-1 text-xs">
+                  {(nodeData as MergeNodeData).output || "<no output>"}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
-			// Output as a simple string without any JSON formatting
-			console.log(`MergeNode [${id}] Plain Output:`, processedOutput);
-
-			updateNodeData({ output: processedOutput });
-		}
-	}, [processedOutput, data.output, updateNodeData, id]);
-
-	// Monitor inputs and update active state
-	useEffect(() => {
-		const hasValidInput = inputValues.length > 0;
-
-		// If disabled, always set isActive to false
-		if (!isEnabled) {
-			updateNodeData({ isActive: false });
-		} else {
-			if (isActive !== hasValidInput) {
-				updateNodeData({ isActive: Boolean(hasValidInput) });
-			}
-		}
-	}, [inputValues, isEnabled, isActive, updateNodeData]);
-
-	// Sync output with active and enabled state
-	useEffect(() => {
-		const output = (nodeData as MergeNodeData).output;
-		if (isActive && isEnabled && output !== undefined) {
-			propagate(output);
-		} else {
-			blockJsonWhenInactive();
-		}
-	}, [isActive, isEnabled, nodeData, propagate, blockJsonWhenInactive]);
-
-	// -------------------------------------------------------------------------
-	// 4.6  Validation
-	// -------------------------------------------------------------------------
-	const validation = validateNodeData(nodeData);
-	if (!validation.success) {
-		reportValidationError("MergeNode", id, validation.errors, {
-			originalData: validation.originalData,
-			component: "MergeNodeNode",
-		});
-	}
-
-	useNodeDataValidation(MergeNodeDataSchema, "MergeNode", validation.data, id);
-
-	// -------------------------------------------------------------------------
-	// 4.7  Feature flag conditional rendering
-	// -------------------------------------------------------------------------
-
-	// If flag is loading, show loading state
-	if (flagState.isLoading) {
-		return (
-			<div className="flex items-center justify-center p-4 text-sm text-muted-foreground">
-				Loading mergeNode feature...
-			</div>
-		);
-	}
-
-	// If flag is disabled and should hide, return null
-	if (!flagState.isEnabled && flagState.hideWhenDisabled) {
-		return null;
-	}
-
-	// If flag is disabled, show disabled message
-	if (!flagState.isEnabled) {
-		return (
-			<div className="flex items-center justify-center p-4 text-sm text-muted-foreground border border-dashed border-muted-foreground/20 rounded-lg">
-				{flagState.disabledMessage}
-			</div>
-		);
-	}
-
-	// -------------------------------------------------------------------------
-	// 4.8  Render
-	// -------------------------------------------------------------------------
-	return (
-		<>
-			{/* Editable label or icon */}
-			{!data.isExpanded && spec.size.collapsed.width === 60 && spec.size.collapsed.height === 60 ? (
-				<div className="absolute inset-0 flex justify-center text-lg p-1 text-foreground/80">
-					{spec.icon && renderLucideIcon(spec.icon, "", 16)}
-				</div>
-			) : (
-				<LabelNode nodeId={id} label={(nodeData as MergeNodeData).label || spec.displayName} />
-			)}
-
-			{!data.isExpanded ? (
-				<div className={`${CONTENT.collapsed} ${!isEnabled ? CONTENT.disabled : ""}`}>
-					<div className="flex justify-center items-center h-full">🔗</div>
-				</div>
-			) : (
-				<div className={`${CONTENT.expanded} ${!isEnabled ? CONTENT.disabled : ""}`}>
-					<div className={`${CONTENT.body} flex flex-col gap-2`}>
-						<div className="flex flex-col gap-1">
-							<div className="text-xs font-medium text-muted-foreground">Input:</div>
-							<div className="h-6 overflow-hidden text-ellipsis whitespace-nowrap rounded bg-muted/30 px-2 py-1 text-xs">
-								{inputValues.length > 0 ? inputValues.join(", ") : "(no input)"}
-							</div>
-						</div>
-
-						<div className="flex flex-col gap-1 mt-2">
-							<div className="text-xs font-medium text-muted-foreground">Output (Processed):</div>
-							<div className="h-6 overflow-hidden text-ellipsis whitespace-nowrap rounded bg-muted/30 px-2 py-1 text-xs">
-								{(nodeData as MergeNodeData).output || "<no output>"}
-							</div>
-						</div>
-					</div>
-				</div>
-			)}
-
-			<ExpandCollapseButton showUI={isExpanded} onToggle={toggleExpand} size="sm" />
-		</>
-	);
-});
+        <ExpandCollapseButton
+          showUI={isExpanded}
+          onToggle={toggleExpand}
+          size="sm"
+        />
+      </>
+    );
+  },
+);
 
 // -----------------------------------------------------------------------------
 // 5️⃣  High‑order wrapper – inject scaffold with dynamic spec
