@@ -47,9 +47,7 @@ import {
 } from "@/features/business-logic-modern/infrastructure/theming/sizing";
 import { useNodeData } from "@/hooks/useNodeData";
 import { useStore } from "@xyflow/react";
-import { useMutation, useQuery } from "convex/react";
-import { api } from "@/convex/_generated/api";
-import type { Id } from "@/convex/_generated/dataModel";
+// Removed Convex imports to eliminate authentication errors
 
 // -----------------------------------------------------------------------------
 // 1️⃣  Data schema & validation
@@ -58,7 +56,7 @@ export const TimeSchedulerDataSchema = z
   .object({
     // Core state
     isEnabled: SafeSchemas.boolean(true),
-    isActive: SafeSchemas.boolean(false),
+    isActive: SafeSchemas.boolean(true),  // Default to active
     isExpanded: SafeSchemas.boolean(false),
 
     // Schedule configuration
@@ -72,7 +70,7 @@ export const TimeSchedulerDataSchema = z
     // I/O
     store: SafeSchemas.text("Schedule configuration"),
     inputs: SafeSchemas.optionalText().nullable().default(null),
-    output: SafeSchemas.optionalText(),
+    output: SafeSchemas.boolean(false),
 
     // UI
     expandedSize: SafeSchemas.text("FE3"),
@@ -106,6 +104,8 @@ const CONTENT = {
   header: "flex items-center justify-between mb-2",
   body: "flex-1 flex flex-col gap-2",
   disabled: "opacity-60 grayscale transition-all duration-300",
+  buttonCancel:
+    "px-1.5 py-0.5 text-[9px] font-medium text-white bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 rounded-md transition-all duration-200 shadow-sm hover:shadow-md",
 
   // Schedule configuration section
   configSection:
@@ -189,10 +189,10 @@ function createDynamicSpec(data: TimeSchedulerData): NodeSpec {
       },
       {
         id: "output",
-        code: "string",
+        code: "boolean",
         position: "right",
         type: "source",
-        dataType: "string",
+        dataType: "boolean",
       },
       {
         id: "input",
@@ -208,7 +208,7 @@ function createDynamicSpec(data: TimeSchedulerData): NodeSpec {
     initialData: createSafeInitialData(TimeSchedulerDataSchema, {
       store: "Schedule configuration",
       inputs: null,
-      output: "",
+      output: false,
       scheduleType: "interval",
       intervalMinutes: 5,
       startTime: "",
@@ -313,7 +313,7 @@ const TimeSchedulerNode = memo(
     const edges = useStore((s) => s.edges);
 
     // keep last emitted output to avoid redundant writes
-    const lastOutputRef = useRef<string | null>(null);
+    const lastOutputRef = useRef<boolean>(false); // Track last boolean output
 
     // Local state for inputs to prevent focus loss
     const [localInterval, setLocalInterval] = useState(intervalMinutes);
@@ -340,9 +340,9 @@ const TimeSchedulerNode = memo(
 
     /** Propagate output ONLY when node is active AND enabled */
     const propagate = useCallback(
-      (value: string) => {
+      (value: boolean) => {
         const shouldSend = isActive && isEnabled;
-        const out = shouldSend ? value : null;
+        const out = shouldSend ? value : false;
         if (out !== lastOutputRef.current) {
           lastOutputRef.current = out;
           updateNodeData({ output: out });
@@ -424,77 +424,165 @@ const TimeSchedulerNode = memo(
       }
     }, [nodeData, isEnabled, updateNodeData]);
 
-    // Durable scheduling via Convex
-    const scheduleDoc = useQuery(api.scheduleTime.getScheduleForNode, { nodeId: id });
-    const upsertSchedule = useMutation(api.scheduleTime.upsertTimeSchedule);
-    const triggerSchedule = useMutation(api.scheduleTime.manualTrigger);
-
-    // Keep server schedule and local node state in sync; server is source of truth
-    const lastServerTriggeredRef = useRef<number | null>(null);
-
-    useEffect(() => {
-      if (!scheduleDoc) return;
-      // Sync enable flag
-      if (typeof scheduleDoc.is_enabled === "boolean" && scheduleDoc.is_enabled !== isEnabled) {
-        updateNodeData({ isEnabled: scheduleDoc.is_enabled });
-      }
-      // Sync timestamps to node data for UI
-      if (scheduleDoc.last_triggered && scheduleDoc.last_triggered !== lastTriggered) {
-        updateNodeData({ lastTriggered: scheduleDoc.last_triggered });
-      }
-      if (scheduleDoc.next_trigger_at && scheduleDoc.next_trigger_at !== nextTrigger) {
-        updateNodeData({ nextTrigger: scheduleDoc.next_trigger_at });
-      }
-
-      // Emit output once per new trigger
-      if (
-        typeof scheduleDoc.last_triggered === "number" &&
-        scheduleDoc.last_triggered !== lastServerTriggeredRef.current &&
-        scheduleDoc.is_enabled
-      ) {
-        lastServerTriggeredRef.current = scheduleDoc.last_triggered;
-        const nowTs = scheduleDoc.last_triggered;
+    // Local scheduling without Convex dependencies
+    // We're removing the Convex dependencies due to authentication issues
+    const scheduleDoc = null; // No longer using Convex for scheduling
+    
+    // Track if we're in the middle of a manual trigger
+    const [isTriggering, setIsTriggering] = useState(false);
+    
+    const triggerManually = useCallback(() => {
+      const nowTs = Date.now();
+      setIsTriggering(true);
+      
+      updateNodeData({
+        isActive: true,
+        lastTriggered: nowTs,
+        output: true,
+      });
+      
+      // Calculate next trigger if it's a recurring schedule
+      if (scheduleType === 'interval' && intervalMinutes > 0) {
         updateNodeData({
-          isActive: true,
-          output: JSON.stringify({
-            triggered: true,
-            timestamp: nowTs,
-            scheduleType,
-            triggerType: "automatic",
-          }),
+          nextTrigger: nowTs + intervalMinutes * 60 * 1000
         });
-        setTimeout(() => {
-          updateNodeData({ isActive: false });
-        }, 1000);
+      } else if (scheduleType === 'daily' && startTime) {
+        // For daily, schedule for tomorrow at the same time
+        const [hours, minutes] = startTime.split(':').map(Number);
+        if (!isNaN(hours) && !isNaN(minutes)) {
+          const nextDay = new Date();
+          nextDay.setDate(nextDay.getDate() + 1);
+          nextDay.setHours(hours, minutes, 0, 0);
+          updateNodeData({ nextTrigger: nextDay.getTime() });
+        }
+      } else if (scheduleType === 'once') {
+        // For one-time schedules, clear the next trigger
+        updateNodeData({ nextTrigger: null });
       }
-    }, [scheduleDoc, isEnabled, scheduleType, lastTriggered, nextTrigger, updateNodeData]);
+      
+      // Auto-reset triggering state after a delay
+      setTimeout(() => {
+        setIsTriggering(false);
+      }, 3000);
+    }, [scheduleType, intervalMinutes, startTime, updateNodeData]);
+    
+    const cancelTrigger = useCallback(() => {
+      setIsTriggering(false);
+      updateNodeData({
+        output: false
+      });
+    }, [updateNodeData]);
 
-    // Push local config changes to server (upsert durable schedule)
-    const lastUpsertPayloadRef = useRef<string>("");
+    // Local timer implementation to replace server-based scheduling
+    const timerRef = useRef<NodeJS.Timeout | null>(null);
+    const lastLocalTriggeredRef = useRef<number | null>(null);
+    
+    // Set up timer for automatic triggering
     useEffect(() => {
-      const payload = {
-        nodeId: id,
-        flowId: undefined as string | undefined,
-        scheduleType,
-        intervalMinutes,
-        startTime,
-        isEnabled,
+      // Clear any existing timer
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
+      
+      // Only set up timer if enabled and we have a next trigger time
+      if (isEnabled && nextTrigger) {
+        const now = Date.now();
+        const timeUntilTrigger = nextTrigger - now;
+        
+        // Only schedule if the trigger time is in the future
+        if (timeUntilTrigger > 0) {
+          timerRef.current = setTimeout(() => {
+            const nowTs = Date.now();
+            lastLocalTriggeredRef.current = nowTs;
+            
+            // Trigger the node
+            updateNodeData({
+              isActive: true,
+              lastTriggered: nowTs,
+              output: true,
+            });
+            
+            // Calculate and set the next trigger time
+            if (scheduleType === 'interval' && intervalMinutes > 0) {
+              updateNodeData({
+                nextTrigger: nowTs + intervalMinutes * 60 * 1000
+              });
+            } else if (scheduleType === 'daily' && startTime) {
+              // For daily, schedule for tomorrow at the same time
+              const [hours, minutes] = startTime.split(':').map(Number);
+              if (!isNaN(hours) && !isNaN(minutes)) {
+                const nextDay = new Date();
+                nextDay.setDate(nextDay.getDate() + 1);
+                nextDay.setHours(hours, minutes, 0, 0);
+                updateNodeData({ nextTrigger: nextDay.getTime() });
+              }
+            } else if (scheduleType === 'once') {
+              // For one-time schedules, clear the next trigger
+              updateNodeData({ nextTrigger: null });
+            }
+            
+            // Visual feedback - update output after a delay
+            // After a delay, keep the output true but update UI
+            setTimeout(() => {
+              // We keep output as true but update the UI state
+              setIsTriggering(false);
+            }, 1000);
+          }, timeUntilTrigger);
+        }
+      }
+      
+      // Cleanup function
+      return () => {
+        if (timerRef.current) {
+          clearTimeout(timerRef.current);
+          timerRef.current = null;
+        }
       };
-      const key = JSON.stringify(payload);
-      if (key !== lastUpsertPayloadRef.current) {
-        lastUpsertPayloadRef.current = key;
-        upsertSchedule(payload).catch(() => {
-          // swallow errors in UI; consider toast elsewhere
-        });
-      }
-    }, [id, scheduleType, intervalMinutes, startTime, isEnabled, upsertSchedule]);
+    }, [isEnabled, nextTrigger, scheduleType, intervalMinutes, startTime, updateNodeData]);
 
-    // Update node active state based on enabled status
+    // Local schedule management without server upsert
+    // We're removing the upsert functionality due to authentication issues
     useEffect(() => {
+      // Instead of upserting to server, we'll just manage the schedule locally
+      // Calculate the next trigger time based on current settings
+      if (isEnabled && !nextTrigger) {
+        let nextTriggerTime: number | null = null;
+        
+        const now = Date.now();
+        if (scheduleType === 'interval' && intervalMinutes > 0) {
+          nextTriggerTime = now + intervalMinutes * 60 * 1000;
+        } else if ((scheduleType === 'daily' || scheduleType === 'once') && startTime) {
+          // Parse HH:MM format
+          const [hours, minutes] = startTime.split(':').map(Number);
+          if (!isNaN(hours) && !isNaN(minutes)) {
+            const scheduledTime = new Date();
+            scheduledTime.setHours(hours, minutes, 0, 0);
+            // If time already passed today, schedule for tomorrow
+            if (scheduledTime.getTime() < now && scheduleType === 'daily') {
+              scheduledTime.setDate(scheduledTime.getDate() + 1);
+            }
+            nextTriggerTime = scheduledTime.getTime();
+          }
+        }
+        
+        if (nextTriggerTime) {
+          updateNodeData({ nextTrigger: nextTriggerTime });
+        }
+      }
+    }, [id, scheduleType, intervalMinutes, startTime, isEnabled, nextTrigger, updateNodeData]);
+
+    // Update node active state based on enabled status and schedule
+    useEffect(() => {
+      // If disabled, always set to inactive
       if (!isEnabled && isActive) {
         updateNodeData({ isActive: false });
       }
-    }, [isEnabled, isActive, updateNodeData]);
+      // If enabled and we have a valid schedule, set to active
+      else if (isEnabled && scheduleDoc && !isActive) {
+        updateNodeData({ isActive: true });
+      }
+    }, [isEnabled, isActive, scheduleDoc, updateNodeData]);
 
     // Format time for display
     const formatTime = useCallback((timestamp: number | null): string => {
@@ -685,9 +773,9 @@ const TimeSchedulerNode = memo(
                   <div className={CONTENT.statusRow}>
                     <span className={CONTENT.statusLabel}>Status:</span>
                     <span
-                      className={`${CONTENT.statusValue} ${isEnabled ? CONTENT.statusActive : CONTENT.statusInactive}`}
+                      className={`${CONTENT.statusValue} ${isActive ? CONTENT.statusActive : CONTENT.statusInactive}`}
                     >
-                      {isEnabled ? "● Active" : "○ Disabled"}
+                      {isActive ? "● Active" : "○ Inactive"}
                     </span>
                   </div>
 
@@ -713,18 +801,25 @@ const TimeSchedulerNode = memo(
                 </div>
               </div>
 
-              {/* Action Button */}
-              <button
-                className={CONTENT.buttonPrimary}
-                disabled={!isEnabled || isActive || !scheduleDoc?._id}
-                onClick={() => {
-                  if (scheduleDoc?._id) {
-                    void triggerSchedule({ scheduleId: scheduleDoc._id as Id<"trigger_time_schedules"> });
-                  }
-                }}
-              >
-                {isActive ? "Triggering..." : "Trigger Now"}
-              </button>
+              {/* Action Buttons */}
+              <div className="flex gap-2">
+                <button
+                  className={CONTENT.buttonPrimary}
+                  disabled={!isEnabled || (isActive && !isTriggering)}
+                  onClick={triggerManually}
+                >
+                  {isTriggering ? "Triggering..." : "Trigger Now"}
+                </button>
+                
+                {isTriggering && (
+                  <button
+                    className={CONTENT.buttonCancel}
+                    onClick={cancelTrigger}
+                  >
+                    Cancel
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         ) : (
@@ -755,9 +850,9 @@ const TimeSchedulerNode = memo(
 
               {/* Status badge */}
               <div
-                className={`${CONTENT.collapsedStatus} ${isEnabled ? CONTENT.collapsedActive : CONTENT.collapsedInactive}`}
+                className={`${CONTENT.collapsedStatus} ${isActive ? CONTENT.collapsedActive : CONTENT.collapsedInactive}`}
               >
-                {isEnabled ? "Active" : "Disabled"}
+                {isActive ? "Active" : "Inactive"}
               </div>
             </div>
           </div>
