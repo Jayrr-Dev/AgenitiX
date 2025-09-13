@@ -7,6 +7,8 @@ import timeThrottle from '../../../node-domain/time/timeThrottle.node';
 import timeDebounce from '../../../node-domain/time/timeDebounce.node';
 import timeStopwatch from '../../../node-domain/time/timeStopwatch.node';
 import timeTimeout from '../../../node-domain/time/timeTimeout.node';
+// TRIGGER nodes
+import triggerWebhook from '../../../node-domain/trigger/triggerWebhook.node';
 // EMAIL nodes
 import emailMessage from '../../../node-domain/email/emailMessage.node';
 // Add new node imports here (Plop can auto-inject these)
@@ -39,6 +41,7 @@ import emailBrand from "../../../node-domain/email/emailBrand.node";
 import emailAnalytics from "../../../node-domain/email/emailAnalytics.node";
 import emailBulk from "../../../node-domain/email/emailBulk.node";
 import emailData from "../../../node-domain/email/emailData.node";
+import emailDraft from "../../../node-domain/email/emailDraft.node";
 import emailList from "../../../node-domain/email/emailList.node";
 import emailUpdater from "../../../node-domain/email/emailUpdater.node";
 import testNode from "../../../node-domain/test/testNode.node";
@@ -72,8 +75,11 @@ export function useDynamicNodeTypes() {
 			timeDebounce,
 			timeStopwatch,
 			timeTimeout,
+			// TRIGGER nodes
+			triggerWebhook,
 			// EMAIL nodes
 			emailMessage,
+			emailDraft,
 			// Add new node types here
 			flowConditional,
 			viewBoolean,
