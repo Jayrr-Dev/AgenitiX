@@ -17,6 +17,7 @@ import { ExpandCollapseButton } from "@/components/nodes/ExpandCollapseButton";
 import LabelNode from "@/components/nodes/labelNode";
 import { findEdgesByHandle } from "@/features/business-logic-modern/infrastructure/flow-engine/utils/edgeUtils";
 import type { NodeSpec } from "@/features/business-logic-modern/infrastructure/node-core/NodeSpec";
+import { useNodeFeatureFlag } from "@/features/business-logic-modern/infrastructure/node-core/features/useNodeFeatureFlag";
 import {
   generateoutputField,
   normalizeHandleId,
@@ -26,7 +27,6 @@ import {
   SafeSchemas,
   createSafeInitialData,
 } from "@/features/business-logic-modern/infrastructure/node-core/utils/schema-helpers";
-import { useNodeFeatureFlag } from "@/features/business-logic-modern/infrastructure/node-core/features/useNodeFeatureFlag";
 import {
   createNodeValidator,
   reportValidationError,
@@ -456,13 +456,7 @@ const ToObjectNode = memo(
           updateNodeData({ output: Object.fromEntries(map.entries()) });
         }
       } catch {}
-    }, [
-      spec.handles,
-      (nodeData as any)["object-output"],
-      nodeData.isActive,
-      nodeData.isEnabled,
-      updateNodeData,
-    ]);
+    }, [spec, nodeData, updateNodeData]);
 
     // -------------------------------------------------------------------------
     // 4.6  Validation
@@ -661,10 +655,7 @@ const ToObjectNodeWithDynamicSpec = (props: NodeProps) => {
   // Recompute spec only when the size keys change
   const dynamicSpec = useMemo(
     () => createDynamicSpec(nodeData as ToObjectData),
-    [
-      (nodeData as ToObjectData).expandedSize,
-      (nodeData as ToObjectData).collapsedSize,
-    ]
+    [nodeData]
   );
 
   // Memoise the scaffolded component to keep focus
