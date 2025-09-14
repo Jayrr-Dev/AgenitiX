@@ -25,6 +25,8 @@ import type * as flows from "../flows.js";
 import type * as googleSheets from "../googleSheets.js";
 import type * as http from "../http.js";
 import type * as manageFlowOps from "../manageFlowOps.js";
+import type * as migrationRunner from "../migrationRunner.js";
+import type * as migrations_20250123_opensource_preparation from "../migrations/20250123_opensource_preparation.js";
 import type * as runUserFlowWorkflow from "../runUserFlowWorkflow.js";
 import type * as scheduleTime from "../scheduleTime.js";
 import type * as sendEmails from "../sendEmails.js";
@@ -64,6 +66,8 @@ declare const fullApi: ApiFromModules<{
   googleSheets: typeof googleSheets;
   http: typeof http;
   manageFlowOps: typeof manageFlowOps;
+  migrationRunner: typeof migrationRunner;
+  "migrations/20250123_opensource_preparation": typeof migrations_20250123_opensource_preparation;
   runUserFlowWorkflow: typeof runUserFlowWorkflow;
   scheduleTime: typeof scheduleTime;
   sendEmails: typeof sendEmails;

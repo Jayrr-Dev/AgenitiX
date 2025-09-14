@@ -35,6 +35,18 @@ export default defineSchema({
     magic_link_expires: v.optional(v.number()),
     login_attempts: v.optional(v.number()),
     last_login_attempt: v.optional(v.number()),
+
+    // Open Source Community Fields
+    contribution_metadata: v.optional(
+      v.object({
+        is_contributor: v.boolean(),
+        contribution_count: v.number(),
+        first_contribution_at: v.optional(v.number()),
+        last_contribution_at: v.optional(v.number()),
+        contribution_types: v.array(v.string()),
+      })
+    ),
+    open_source_user: v.optional(v.boolean()),
   }).index("email", ["email"]),
 
   // Email Domain
@@ -169,7 +181,6 @@ export default defineSchema({
     .index("by_created_at", ["created_at"])
     .index("by_user_and_strategy", ["user_id", "reply_strategy"]),
 
-
   flow_nodes: defineTable({
     user_id: v.id("users"),
     workflow_id: v.optional(v.string()), // Reference to workflow
@@ -252,6 +263,22 @@ export default defineSchema({
     canvas_updated_at: v.optional(v.string()), // Last canvas save timestamp
     created_at: v.string(),
     updated_at: v.string(),
+
+    // Open Source Community Fields
+    open_source_metadata: v.optional(
+      v.object({
+        is_community_template: v.boolean(),
+        contribution_status: v.union(
+          v.literal("private"),
+          v.literal("public"),
+          v.literal("featured"),
+          v.literal("archived")
+        ),
+        license: v.string(),
+        tags: v.array(v.string()),
+        created_for_open_source: v.boolean(),
+      })
+    ),
   })
     .index("by_user_id", ["user_id"])
     .index("by_created_at", ["created_at"])
@@ -409,7 +436,11 @@ export default defineSchema({
     user_id: v.id("users"),
     node_id: v.string(),
     flow_id: v.optional(v.string()),
-    schedule_type: v.union(v.literal("interval"), v.literal("daily"), v.literal("once")),
+    schedule_type: v.union(
+      v.literal("interval"),
+      v.literal("daily"),
+      v.literal("once")
+    ),
     interval_minutes: v.optional(v.number()),
     start_time: v.optional(v.string()), // HH:MM (24h)
     is_enabled: v.boolean(),
@@ -460,7 +491,12 @@ export default defineSchema({
     updated_at: v.number(),
   })
     .index("by_user_and_date", ["user_id", "date_key"]) // aggregate per user per day
-    .index("by_user_date_provider_method", ["user_id", "date_key", "provider", "method"]) // fast lookup
+    .index("by_user_date_provider_method", [
+      "user_id",
+      "date_key",
+      "provider",
+      "method",
+    ]) // fast lookup
     .index("by_provider_and_date", ["provider", "date_key"]) // aggregate per provider per day
     .index("by_user_and_updated_at", ["user_id", "updated_at"]),
 
@@ -501,7 +537,44 @@ export default defineSchema({
     updated_at: v.number(),
   })
     .index("by_user_and_date", ["user_id", "date_key"]) // aggregate per user per day
-    .index("by_user_date_provider_model", ["user_id", "date_key", "provider", "model"]) // fast lookup
+    .index("by_user_date_provider_model", [
+      "user_id",
+      "date_key",
+      "provider",
+      "model",
+    ]) // fast lookup
     .index("by_provider_and_date", ["provider", "date_key"]) // aggregate per provider per day
     .index("by_user_and_updated_at", ["user_id", "updated_at"]),
+
+  // OPEN SOURCE DOMAIN - Tables for open source community features
+  open_source_metadata: defineTable({
+    project_name: v.string(),
+    license: v.string(),
+    version: v.string(),
+    open_source_since: v.number(),
+    github_url: v.string(),
+    documentation_url: v.string(),
+    community_features_enabled: v.boolean(),
+    contribution_tracking_enabled: v.boolean(),
+    created_at: v.number(),
+    updated_at: v.number(),
+  }),
+
+  feature_flags: defineTable({
+    flag_name: v.string(),
+    description: v.string(),
+    enabled: v.boolean(),
+    created_at: v.number(),
+    updated_at: v.number(),
+  }).index("by_flag_name", ["flag_name"]),
+
+  migrations: defineTable({
+    version: v.string(),
+    name: v.string(),
+    description: v.string(),
+    applied_at: v.number(),
+    changes: v.array(v.string()),
+  })
+    .index("by_version", ["version"])
+    .index("by_name", ["name"]),
 });

@@ -177,7 +177,7 @@ export const startUserFlow = mutation({
     const plan = compileGraphToPlan(nodes, edges);
     // Note: This would need to be implemented as a proper workflow
     // For now, we'll just compile the plan
-    console.log("Compiled plan:", plan);
+    // Debug: Compiled plan available for inspection
   },
 });
 
