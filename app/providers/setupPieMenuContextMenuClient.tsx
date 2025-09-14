@@ -10,8 +10,12 @@ Route: app/providers/setupPieMenuContextMenuClient.tsx
  * Keywords: contextmenu, pie-menu, global-handler, portal, shadcn
  */
 
+import {
+  type PieMenuAction,
+  usePieMenuTrigger,
+} from "@/components/ui/pie-menu";
+import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useMemo } from "react";
-import { type PieMenuAction, usePieMenuTrigger } from "@/components/ui/pie-menu";
 
 // ------------------------------------------------------------------------------------
 // Constants
@@ -81,19 +85,33 @@ const DEFAULT_PIE_MENU_ACTIONS: ReadonlyArray<PieMenuAction> = [
 /**
  * Mounts a single global `contextmenu` listener that prevents the browser menu
  * and triggers the pie menu at the cursor position.
+ * Only enabled on matrix URLs (/matrix/[flowId]).
  */
 export function SetupPieMenuContextMenuClient() {
   const { triggerPieMenu } = usePieMenuTrigger();
+  const pathname = usePathname();
 
   const actions = useMemo(() => DEFAULT_PIE_MENU_ACTIONS.slice(), []);
 
+  // Check if current path is a matrix URL
+  const isMatrixUrl = useMemo(() => {
+    return pathname.startsWith("/matrix/") && pathname !== "/matrix";
+  }, [pathname]);
+
   const handleContextMenu = useCallback(
     (event: MouseEvent) => {
+      // Only enable pie menu on matrix URLs
+      if (!isMatrixUrl) {
+        return; // Allow native browser context menu on non-matrix pages
+      }
+
       // Allow native menu on text inputs/content editable, basically preserve standard UX
       const target = event.target as Element | null;
       if (target) {
         const isEditable =
-          target.closest("input, textarea, [contenteditable='true'], [contenteditable='']") !== null;
+          target.closest(
+            "input, textarea, [contenteditable='true'], [contenteditable='']"
+          ) !== null;
         if (isEditable) {
           return;
         }
@@ -106,14 +124,17 @@ export function SetupPieMenuContextMenuClient() {
       // Open the pie menu at the cursor with default actions
       triggerPieMenu(event, actions);
     },
-    [triggerPieMenu, actions]
+    [triggerPieMenu, actions, isMatrixUrl]
   );
 
   useEffect(() => {
     if (typeof window === "undefined") return;
 
     // Capture phase to reliably block the native menu before other handlers
-    window.addEventListener("contextmenu", handleContextMenu, { capture: true, passive: false });
+    window.addEventListener("contextmenu", handleContextMenu, {
+      capture: true,
+      passive: false,
+    });
     return () => {
       window.removeEventListener("contextmenu", handleContextMenu, true);
     };
@@ -121,5 +142,3 @@ export function SetupPieMenuContextMenuClient() {
 
   return null;
 }
-
-
