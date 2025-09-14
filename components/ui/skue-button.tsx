@@ -57,6 +57,8 @@ export interface SkueButtonProps
 	activated?: boolean;
 	/** When true, keeps the button in a pressed-down state for processing feedback */
 	processing?: boolean;
+	/** When true, disables the button interaction */
+	disabled?: boolean;
 }
 
 export const SkueButton = React.forwardRef<HTMLDivElement, SkueButtonProps>(
@@ -73,6 +75,7 @@ export const SkueButton = React.forwardRef<HTMLDivElement, SkueButtonProps>(
         surfaceBgVar,
 			activated = false,
 			processing = false,
+			disabled = false,
 			...rest
 		},
 		ref
@@ -86,13 +89,16 @@ export const SkueButton = React.forwardRef<HTMLDivElement, SkueButtonProps>(
 
 		const handleChange = React.useCallback(
 			(e: React.ChangeEvent<HTMLInputElement>) => {
+				// if the button is disabled, prevent state changes
+				if (disabled) return;
+				
 				const next = e.target.checked;
 				if (!isControlled) {
 					setInternalChecked(next);
 				}
 				onCheckedChange?.(next);
 			},
-			[isControlled, onCheckedChange]
+			[disabled, isControlled, onCheckedChange]
 		);
 
       return (
@@ -103,6 +109,7 @@ export const SkueButton = React.forwardRef<HTMLDivElement, SkueButtonProps>(
 					styles.container, 
 					activated && styles.activated,
 					processing && styles.processing,
+					disabled && styles.disabled,
 					className
 				)}
           style={surfaceBgVar ? ({
@@ -118,6 +125,7 @@ export const SkueButton = React.forwardRef<HTMLDivElement, SkueButtonProps>(
 					aria-label={ariaLabel}
 					checked={effectiveChecked}
 					onChange={handleChange}
+					disabled={disabled}
 				/>
 				<label className={styles.button} htmlFor={inputId}>
 					<span className={styles.icon} aria-hidden>
