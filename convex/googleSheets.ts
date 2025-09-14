@@ -1,13 +1,19 @@
 /**
  * Google Sheets Integration - Convex Functions
- * 
+ *
  * Utiliza la autenticación OAuth2 existente de Gmail para acceder a Google Sheets API
  */
 
 import { v } from "convex/values";
-import { action, mutation, query } from "./_generated/server";
 import { api } from "./_generated/api";
-import { requireAuth, requireUser, debug, logAuthState, getAuthContext } from "./authHelpers";
+import { action, query } from "./_generated/server";
+import {
+  debug,
+  getAuthContext,
+  logAuthState,
+  requireAuth,
+  requireUser,
+} from "./authHelpers";
 
 // Check if user is authenticated and has access to Google Sheets
 export const checkGoogleSheetsAuth = query({
@@ -15,12 +21,12 @@ export const checkGoogleSheetsAuth = query({
   handler: async (ctx) => {
     try {
       const authContext = await getAuthContext(ctx);
-      
+
       if (!authContext.isAuthenticated) {
         return {
           isAuthenticated: false,
           hasGmailAccount: false,
-          error: "User not authenticated"
+          error: "User not authenticated",
         };
       }
 
@@ -36,13 +42,16 @@ export const checkGoogleSheetsAuth = query({
         isAuthenticated: true,
         hasGmailAccount: gmailAccounts.length > 0,
         accountCount: gmailAccounts.length,
-        error: null
+        error: null,
       };
     } catch (error) {
       return {
         isAuthenticated: false,
         hasGmailAccount: false,
-        error: error instanceof Error ? error.message : "Authentication check failed"
+        error:
+          error instanceof Error
+            ? error.message
+            : "Authentication check failed",
       };
     }
   },
@@ -56,68 +65,74 @@ export const getGoogleSheetsToken = query({
   handler: async (ctx, args) => {
     try {
       const { authContext, user } = await requireUser(ctx);
-      
+
       logAuthState("getGoogleSheetsToken", authContext, {
         accountId: args.accountId,
       });
 
-    // Si se proporciona un accountId específico, usarlo
-    if (args.accountId) {
-      // Primero intentar buscar por _id (documento de Convex)
-      let account = await ctx.db.get(args.accountId);
-      
-      // Si no se encuentra, intentar buscar por accountId interno
-      if (!account) {
-        account = await ctx.db
-          .query("email_accounts")
-          .withIndex("by_user_id", (q) => q.eq("user_id", user._id))
-          .filter((q) => q.eq(q.field("account_id"), args.accountId))
-          .first();
+      // Si se proporciona un accountId específico, usarlo
+      if (args.accountId) {
+        // Primero intentar buscar por _id (documento de Convex)
+        let account = await ctx.db.get(args.accountId);
+
+        // Si no se encuentra, buscar por email o provider en las cuentas del usuario
+        if (!account) {
+          account = await ctx.db
+            .query("email_accounts")
+            .withIndex("by_user_id", (q) => q.eq("user_id", user._id))
+            .filter((q) => q.eq(q.field("provider"), "gmail"))
+            .first();
+        }
+
+        if (!account) {
+          throw new Error("Email account not found");
+        }
+
+        // Verificar que la cuenta pertenece al usuario
+        if (account.user_id !== user._id) {
+          throw new Error(
+            "Access denied: account does not belong to current user"
+          );
+        }
+
+        if (account.provider !== "gmail") {
+          throw new Error(
+            "Only Gmail accounts can be used for Google Sheets access"
+          );
+        }
+
+        // Parsear credenciales
+        const credentials = JSON.parse(account.encrypted_credentials || "{}");
+        return {
+          accessToken: credentials.accessToken,
+          refreshToken: credentials.refreshToken,
+          tokenExpiry: credentials.tokenExpiry,
+          email: account.email,
+        };
       }
-      
-      if (!account) {
-        throw new Error("Email account not found");
+
+      // Si no se proporciona accountId, buscar la primera cuenta de Gmail activa
+      const gmailAccount = await ctx.db
+        .query("email_accounts")
+        .withIndex("by_user_id", (q) => q.eq("user_id", user._id))
+        .filter((q) => q.eq(q.field("provider"), "gmail"))
+        .filter((q) => q.eq(q.field("is_active"), true))
+        .filter((q) => q.eq(q.field("connection_status"), "connected"))
+        .first();
+
+      if (!gmailAccount) {
+        return null; // No hay cuenta de Gmail disponible
       }
-      
-      // Verificar que la cuenta pertenece al usuario
-      if (account.user_id !== user._id) {
-        throw new Error("Access denied: account does not belong to current user");
-      }
-      
-      if (account.provider !== "gmail") {
-        throw new Error("Only Gmail accounts can be used for Google Sheets access");
-      }
-      
-      // Parsear credenciales
-      const credentials = JSON.parse(account.encrypted_credentials || "{}");
+
+      const credentials = JSON.parse(
+        gmailAccount.encrypted_credentials || "{}"
+      );
       return {
         accessToken: credentials.accessToken,
         refreshToken: credentials.refreshToken,
         tokenExpiry: credentials.tokenExpiry,
-        email: account.email,
+        email: gmailAccount.email,
       };
-    }
-
-    // Si no se proporciona accountId, buscar la primera cuenta de Gmail activa
-    const gmailAccount = await ctx.db
-      .query("email_accounts")
-      .withIndex("by_user_id", (q) => q.eq("user_id", user._id))
-      .filter((q) => q.eq(q.field("provider"), "gmail"))
-      .filter((q) => q.eq(q.field("is_active"), true))
-      .filter((q) => q.eq(q.field("connection_status"), "connected"))
-      .first();
-
-    if (!gmailAccount) {
-      return null; // No hay cuenta de Gmail disponible
-    }
-
-    const credentials = JSON.parse(gmailAccount.encrypted_credentials || "{}");
-    return {
-      accessToken: credentials.accessToken,
-      refreshToken: credentials.refreshToken,
-      tokenExpiry: credentials.tokenExpiry,
-      email: gmailAccount.email,
-    };
     } catch (error) {
       debug("getGoogleSheetsToken", "Authentication error:", error);
       // Return null instead of throwing to allow graceful handling in the UI
@@ -134,7 +149,7 @@ export const refreshGoogleToken = action({
   },
   handler: async (ctx, args) => {
     const authContext = await requireAuth(ctx);
-    
+
     logAuthState("refreshGoogleToken", authContext, {
       accountId: args.accountId,
     });
@@ -154,25 +169,29 @@ export const refreshGoogleToken = action({
       });
 
       if (!response.ok) {
-        throw new Error(`Token refresh failed: ${response.status} ${response.statusText}`);
+        throw new Error(
+          `Token refresh failed: ${response.status} ${response.statusText}`
+        );
       }
 
       const tokenData = await response.json();
-      
+
       // Actualizar las credenciales en la base de datos
       const account = await ctx.runQuery(api.emailAccounts.getAccountById, {
         accountId: args.accountId,
       });
-      
+
       if (!account) {
         throw new Error("Account not found");
       }
 
-      const currentCredentials = JSON.parse(account.encrypted_credentials || "{}");
+      const currentCredentials = JSON.parse(
+        account.encrypted_credentials || "{}"
+      );
       const updatedCredentials = {
         ...currentCredentials,
         accessToken: tokenData.access_token,
-        tokenExpiry: Date.now() + (tokenData.expires_in * 1000),
+        tokenExpiry: Date.now() + tokenData.expires_in * 1000,
       };
 
       await ctx.runMutation(api.emailAccounts.upsertEmailAccountForUser, {
@@ -189,10 +208,11 @@ export const refreshGoogleToken = action({
         accessToken: tokenData.access_token,
         tokenExpiry: updatedCredentials.tokenExpiry,
       };
-
     } catch (error) {
       debug("refreshGoogleToken", "Token refresh failed:", error);
-      throw new Error(`Failed to refresh token: ${error instanceof Error ? error.message : "Unknown error"}`);
+      throw new Error(
+        `Failed to refresh token: ${error instanceof Error ? error.message : "Unknown error"}`
+      );
     }
   },
 });
@@ -203,7 +223,10 @@ export const testGoogleSheetsConnection = action({
     spreadsheetId: v.string(),
     accountId: v.optional(v.id("email_accounts")),
   },
-  handler: async (ctx, args): Promise<{
+  handler: async (
+    ctx,
+    args
+  ): Promise<{
     success: boolean;
     error?: string;
     requiresAuth?: boolean;
@@ -214,7 +237,7 @@ export const testGoogleSheetsConnection = action({
     };
   }> => {
     const authContext = await requireAuth(ctx);
-    
+
     logAuthState("testGoogleSheetsConnection", authContext, {
       spreadsheetId: args.spreadsheetId,
       accountId: args.accountId,
@@ -222,14 +245,18 @@ export const testGoogleSheetsConnection = action({
 
     try {
       // Obtener token de acceso
-      const tokenData: any = await ctx.runQuery(api.googleSheets.getGoogleSheetsToken, {
-        accountId: args.accountId,
-      });
+      const tokenData: any = await ctx.runQuery(
+        api.googleSheets.getGoogleSheetsToken,
+        {
+          accountId: args.accountId,
+        }
+      );
 
       if (!tokenData) {
         return {
           success: false,
-          error: "No Gmail account found. Please connect a Gmail account first.",
+          error:
+            "No Gmail account found. Please connect a Gmail account first.",
           requiresAuth: true,
         };
       }
@@ -238,15 +265,19 @@ export const testGoogleSheetsConnection = action({
       if (tokenData.tokenExpiry && Date.now() > tokenData.tokenExpiry) {
         if (tokenData.refreshToken) {
           // Intentar refrescar el token
-          const refreshedToken = await ctx.runAction(api.googleSheets.refreshGoogleToken, {
-            accountId: args.accountId!,
-            refreshToken: tokenData.refreshToken,
-          });
+          const refreshedToken = await ctx.runAction(
+            api.googleSheets.refreshGoogleToken,
+            {
+              accountId: args.accountId!,
+              refreshToken: tokenData.refreshToken,
+            }
+          );
           tokenData.accessToken = refreshedToken.accessToken;
         } else {
           return {
             success: false,
-            error: "Access token expired and no refresh token available. Please reconnect your Gmail account.",
+            error:
+              "Access token expired and no refresh token available. Please reconnect your Gmail account.",
             requiresAuth: true,
           };
         }
@@ -273,21 +304,23 @@ export const testGoogleSheetsConnection = action({
       }
 
       const spreadsheetData = await response.json();
-      
+
       return {
         success: true,
         spreadsheetInfo: {
           title: spreadsheetData.properties?.title || "Unknown",
           url: `https://docs.google.com/spreadsheets/d/${args.spreadsheetId}`,
-          sheets: spreadsheetData.sheets?.map((sheet: any) => sheet.properties?.title || "Sheet1") || ["Sheet1"],
+          sheets: spreadsheetData.sheets?.map(
+            (sheet: any) => sheet.properties?.title || "Sheet1"
+          ) || ["Sheet1"],
         },
       };
-
     } catch (error) {
       debug("testGoogleSheetsConnection", "Connection test failed:", error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Connection test failed",
+        error:
+          error instanceof Error ? error.message : "Connection test failed",
         requiresAuth: false,
       };
     }
@@ -302,9 +335,17 @@ export const syncDataToGoogleSheets = action({
     data: v.any(),
     accountId: v.optional(v.id("email_accounts")),
   },
-  handler: async (ctx, args): Promise<{ success: boolean; rowsAffected: number; error?: string; spreadsheetUrl?: string }> => {
+  handler: async (
+    ctx,
+    args
+  ): Promise<{
+    success: boolean;
+    rowsAffected: number;
+    error?: string;
+    spreadsheetUrl?: string;
+  }> => {
     const authContext = await requireAuth(ctx);
-    
+
     logAuthState("syncDataToGoogleSheets", authContext, {
       spreadsheetId: args.spreadsheetId,
       sheetName: args.sheetName,
@@ -314,14 +355,18 @@ export const syncDataToGoogleSheets = action({
 
     try {
       // Obtener token de acceso
-      const tokenData: any = await ctx.runQuery(api.googleSheets.getGoogleSheetsToken, {
-        accountId: args.accountId,
-      });
+      const tokenData: any = await ctx.runQuery(
+        api.googleSheets.getGoogleSheetsToken,
+        {
+          accountId: args.accountId,
+        }
+      );
 
       if (!tokenData) {
         return {
           success: false,
-          error: "No Gmail account found. Please connect a Gmail account first.",
+          error:
+            "No Gmail account found. Please connect a Gmail account first.",
           rowsAffected: 0,
         };
       }
@@ -329,10 +374,13 @@ export const syncDataToGoogleSheets = action({
       // Verificar si el token ha expirado
       if (tokenData.tokenExpiry && Date.now() > tokenData.tokenExpiry) {
         if (tokenData.refreshToken) {
-          const refreshedToken = await ctx.runAction(api.googleSheets.refreshGoogleToken, {
-            accountId: args.accountId!,
-            refreshToken: tokenData.refreshToken,
-          });
+          const refreshedToken = await ctx.runAction(
+            api.googleSheets.refreshGoogleToken,
+            {
+              accountId: args.accountId!,
+              refreshToken: tokenData.refreshToken,
+            }
+          );
           tokenData.accessToken = refreshedToken.accessToken;
         } else {
           return {
@@ -398,13 +446,12 @@ export const syncDataToGoogleSheets = action({
       }
 
       const result = await response.json();
-      
+
       return {
         success: true,
         rowsAffected: result.updates?.updatedRows || values.length,
         spreadsheetUrl: `https://docs.google.com/spreadsheets/d/${args.spreadsheetId}`,
       };
-
     } catch (error) {
       debug("syncDataToGoogleSheets", "Sync failed:", error);
       return {

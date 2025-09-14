@@ -10,7 +10,7 @@
  */
 
 import { v } from "convex/values";
-import { internal, components } from "./_generated/api";
+import { components, internal } from "./_generated/api";
 import { internalAction, mutation } from "./_generated/server";
 import { workflow as WORKFLOW } from "./workflow";
 
@@ -19,9 +19,17 @@ import { workflow as WORKFLOW } from "./workflow";
 // --------------------------------------------------------------------------------
 
 type NodeKind = string; // e.g., "emailSend", "aiSummarize", etc.
-type GraphNode = { id: string; kind: NodeKind; config: Record<string, unknown> };
+type GraphNode = {
+  id: string;
+  kind: NodeKind;
+  config: Record<string, unknown>;
+};
 type GraphEdge = { from: string; to: string };
-type PlanStep = { kind: NodeKind; config: Record<string, unknown>; runAfterMs?: number };
+type PlanStep = {
+  kind: NodeKind;
+  config: Record<string, unknown>;
+  runAfterMs?: number;
+};
 type ParallelBlock = { parallel: PlanStep[] };
 type Plan = Array<PlanStep | ParallelBlock>;
 
@@ -36,7 +44,7 @@ export const node_emailSend = internalAction({
     // Use resend component directly to avoid extra indirection
     const html = `<p>${body}</p>`;
     await ctx.runMutation(components.resend.lib.sendEmail, {
-      from: "noreply@agenitix.com",
+      from: process.env.RESEND_FROM_EMAIL || "noreply@agenitix.com",
       to,
       subject,
       html,
@@ -80,7 +88,9 @@ function compileGraphToPlan(nodes: GraphNode[], edges: GraphEdge[]): Plan {
   }
   // Kahn's algorithm with parallel layers
   const plan: Plan = [];
-  let layer = nodes.filter((n) => (incoming.get(n.id) || 0) === 0).map((n) => n.id);
+  let layer = nodes
+    .filter((n) => (incoming.get(n.id) || 0) === 0)
+    .map((n) => n.id);
   const visited = new Set<string>();
   while (layer.length) {
     const nextLayer: string[] = [];
@@ -126,24 +136,33 @@ export const runUserFlowWorkflow = WORKFLOW.define({
   },
 });
 
-async function runStep(step: any, s: PlanStep): Promise<unknown> {
+function runStep(step: any, s: PlanStep): Promise<unknown> {
   const opts = s.runAfterMs ? { runAfter: s.runAfterMs } : undefined;
   switch (s.kind) {
     case "emailSend": {
       const to = String(s.config.to || "");
       const subject = String(s.config.subject || "");
       const body = String(s.config.body || "");
-      if (!to) return;
-      return step.runAction(internal.runUserFlowWorkflow.node_emailSend, { to, subject, body }, { retry: true, ...opts });
+      if (!to) return Promise.resolve(undefined);
+      return step.runAction(
+        internal.runUserFlowWorkflow.node_emailSend,
+        { to, subject, body },
+        { retry: true, ...opts }
+      );
     }
     case "wait": {
       const ms = Number(s.config.ms || 0);
-      if (ms > 0) return step.runAction(internal.runUserFlowWorkflow.node_wait, { ms }, opts);
-      return;
+      if (ms > 0)
+        return step.runAction(
+          internal.runUserFlowWorkflow.node_wait,
+          { ms },
+          opts
+        );
+      return Promise.resolve(undefined);
     }
     default: {
       // Unknown kind: no-op to avoid crashes; you can extend with your node kinds
-      return;
+      return Promise.resolve(undefined);
     }
   }
 }
@@ -154,7 +173,7 @@ async function runStep(step: any, s: PlanStep): Promise<unknown> {
 
 export const startUserFlow = mutation({
   args: { nodes: v.any(), edges: v.any() },
-  handler: async (ctx, { nodes, edges }): Promise<void> => {
+  handler: (ctx, { nodes, edges }): void => {
     const plan = compileGraphToPlan(nodes, edges);
     // Note: This would need to be implemented as a proper workflow
     // For now, we'll just compile the plan
@@ -171,5 +190,3 @@ export const getUserFlowStatus = mutation({
   args: { id: v.any() },
   handler: async (ctx, { id }) => WORKFLOW.status(ctx, id),
 });
-
-

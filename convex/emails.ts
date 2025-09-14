@@ -11,15 +11,13 @@
  */
 
 "use node";
-
-import { render } from "@react-email/render";
 import { v } from "convex/values";
 // TODO: Fix React Email compatibility with React 19
 // import { AgenitiXMagicLinkEmail } from "../react-email-starter/emails/agenitix-magic-link";
 import { action } from "./_generated/server";
 import { resend } from "./sendEmails";
 
-const FROM_EMAIL = "noreply@agenitix.com";
+const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || "noreply@agenitix.com";
 
 export const sendMagicLinkEmail = action({
   args: {
@@ -80,13 +78,13 @@ export const sendTestEmail = action({
     // const html = await render(
     //   AgenitiXMagicLinkEmail({
     //     name: "Test User",
-    //     magicLinkUrl: "https://agenitix.com/auth/verify?token=test123",
+    //     magicLinkUrl: `${process.env.NEXT_PUBLIC_APP_URL || "https://agenitix.com"}/auth/verify?token=test123`,
     //     type: "verification",
     //     requestFromIp: "127.0.0.1",
     //     requestFromLocation: "Local Development",
     //   })
     // );
-    const html = `<p>Magic link: https://agenitix.com/auth/verify?token=test123</p>`;
+    const html = `<p>Magic link: ${process.env.NEXT_PUBLIC_APP_URL || "https://agenitix.com"}/auth/verify?token=test123</p>`;
 
     const emailId = await resend.sendEmail(ctx, {
       from: FROM_EMAIL,

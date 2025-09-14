@@ -1,8 +1,7 @@
-
+import { SetupPieMenuContextMenuClient } from "@/app/providers/setupPieMenuContextMenuClient";
 import LayoutWrapper from "@/app/wrapper/LayoutWrapper";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import PWAStatus from "@/components/PWAStatus";
-import { AnubisControlPanel } from "@/components/anubis/AnubisControlPanel";
 import { AnubisDebugger } from "@/components/anubis/AnubisDebugger";
 import {
   AnubisProvider,
@@ -10,7 +9,9 @@ import {
 } from "@/components/anubis/AnubisProvider";
 import { OptimisticVerificationProvider } from "@/components/anubis/OptimisticVerification";
 import { RiskDashboard } from "@/components/anubis/RiskDashboard";
-import MagicLinkTest from "@/components/auth/MagicLinkTest";
+import { PieMenuProvider } from "@/components/ui/pie-menu";
+import "@arco-design/web-react/dist/css/arco.css";
+import { ConvexAuthNextjsServerProvider } from "@convex-dev/auth/nextjs/server";
 import { Analytics } from "@vercel/analytics/react";
 import type { Metadata, Viewport } from "next";
 import { ThemeProvider } from "next-themes";
@@ -20,12 +21,8 @@ import type React from "react";
 import { Suspense } from "react";
 import { Toaster } from "sonner";
 import "./globals.css";
-import "@arco-design/web-react/dist/css/arco.css";
 import Loading from "./loading";
-import { ConvexAuthNextjsServerProvider } from "@convex-dev/auth/nextjs/server";
 import { ConvexClientProvider } from "./provider";
-import { PieMenuProvider } from "@/components/ui/pie-menu";
-import { SetupPieMenuContextMenuClient } from "@/app/providers/setupPieMenuContextMenuClient";
 
 // Import why-did-you-render for development debugging
 import "@/lib/why-did-you-render";
@@ -106,75 +103,75 @@ export default function RootLayout({
   return (
     <>
       <ConvexAuthNextjsServerProvider>
-    <html lang="en" className={`${geistSans.className} ${inter.className}`}>
-      <head>
-        <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Work+Sans:wght@400;600&family=Source+Serif+Pro:ital,wght@0,400;1,400&display=swap"
-          rel="stylesheet"
-        />
-      </head>
-      <body
-        className="bg-background text-foreground"
-        suppressHydrationWarning={true}
-      >
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="dark"
-          enableSystem={true}
-          disableTransitionOnChange={true}
-        >
-          <AnubisProvider>
-            <OptimisticVerificationProvider>
-              <ConvexClientProvider>
-                <PieMenuProvider>
-                  <Suspense fallback={<Loading />}>
-                    <LayoutWrapper>{children}</LayoutWrapper>
-                  </Suspense>
-                  <SetupPieMenuContextMenuClient />
-                </PieMenuProvider>
-                {/* {process.env.NODE_ENV === "development" && <MagicLinkTest />} */}
-              </ConvexClientProvider>
-              <PWAInstallPrompt />
-              <PWAStatus />
-              {/* <AnubisToggle /> */}
-              <AnubisStatus />
-              {process.env.NODE_ENV === "development" && <AnubisDebugger />}
-              {process.env.NODE_ENV === "development" && <RiskDashboard />}
-            </OptimisticVerificationProvider>
-          </AnubisProvider>
-          <Toaster position="top-right" />
+        <html lang="en" className={`${geistSans.className} ${inter.className}`}>
+          <head>
+            <link
+              href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Work+Sans:wght@400;600&family=Source+Serif+Pro:ital,wght@0,400;1,400&display=swap"
+              rel="stylesheet"
+            />
+          </head>
+          <body
+            className="bg-background text-foreground"
+            suppressHydrationWarning={true}
+          >
+            <ThemeProvider
+              attribute="class"
+              defaultTheme="dark"
+              enableSystem={true}
+              disableTransitionOnChange={true}
+            >
+              <AnubisProvider>
+                <OptimisticVerificationProvider>
+                  <ConvexClientProvider>
+                    <PieMenuProvider>
+                      <Suspense fallback={<Loading />}>
+                        <LayoutWrapper>{children}</LayoutWrapper>
+                      </Suspense>
+                      <SetupPieMenuContextMenuClient />
+                    </PieMenuProvider>
+                    {/* {process.env.NODE_ENV === "development" && <MagicLinkTest />} */}
+                  </ConvexClientProvider>
+                  <PWAInstallPrompt />
+                  <PWAStatus />
+                  {/* <AnubisToggle /> */}
+                  <AnubisStatus />
+                  {process.env.NODE_ENV === "development" && <AnubisDebugger />}
+                  {process.env.NODE_ENV === "development" && <RiskDashboard />}
+                </OptimisticVerificationProvider>
+              </AnubisProvider>
+              <Toaster position="top-right" />
 
-          <Analytics />
+              <Analytics />
 
-          <Script
-            type="application/ld+json"
-            dangerouslySetInnerHTML={{
-              __html: JSON.stringify({
-                "@context": "https://schema.org",
-                "@type": "Organization",
-                name: "AgenitiX Inc.",
-                url: defaultUrl,
-                logo: "https://86apvmagmm.ufs.sh/f/EORhWwIHc4gy98vCVQXnvd0FBAOChWPpUI7LwlytcoN5fm4Q",
-                description:
-                  "Digital technology agency specializing in n8n automation workflows...",
-                contactPoint: {
-                  "@type": "ContactPoint",
-                  contactType: "Customer Service",
-                  areaServed: "Worldwide",
-                  availableLanguage: "English",
-                },
-                sameAs: [
-                  "https://twitter.com/AgenitiX",
-                  "https://linkedin.com/company/agenitix",
-                  "https://github.com/agenitix",
-                ],
-              }),
-            }}
-          />
-        </ThemeProvider>
-        </body>
-      </html>
-    </ConvexAuthNextjsServerProvider>
-      </>
+              <Script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{
+                  __html: JSON.stringify({
+                    "@context": "https://schema.org",
+                    "@type": "Organization",
+                    name: "AgenitiX Inc.",
+                    url: defaultUrl,
+                    logo: "https://86apvmagmm.ufs.sh/f/EORhWwIHc4gy98vCVQXnvd0FBAOChWPpUI7LwlytcoN5fm4Q",
+                    description:
+                      "Digital technology agency specializing in n8n automation workflows...",
+                    contactPoint: {
+                      "@type": "ContactPoint",
+                      contactType: "Customer Service",
+                      areaServed: "Worldwide",
+                      availableLanguage: "English",
+                    },
+                    sameAs: [
+                      "https://twitter.com/AgenitiX",
+                      "https://linkedin.com/company/agenitix",
+                      "https://github.com/agenitix",
+                    ],
+                  }),
+                }}
+              />
+            </ThemeProvider>
+          </body>
+        </html>
+      </ConvexAuthNextjsServerProvider>
+    </>
   );
 }

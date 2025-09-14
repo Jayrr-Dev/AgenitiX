@@ -1,12 +1,3 @@
-/**
- * Google Sheets Service - Integración con autenticación OAuth2 existente
- * 
- * Utiliza la autenticación de Gmail ya implementada en convex/emailAccounts.ts
- * para acceder a Google Sheets API de manera segura.
- */
-
-import { ConvexError } from "convex/values";
-
 export interface GoogleSheetsConfig {
   spreadsheetId: string;
   sheetName: string;
@@ -36,26 +27,26 @@ export interface ConnectionResult {
  */
 export function extractSpreadsheetId(input: string): string | null {
   if (!input) return null;
-  
+
   // Si ya es un ID (no contiene '/' ni 'docs.google.com')
-  if (!input.includes('/') && !input.includes('docs.google.com')) {
+  if (!input.includes("/") && !input.includes("docs.google.com")) {
     return input;
   }
-  
+
   // Extraer de URL completa
   const patterns = [
     /\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/,
     /\/d\/([a-zA-Z0-9-_]+)/,
-    /spreadsheets\/d\/([a-zA-Z0-9-_]+)/
+    /spreadsheets\/d\/([a-zA-Z0-9-_]+)/,
   ];
-  
+
   for (const pattern of patterns) {
     const match = input.match(pattern);
     if (match) {
       return match[1];
     }
   }
-  
+
   return null;
 }
 
@@ -63,7 +54,7 @@ export function extractSpreadsheetId(input: string): string | null {
  * Genera URL para crear un nuevo Google Sheet
  */
 export function getCreateSheetUrl(title?: string): string {
-  const encodedTitle = encodeURIComponent(title || 'AgenitiX Data Sheet');
+  const encodedTitle = encodeURIComponent(title || "AgenitiX Data Sheet");
   return `https://docs.google.com/spreadsheets/create?title=${encodedTitle}`;
 }
 
@@ -76,10 +67,10 @@ export class GoogleSheetsService {
 
   constructor(config: GoogleSheetsConfig) {
     this.config = config;
-    this.apiKey = process.env.NEXT_PUBLIC_GOOGLE_SHEETS_API_KEY || '';
-    
+    this.apiKey = process.env.GOOGLE_SHEETS_API_KEY || "";
+
     if (!this.apiKey) {
-      throw new Error('Google Sheets API key not configured');
+      throw new Error("Google Sheets API key not configured");
     }
   }
 
@@ -99,7 +90,7 @@ export class GoogleSheetsService {
         return {
           success: false,
           isAuthenticated: false,
-          error: 'Spreadsheet ID is required'
+          error: "Spreadsheet ID is required",
         };
       }
 
@@ -107,10 +98,10 @@ export class GoogleSheetsService {
       const response = await fetch(
         `https://sheets.googleapis.com/v4/spreadsheets/${this.config.spreadsheetId}?key=${this.apiKey}`,
         {
-          method: 'GET',
+          method: "GET",
           headers: {
-            'Accept': 'application/json',
-          }
+            Accept: "application/json",
+          },
         }
       );
 
@@ -120,10 +111,12 @@ export class GoogleSheetsService {
           success: true,
           isAuthenticated: !!this.config.accessToken,
           spreadsheetInfo: {
-            title: data.properties?.title || 'Unknown',
+            title: data.properties?.title || "Unknown",
             url: `https://docs.google.com/spreadsheets/d/${this.config.spreadsheetId}`,
-            sheets: data.sheets?.map((sheet: any) => sheet.properties?.title || 'Sheet1') || ['Sheet1']
-          }
+            sheets: data.sheets?.map(
+              (sheet: any) => sheet.properties?.title || "Sheet1"
+            ) || ["Sheet1"],
+          },
         };
       }
 
@@ -132,11 +125,11 @@ export class GoogleSheetsService {
         const authResponse = await fetch(
           `https://sheets.googleapis.com/v4/spreadsheets/${this.config.spreadsheetId}`,
           {
-            method: 'GET',
+            method: "GET",
             headers: {
-              'Authorization': `Bearer ${this.config.accessToken}`,
-              'Accept': 'application/json',
-            }
+              Authorization: `Bearer ${this.config.accessToken}`,
+              Accept: "application/json",
+            },
           }
         );
 
@@ -146,10 +139,12 @@ export class GoogleSheetsService {
             success: true,
             isAuthenticated: true,
             spreadsheetInfo: {
-              title: data.properties?.title || 'Unknown',
+              title: data.properties?.title || "Unknown",
               url: `https://docs.google.com/spreadsheets/d/${this.config.spreadsheetId}`,
-              sheets: data.sheets?.map((sheet: any) => sheet.properties?.title || 'Sheet1') || ['Sheet1']
-            }
+              sheets: data.sheets?.map(
+                (sheet: any) => sheet.properties?.title || "Sheet1"
+              ) || ["Sheet1"],
+            },
           };
         }
       }
@@ -157,14 +152,13 @@ export class GoogleSheetsService {
       return {
         success: false,
         isAuthenticated: !!this.config.accessToken,
-        error: `Failed to access spreadsheet: ${response.status} ${response.statusText}`
+        error: `Failed to access spreadsheet: ${response.status} ${response.statusText}`,
       };
-
     } catch (error) {
       return {
         success: false,
         isAuthenticated: !!this.config.accessToken,
-        error: error instanceof Error ? error.message : 'Connection failed'
+        error: error instanceof Error ? error.message : "Connection failed",
       };
     }
   }
@@ -178,7 +172,8 @@ export class GoogleSheetsService {
         return {
           success: false,
           rowsAffected: 0,
-          error: 'Authentication required. Please connect your Gmail account first.'
+          error:
+            "Authentication required. Please connect your Gmail account first.",
         };
       }
 
@@ -186,13 +181,13 @@ export class GoogleSheetsService {
         return {
           success: false,
           rowsAffected: 0,
-          error: 'No data to sync'
+          error: "No data to sync",
         };
       }
 
       // Preparar datos para Google Sheets
       const values = this.prepareDataForSheets(data);
-      
+
       // Obtener el rango actual para determinar dónde insertar
       const currentRange = await this.getCurrentRange();
       const startRow = currentRange + 1;
@@ -202,14 +197,14 @@ export class GoogleSheetsService {
       const response = await fetch(
         `https://sheets.googleapis.com/v4/spreadsheets/${this.config.spreadsheetId}/values/${range}:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS`,
         {
-          method: 'POST',
+          method: "POST",
           headers: {
-            'Authorization': `Bearer ${this.config.accessToken}`,
-            'Content-Type': 'application/json',
+            Authorization: `Bearer ${this.config.accessToken}`,
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            values: values
-          })
+            values: values,
+          }),
         }
       );
 
@@ -218,23 +213,22 @@ export class GoogleSheetsService {
         return {
           success: false,
           rowsAffected: 0,
-          error: `Failed to sync data: ${response.status} ${response.statusText} - ${errorData.error?.message || 'Unknown error'}`
+          error: `Failed to sync data: ${response.status} ${response.statusText} - ${errorData.error?.message || "Unknown error"}`,
         };
       }
 
       const result = await response.json();
-      
+
       return {
         success: true,
         rowsAffected: result.updates?.updatedRows || values.length,
-        spreadsheetUrl: `https://docs.google.com/spreadsheets/d/${this.config.spreadsheetId}`
+        spreadsheetUrl: `https://docs.google.com/spreadsheets/d/${this.config.spreadsheetId}`,
       };
-
     } catch (error) {
       return {
         success: false,
         rowsAffected: 0,
-        error: error instanceof Error ? error.message : 'Sync failed'
+        error: error instanceof Error ? error.message : "Sync failed",
       };
     }
   }
@@ -248,8 +242,8 @@ export class GoogleSheetsService {
         `https://sheets.googleapis.com/v4/spreadsheets/${this.config.spreadsheetId}/values/${this.config.sheetName}`,
         {
           headers: {
-            'Authorization': `Bearer ${this.config.accessToken}`,
-          }
+            Authorization: `Bearer ${this.config.accessToken}`,
+          },
         }
       );
 
@@ -257,7 +251,7 @@ export class GoogleSheetsService {
         const data = await response.json();
         return data.values?.length || 0;
       }
-      
+
       return 0;
     } catch {
       return 0;
@@ -272,23 +266,23 @@ export class GoogleSheetsService {
 
     // Si el primer elemento es un objeto, crear headers
     const firstItem = data[0];
-    if (typeof firstItem === 'object' && firstItem !== null) {
+    if (typeof firstItem === "object" && firstItem !== null) {
       const headers = Object.keys(firstItem);
-      const rows = data.map(item => 
-        headers.map(header => {
+      const rows = data.map((item) =>
+        headers.map((header) => {
           const value = item[header];
-          if (value === null || value === undefined) return '';
-          if (typeof value === 'object') return JSON.stringify(value);
+          if (value === null || value === undefined) return "";
+          if (typeof value === "object") return JSON.stringify(value);
           return String(value);
         })
       );
-      
+
       // Solo agregar headers si es la primera vez (esto se puede mejorar)
       return rows;
     }
 
     // Si son valores primitivos, convertir a array de arrays
-    return data.map(item => [String(item)]);
+    return data.map((item) => [String(item)]);
   }
 
   /**
@@ -303,6 +297,8 @@ export class GoogleSheetsService {
 /**
  * Factory function para crear el servicio
  */
-export function createGoogleSheetsService(config: GoogleSheetsConfig): GoogleSheetsService {
+export function createGoogleSheetsService(
+  config: GoogleSheetsConfig
+): GoogleSheetsService {
   return new GoogleSheetsService(config);
 }
