@@ -17,10 +17,11 @@ import { createEmailError } from "../utils";
 import { BaseEmailProvider } from "./base";
 
 // Gmail OAuth2 configuration
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000";
 const GMAIL_OAUTH_CONFIG = {
   clientId: process.env.GMAIL_CLIENT_ID,
   clientSecret: process.env.GMAIL_CLIENT_SECRET,
-  redirectUri: "http://localhost:3000/api/auth/email/gmail/callback",
+  redirectUri: `${BASE_URL}/api/auth/email/gmail/callback`,
   scope:
     "https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/spreadsheets",
   authUrl: "https://accounts.google.com/o/oauth2/v2/auth",
