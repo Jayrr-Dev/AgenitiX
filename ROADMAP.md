@@ -263,3 +263,4 @@ This roadmap is updated regularly based on:
 **Note**: This roadmap is subject to change based on community feedback, technical discoveries, and business priorities. We encourage community participation in shaping our development direction.
 
 For questions about the roadmap or to suggest changes, please [open a discussion](https://github.com/agenitix/agenitix/discussions).
+

@@ -232,3 +232,4 @@ If you have questions or concerns about this Privacy Policy:
 ---
 
 **Thank you for trusting AgenitiX with your data. We are committed to protecting your privacy and being transparent about our data practices.**
+

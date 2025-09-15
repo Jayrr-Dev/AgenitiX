@@ -250,3 +250,4 @@ For issues with the migration:
 | Version | Name                    | Date       | Description                   |
 | ------- | ----------------------- | ---------- | ----------------------------- |
 | 0.12.0  | open_source_preparation | 2025-01-23 | Initial open source migration |
+

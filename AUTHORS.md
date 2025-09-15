@@ -92,3 +92,4 @@ This project follows the Contributor Covenant Code of Conduct - see [CODE_OF_CON
 ---
 
 **Thank you to all contributors who help make AgenitiX better!**
+
