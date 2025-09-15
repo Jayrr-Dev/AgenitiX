@@ -6,14 +6,14 @@ Thank you for your interest in contributing to AgenitiX! This document provides 
 
 ### Reporting Issues
 
-- Use the [GitHub Issues](https://github.com/agenitix/agenitix/issues) page
+- Use the [GitHub Issues](https://github.com/Jayrr-Dev/AgenitiX/issues) page
 - Search existing issues before creating new ones
 - Provide clear descriptions and reproduction steps
 - Include relevant environment information
 
 ### Suggesting Features
 
-- Use [GitHub Discussions](https://github.com/agenitix/agenitix/discussions) for feature requests
+- Use [GitHub Discussions](https://github.com/Jayrr-Dev/AgenitiX/discussions) for feature requests
 - Describe the problem you're trying to solve
 - Explain how the feature would benefit users
 - Consider implementation complexity
@@ -231,8 +231,8 @@ export const myQuery = query({
 
 ## 📞 Getting Help
 
-- **Discussions**: [GitHub Discussions](https://github.com/agenitix/agenitix/discussions)
-- **Issues**: [GitHub Issues](https://github.com/agenitix/agenitix/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/Jayrr-Dev/AgenitiX/discussions)
+- **Issues**: [GitHub Issues](https://github.com/Jayrr-Dev/AgenitiX/issues)
 - **Documentation**: Check existing docs first
 
 ## 📄 License
@@ -242,4 +242,3 @@ By contributing, you agree that your contributions will be licensed under the MI
 ---
 
 Thank you for contributing to AgenitiX! 🎉
-

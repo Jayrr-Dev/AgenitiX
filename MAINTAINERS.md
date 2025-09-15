@@ -8,7 +8,7 @@ This document outlines the maintainer responsibilities and guidelines for the Ag
 
 - **AgenitiX Team** - _Project Lead_
   - Email: [maintainers@agenitix.com](mailto:maintainers@agenitix.com)
-  - GitHub: [@agenitix](https://github.com/agenitix)
+  - GitHub: [@Jayrr-Dev](https://github.com/Jayrr-Dev)
   - Responsibilities: Project direction, major decisions, release management
 
 ## Maintainer Responsibilities
@@ -203,15 +203,14 @@ This document outlines the maintainer responsibilities and guidelines for the Ag
 ### Maintainer Contact
 
 - **Email**: [maintainers@agenitix.com](mailto:maintainers@agenitix.com)
-- **GitHub**: [@agenitix](https://github.com/agenitix)
-- **Issues**: [GitHub Issues](https://github.com/agenitix/agenitix/issues)
+- **GitHub**: [@Jayrr-Dev](https://github.com/Jayrr-Dev)
+- **Issues**: [GitHub Issues](https://github.com/Jayrr-Dev/AgenitiX/issues)
 
 ### General Contact
 
 - **Email**: [hello@agenitix.com](mailto:hello@agenitix.com)
-- **Discussions**: [GitHub Discussions](https://github.com/agenitix/agenitix/discussions)
+- **Discussions**: [GitHub Discussions](https://github.com/Jayrr-Dev/AgenitiX/discussions)
 
 ---
 
 **Thank you to all maintainers who help keep AgenitiX running smoothly!**
-
