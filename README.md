@@ -39,8 +39,8 @@ AgenitiX is a comprehensive workflow automation platform that enables users to c
 1. **Clone the repository**
 
    ```bash
-   git clone https://github.com/agenitix/agenitix.git
-   cd agenitix
+   git clone https://github.com/Jayrr-Dev/AgenitiX.git
+   cd AgenitiX
    ```
 
 2. **Install dependencies**
@@ -105,7 +105,7 @@ See `.env.example` for complete list of environment variables.
 ## 🏗️ Project Structure
 
 ```
-agenitix/
+AgenitiX/
 ├── app/                    # Next.js app router pages
 ├── components/             # React components
 │   ├── ui/                # Reusable UI components
@@ -229,9 +229,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🆘 Support
 
-- **Issues**: [GitHub Issues](https://github.com/agenitix/agenitix/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/agenitix/agenitix/discussions)
-- **Documentation**: [GitHub Wiki](https://github.com/agenitix/agenitix/wiki)
+- **Issues**: [GitHub Issues](https://github.com/Jayrr-Dev/AgenitiX/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/Jayrr-Dev/AgenitiX/discussions)
+- **Documentation**: [GitHub Wiki](https://github.com/Jayrr-Dev/AgenitiX/wiki)
 
 ## 🙏 Acknowledgments
 
@@ -243,4 +243,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ---
 
 **Made with ❤️ by AgenitiX**
-
